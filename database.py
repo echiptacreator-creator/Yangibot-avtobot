@@ -273,3 +273,36 @@ def create_campaign(
     conn.close()
     return cid
 
+def get_user_campaigns(user_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT
+            id, text, groups,
+            interval_minutes, duration_minutes,
+            start_time, sent_count,
+            status
+        FROM campaigns
+        WHERE user_id = %s
+        ORDER BY id DESC
+        LIMIT 10
+    """, (user_id,))
+
+    rows = cur.fetchall()
+    conn.close()
+
+    campaigns = []
+    for r in rows:
+        campaigns.append({
+            "id": r[0],
+            "text": r[1],
+            "groups": json.loads(r[2]) if isinstance(r[2], str) else r[2],
+            "interval": r[3],
+            "duration": r[4],
+            "start_time": r[5],
+            "sent_count": r[6],
+            "status": r[7]
+        })
+
+    return campaigns
