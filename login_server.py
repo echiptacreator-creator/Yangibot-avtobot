@@ -94,26 +94,27 @@ def send_code():
     data = request.json
     phone = data.get("phone")
 
-    try:
+    async def _send():
         client = TelegramClient(
             os.path.join(SESSIONS_DIR, phone.replace("+", "")),
             API_ID,
             API_HASH
         )
-        client.connect()
-        client.send_code_request(phone)
+        await client.connect()
+        await client.send_code_request(phone)
+        await client.disconnect()
 
+    try:
+        asyncio.run(_send())
         return jsonify({
             "status": "ok",
             "message": "Kod yuborildi"
         })
-
     except Exception as e:
         return jsonify({
             "status": "error",
             "message": str(e)
         })
-
 
 # =====================
 # VERIFY CODE
