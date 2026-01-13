@@ -319,6 +319,7 @@ async def handle_limit_input(message: Message):
 async def edit_free_limits(message: Message):
     admin_state[message.from_user.id] = {"step": "max_campaigns"}
     await message.answer("📦 Maksimal kampaniyalar sonini kiriting:")
+
 @dp.message()
 async def handle_admin_limits(message: Message):
     user_id = message.from_user.id
@@ -327,73 +328,62 @@ async def handle_admin_limits(message: Message):
     if not state:
         return
 
-    # 🔴 HAR DOIM ENG BIRINCHI
-    if message.text == "⬅️ Ortga":
-        admin_state.pop(message.from_user.id, None)
+    # ⬅️ ORQAGA
+    if message.text == "⬅️ Orqaga":
+        admin_state.pop(user_id, None)
         await message.answer(
             "🔙 Admin menyu:",
             reply_markup=admin_main_menu()
         )
         return
-    
-        # 2-QADAM: RAQAM TEKSHIRUV
+
+    # faqat raqam
     if not message.text.isdigit():
         await message.answer("❌ Iltimos, faqat raqam kiriting:")
         return
 
     value = int(message.text)
+    step = state.get("step")
 
-
-        state["max_campaigns"] = int(message.text)
+    # 1️⃣ MAX CAMPAIGNS
+    if step == "max_campaigns":
+        state["max_campaigns"] = value
         state["step"] = "max_active"
         await message.answer("🟢 Bir vaqtning o‘zida aktiv kampaniyalar soni:")
         return
-    # =====================
-# MAX ACTIVE
-# =====================
-    if step == "max_active":
-        if not message.text.isdigit():
-            await message.answer("❌ Raqam kiriting:")
-            return
 
-        state["max_active"] = int(message.text)
+    # 2️⃣ MAX ACTIVE
+    if step == "max_active":
+        state["max_active"] = value
         state["step"] = "daily_limit"
         await message.answer("📨 Kunlik xabarlar limiti:")
         return
 
-
-    # =====================
-# DAILY LIMIT
-# =====================
+    # 3️⃣ DAILY LIMIT
     if step == "daily_limit":
-        if not message.text.isdigit():
-            await message.answer("❌ Raqam kiriting:")
-            return
-
-        daily_limit = int(message.text)
-
         from database import get_db
         conn = get_db()
         cur = conn.cursor()
+
         cur.execute("""
             INSERT INTO free_limits (max_campaigns, max_active, daily_limit)
             VALUES (%s, %s, %s)
         """, (
             state["max_campaigns"],
             state["max_active"],
-            daily_limit
+            value
         ))
+
         conn.commit()
         conn.close()
 
         admin_state.pop(user_id, None)
 
-        admin_state.pop(message.from_user.id, None)
         await message.answer(
             "✅ Limitlar muvaffaqiyatli saqlandi",
             reply_markup=admin_main_menu()
         )
-        return
+
 # =====================
 # UMUMI STATISTIKA
 # =====================
