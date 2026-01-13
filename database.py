@@ -1,6 +1,8 @@
 import os
 import psycopg2
 from datetime import date
+import json
+import time
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -76,10 +78,29 @@ def init_db():
     );
     """)
 
+    # =========================
+    # KAMPANIYALAR
+    # =========================
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS campaigns (
+        id SERIAL PRIMARY KEY,
+        user_id BIGINT NOT NULL,
+        text TEXT NOT NULL,
+        groups JSONB NOT NULL,
+        interval_minutes INTEGER NOT NULL,
+        duration_minutes INTEGER NOT NULL,
+        start_time BIGINT NOT NULL,
+        sent_count INTEGER DEFAULT 0,
+        status TEXT NOT NULL,
+        status_message_id BIGINT,
+        chat_id BIGINT,
+        created_at BIGINT
+    );
+    """)
+
     conn.commit()
     cur.close()
     conn.close()
-
 
 # =========================
 # YORDAMCHI FUNKSIYALAR
@@ -134,3 +155,106 @@ def activate_subscription(user_id: str, days: int = 30):
 
     conn.commit()
     conn.close()
+
+def create_campaign(
+    user_id: int,
+    text: str,
+    groups: list,
+    interval: int,
+    duration: int,
+    chat_id: int,
+    status_message_id: int
+) -> int:
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        INSERT INTO campaigns (
+            user_id, text, groups,
+            interval_minutes, duration_minutes,
+            start_time, status,
+            chat_id, status_message_id,
+            created_at
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        RETURNING id
+    """, (
+        user_id,
+        text,
+        json.dumps(groups),
+        interval,
+        duration,
+        int(time.time()),
+        "active",
+        chat_id,
+        status_message_id,
+        int(time.time())
+    ))
+
+    campaign_id = cur.fetchone()[0]
+    conn.commit()
+    conn.close()
+    return campaign_id
+
+def update_campaign_status(campaign_id: int, status: str):
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE campaigns
+        SET status = %s
+        WHERE id = %s
+    """, (status, campaign_id))
+
+    conn.commit()
+    conn.close()
+
+def increment_sent_count(campaign_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE campaigns
+        SET sent_count = sent_count + 1
+        WHERE id = %s
+    """, (campaign_id,))
+
+    conn.commit()
+    conn.close()
+
+def get_active_campaigns():
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT
+            id, user_id, text, groups,
+            interval_minutes, duration_minutes,
+            start_time, sent_count,
+            status, chat_id, status_message_id
+        FROM campaigns
+        WHERE status IN ('active', 'paused')
+    """)
+
+    rows = cur.fetchall()
+    conn.close()
+
+    campaigns = []
+    for r in rows:
+        campaigns.append({
+            "id": r[0],
+            "user_id": r[1],
+            "text": r[2],
+            "groups": r[3],
+            "interval": r[4],
+            "duration": r[5],
+            "start_time": r[6],
+            "sent_count": r[7],
+            "status": r[8],
+            "chat_id": r[9],
+            "status_message_id": r[10],
+            "paused": r[8] == "paused",
+            "active": r[8] == "active"
+        })
+
+    return campaigns
