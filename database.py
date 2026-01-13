@@ -103,6 +103,17 @@ def init_db():
     conn.close()
 
 # =========================
+# MEDIA
+# =========================
+
+    cur.execute("""
+    ALTER TABLE campaigns
+    ADD COLUMN IF NOT EXISTS media_type TEXT,
+    ADD COLUMN IF NOT EXISTS media_file_id TEXT;
+    """)
+
+
+# =========================
 # YORDAMCHI FUNKSIYALAR
 # =========================
 
@@ -258,3 +269,49 @@ def get_active_campaigns():
         })
 
     return campaigns
+
+def create_campaign(
+    user_id: int,
+    text: str,
+    groups: list,
+    interval: int,
+    duration: int,
+    chat_id: int,
+    status_message_id: int,
+    media_type: str = None,
+    media_file_id: str = None
+):
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        INSERT INTO campaigns (
+            user_id, text, groups,
+            interval_minutes, duration_minutes,
+            start_time, status,
+            chat_id, status_message_id,
+            media_type, media_file_id,
+            created_at
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        RETURNING id
+    """, (
+        user_id,
+        text,
+        json.dumps(groups),
+        interval,
+        duration,
+        int(time.time()),
+        "active",
+        chat_id,
+        status_message_id,
+        media_type,
+        media_file_id,
+        int(time.time())
+    ))
+
+    cid = cur.fetchone()[0]
+    conn.commit()
+    conn.close()
+    return cid
+
