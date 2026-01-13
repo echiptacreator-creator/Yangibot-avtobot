@@ -20,6 +20,7 @@ from database import (
     increment_sent_count,
     get_active_campaigns
 )
+from database import get_user_limits, get_user_usage
 # =====================
 # STATE (XABAR YUBORISH)
 # =====================
@@ -601,9 +602,6 @@ async def cancel_campaign(cb):
 # =====================
 # KOMPANIYANI BOSHLASH
 # =====================
-from database import create_campaign
-from database import get_user_limits, get_user_usage
-
 @dp.callback_query(F.data == "camp_start")
 async def start_campaign(cb):
     user_id = cb.from_user.id
