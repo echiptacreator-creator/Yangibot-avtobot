@@ -58,9 +58,9 @@ async def start(message: Message):
             [KeyboardButton(text="🧾 Kutilayotgan to‘lovlar")],
             [KeyboardButton(text="🟢 Faol obunalar")],
             [KeyboardButton(text="🔴 Bloklangan obunalar")],
-            [KeyboardButton(text="📊 Hisobotlar")]
+            [KeyboardButton(text="📊 Hisobotlar")],
             [KeyboardButton(text="🆓 Bepul limitlar")],
-            [KeyboardButton(text="📊 Umumiy statistika")]
+            [KeyboardButton(text="📊 Umumiy statistika")],
             [KeyboardButton(text="👤 Foydalanuvchini boshqarish")]
         ],
         resize_keyboard=True
