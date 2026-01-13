@@ -61,6 +61,7 @@ async def start(message: Message):
             [KeyboardButton(text="📊 Hisobotlar")]
             [KeyboardButton(text="🆓 Bepul limitlar")],
             [KeyboardButton(text="📊 Umumiy statistika")]
+            [KeyboardButton(text="👤 Foydalanuvchini boshqarish")]
         ],
         resize_keyboard=True
     )
@@ -385,6 +386,146 @@ async def show_global_stats(message: Message):
         parse_mode="Markdown",
         reply_markup=admin_menu()
     )
+
+# =====================
+# FOYDALANUVCHI LIMITLARI BILAN ISHLASH
+# =====================
+
+@dp.message(F.text == "👤 Foydalanuvchini boshqarish")
+async def admin_find_user(message: Message):
+    admin_state[message.from_user.id] = {"step": "find_user"}
+    await message.answer(
+        "🔎 Userni topish uchun yozing:\n\n"
+        "📞 Telefon raqam\n"
+        "🆔 User ID\n"
+        "👤 Username"
+    )
+
+from database import find_user_any
+
+@dp.message()
+async def handle_admin_search(message: Message):
+    admin_id = message.from_user.id
+    state = admin_state.get(admin_id)
+
+    if not state or state.get("step") != "find_user":
+        return
+
+    user = find_user_any(message.text)
+
+    if not user:
+        await message.answer("❌ User topilmadi. Qayta urinib ko‘ring.")
+        return
+
+    user_id, phone, username = user
+
+    admin_state.pop(admin_id, None)
+
+    # obuna holati
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT status, paid_until
+        FROM subscriptions
+        WHERE user_id = %s
+    """, (user_id,))
+    sub = cur.fetchone()
+    conn.close()
+
+    status = sub[0] if sub else "yo‘q"
+    paid_until = sub[1] if sub else "—"
+
+    text = (
+        f"👤 *Foydalanuvchi topildi*\n\n"
+        f"🆔 ID: `{user_id}`\n"
+        f"📞 Telefon: `{phone}`\n"
+        f"👤 Username: @{username if username else 'yo‘q'}\n\n"
+        f"📌 Status: *{status}*\n"
+        f"⏳ Paid until: *{paid_until}*"
+    )
+
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton("➕ 1 oy", callback_data=f"add_1:{user_id}"),
+                InlineKeyboardButton("➕ 3 oy", callback_data=f"add_3:{user_id}")
+            ],
+            [
+                InlineKeyboardButton("⛔ Bloklash", callback_data=f"block:{user_id}"),
+                InlineKeyboardButton("✅ Blokdan chiqarish", callback_data=f"unblock:{user_id}")
+            ]
+        ]
+    )
+
+    await message.answer(text, reply_markup=kb, parse_mode="Markdown")
+
+@dp.callback_query(F.data.startswith("add_"))
+async def add_months(cb):
+    action, user_id = cb.data.split(":")
+    months = int(action.split("_")[1])
+    user_id = int(user_id)
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE subscriptions
+        SET
+            status = 'active',
+            paid_until = GREATEST(paid_until, CURRENT_DATE)
+                         + (%s || ' days')::INTERVAL
+        WHERE user_id = %s
+    """, (months * 30, user_id))
+
+    conn.commit()
+    conn.close()
+
+    await cb.answer("✅ Obuna faollashtirildi va uzaytirildi")
+
+@dp.callback_query(F.data.startswith("block:"))
+async def block_user(cb):
+    user_id = int(cb.data.split(":")[1])
+
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE subscriptions
+        SET status = 'blocked'
+        WHERE user_id = %s
+    """, (user_id,))
+    conn.commit()
+    conn.close()
+
+    await cb.answer("⛔ User bloklandi")
+
+
+@dp.callback_query(F.data.startswith("unblock:"))
+async def unblock_user(cb):
+    user_id = int(cb.data.split(":")[1])
+
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE subscriptions
+        SET status = 'active'
+        WHERE user_id = %s
+    """, (user_id,))
+    conn.commit()
+    conn.close()
+
+    await cb.answer("✅ User blokdan chiqarildi")
+
+# =====================
+# RUN
+# =====================
+
+# =====================
+# RUN
+# =====================
+
+# =====================
+# RUN
+# =====================
 
 # =====================
 # RUN
