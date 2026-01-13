@@ -442,7 +442,61 @@ async def pick_group(cb):
 # =====================
 # MATN KIRITISH
 # =====================
-async def handle_photo
+@dp.message()
+async def handle_text_steps(message: Message):
+    user_id = message.from_user.id
+    state = user_state.get(user_id)
+
+    if not state:
+        return
+
+    step = state.get("step")
+
+    # =====================================
+    # ✍️ XABAR KIRITISH BOSQICHI
+    # =====================================
+    if step == "enter_text":
+
+        # 📸 FOTO BO‘LSA
+        if message.photo:
+            state["media_type"] = "photo"
+            state["media_file_id"] = message.photo[-1].file_id
+            state["text"] = message.caption or ""
+
+            state["step"] = "enter_interval"
+            await message.answer("⏱ Intervalni kiriting (daqiqada):")
+            return
+
+        # 🎥 VIDEO BO‘LSA
+        if message.video:
+            state["media_type"] = "video"
+            state["media_file_id"] = message.video.file_id
+            state["text"] = message.caption or ""
+
+            state["step"] = "enter_interval"
+            await message.answer("⏱ Intervalni kiriting (daqiqada):")
+            return
+
+        # 📝 MATN BO‘LSA
+        if message.text:
+            text = message.text.strip()
+
+            if len(text) < 3:
+                await message.answer("❌ Xabar juda qisqa. Qayta kiriting:")
+                return
+
+            state["text"] = text
+            state["media_type"] = None
+            state["media_file_id"] = None
+
+            state["step"] = "enter_interval"
+            await message.answer("⏱ Intervalni kiriting (daqiqada):")
+            return
+
+        # ❌ BOSHQA NARSA BO‘LSA
+        await message.answer("❌ Iltimos, matn yoki foto/video yuboring")
+        return
+
 
 # =====================
 # VAQT INTERVAL
@@ -469,37 +523,6 @@ async def handle_photo
             "Masalan: 60 (daqiqada)"
         )
         return
-
-# =====================
-# VAQT DAVOMIYLIK
-# =====================
-    # =====================
-    # 3️⃣ DAVOMIYLIK
-    # =====================
-    if step == "enter_duration":
-        if not message.text.isdigit():
-            await message.answer("❌ Faqat raqam kiriting (daqiqada):")
-            return
-
-        duration = int(message.text)
-
-        if duration < 1:
-            await message.answer("❌ Davomiylik kamida 1 daqiqa bo‘lishi kerak:")
-            return
-
-        if duration < state["interval"]:
-            await message.answer(
-                "❌ Davomiylik intervaldan kichik bo‘lishi mumkin emas.\n"
-                "Qayta kiriting:"
-            )
-            return
-
-        state["duration"] = duration
-        state["step"] = "ready"
-
-        await show_campaign_summary(message)
-        return
-
 # =====================
 # KOMPANIYA HOLATI
 # =====================
@@ -564,14 +587,21 @@ async def start_campaign(cb):
         return
 
     msg = await cb.message.edit_text(
-        "🚀 Kampaniya ishga tushdi!\n\n"
-        f"📍 Guruhlar: {len(state['selected_ids'])}\n"
-        f"⏱ Interval: {state['interval']} daqiqa\n"
-        f"⏳ Davomiylik: {state['duration']} daqiqa\n"
-        "📊 Yuborildi: 0"
+        "🚀 Kampaniya ishga tushdi...\n📊 Yuborildi: 0"
     )
-    # endi RAM emas, ID bilan ishlaymiz
-    
+
+    campaign_id = create_campaign(
+        user_id=user_id,
+        text=state["text"],
+        groups=state["selected_ids"],
+        interval=state["interval"],
+        duration=state["duration"],
+        chat_id=cb.message.chat.id,
+        status_message_id=msg.message_id
+    )
+
+    asyncio.create_task(run_campaign(campaign_id))
+
     user_state.pop(user_id, None)
     await cb.answer()
 
@@ -713,15 +743,7 @@ def campaign_controls(campaign_id: int, status: str):
 # =====================
 # QOSHIMCHA
 # =====================
-user_campaigns[user_id].append(campaign)
-campaign = get_campaign(campaign_id)
 
-if campaign["status"] == "paused":
-    await asyncio.sleep(3)
-    continue
-
-if campaign["status"] == "stopped":
-    break
     
 # =====================
 # RASM VA VIDEO
