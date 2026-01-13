@@ -507,9 +507,9 @@ async def handle_text_steps(message: Message):
             await message.answer("⏱ Intervalni kiriting (daqiqada):")
             return
 
-        # ❌ BOSHQA NARSA BO‘LSA
-        await message.answer("❌ Iltimos, matn yoki foto/video yuboring")
-        return
+            # ❌ BOSHQA NARSA BO‘LSA
+            await message.answer("❌ Iltimos, matn yoki foto/video yuboring")
+            return
         
             if step == "enter_interval":
         if not message.text.isdigit():
