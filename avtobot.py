@@ -597,8 +597,11 @@ async def start_campaign(cb):
         interval=state["interval"],
         duration=state["duration"],
         chat_id=cb.message.chat.id,
-        status_message_id=msg.message_id
+        status_message_id=msg.message_id,
+        media_type=state.get("media_type"),
+        media_file_id=state.get("media_file_id")
     )
+
 
     asyncio.create_task(run_campaign(campaign_id))
 
