@@ -780,9 +780,10 @@ if campaign["status"] == "stopped":
     break
     
 # =====================
-# RASM VA VIDEO@dp.message(F.photo)
+# RASM VA VIDEO
 # =====================
 
+@dp.message(F.photo)
 async def handle_photo(message: Message):
     user_id = message.from_user.id
     state = user_state.get(user_id)
@@ -817,7 +818,6 @@ async def handle_video(message: Message):
     await message.answer(
         "⏱ Xabar qanchada bir yuborilsin? (daqiqada)"
     )
-
 
 # =====================
 # RUN
