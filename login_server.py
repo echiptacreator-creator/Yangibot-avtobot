@@ -101,20 +101,25 @@ def send_code():
             API_HASH
         )
         await client.connect()
-        await client.send_code_request(phone)
+        result = await client.send_code_request(phone)
         await client.disconnect()
+        return result
 
     try:
-        asyncio.run(_send())
+        res = asyncio.run(_send())
+        print("SEND_CODE RESULT:", res)
+
         return jsonify({
             "status": "ok",
             "message": "Kod yuborildi"
         })
     except Exception as e:
+        print("SEND_CODE ERROR:", repr(e))
         return jsonify({
             "status": "error",
             "message": str(e)
         })
+
 
 # =====================
 # VERIFY CODE
