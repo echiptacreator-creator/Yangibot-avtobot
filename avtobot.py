@@ -142,6 +142,11 @@ def main_menu():
         ],
         resize_keyboard=True
     )
+async def subscription_watcher():
+    while True:
+        await check_subscriptions()
+        await asyncio.sleep(24 * 60 * 60)  # har kuni
+asyncio.create_task(subscription_watcher())
 
 # =====================
 # /START
@@ -1062,9 +1067,71 @@ async def receive_check(message: Message):
     )
 
 # =====================
+# OGOHLANTIRISH
+# =====================
+
+from datetime import date
+
+WARNING_DAYS = [7, 5, 3, 2, 1]
+
+async def check_subscriptions():
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT user_id, status, paid_until, last_notify
+        FROM subscriptions
+    """)
+    rows = cur.fetchall()
+    conn.close()
+
+    today = date.today()
+
+    for user_id, status, paid_until, last_notify in rows:
+        if not paid_until:
+            continue
+
+        days_left = (paid_until - today).days
+
+        # 🟢 ACTIVE → OGOHLANTIRISH
+        if status == "active":
+            if days_left in WARNING_DAYS:
+                if last_notify == today:
+                    continue
+
+                await bot.send_message(
+                    user_id,
+                    f"⏰ Premium obunangiz *{days_left} kun*dan keyin tugaydi.\n\n"
+                    "Davom ettirish uchun oldindan to‘lov qiling 💳",
+                    parse_mode="Markdown"
+                )
+
+                update_last_notify(user_id)
+
+            # ❌ MUDDAT O‘TIB KETDI
+            if days_left < 0:
+                expire_subscription(user_id)
+
+        # 🔴 EXPIRED → HAR OY ESLATISH
+        if status == "expired":
+            if not last_notify or (today - last_notify).days >= 30:
+                await bot.send_message(
+                    user_id,
+                    "🔔 Premium obunangiz muddati tugagan.\n\n"
+                    "To‘lov qilsangiz yana davom etamiz 💳",
+                    parse_mode="Markdown"
+                )
+
+                update_last_notify(user_id)
+
+
+# =====================
 # RUN
 # =====================
 
+# =====================
+# RUN
+# =====================
 async def main():
     print("🤖 Avtobot ishga tushdi")
 
