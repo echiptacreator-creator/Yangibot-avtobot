@@ -428,31 +428,37 @@ def get_user_limits(user_id: int):
         "daily_limit": 200
     }
 
-def get_user_limits(user_id: int):
+def get_user_usage(user_id: int):
+    """
+    User qancha kampaniya qilganini va hozir nechta aktiv kampaniyasi borligini qaytaradi
+    """
     conn = get_db()
     cur = conn.cursor()
 
-    cur.execute(
-        "SELECT status FROM subscriptions WHERE user_id = %s",
-        (user_id,)
-    )
-    row = cur.fetchone()
+    # jami kampaniyalar
+    cur.execute("""
+        SELECT COUNT(*)
+        FROM campaigns
+        WHERE user_id = %s
+    """, (user_id,))
+    total = cur.fetchone()[0]
+
+    # aktiv kampaniyalar
+    cur.execute("""
+        SELECT COUNT(*)
+        FROM campaigns
+        WHERE user_id = %s
+          AND status = 'active'
+    """, (user_id,))
+    active = cur.fetchone()[0]
+
     conn.close()
 
-    # premium bo‘lsa
-    if row and row[0] == "active":
-        return {
-            "max_campaigns": 50,
-            "max_active": 10,
-            "daily_limit": 5000
-        }
+    return {
+        "total_campaigns": total,
+        "active_campaigns": active
+    }
 
-    # bloklangan
-    if row and row[0] == "blocked":
-        return {"blocked": True}
-
-    # ❗ aks holda — BEPUL LIMIT
-    return get_free_limits()
 
 def get_free_limits():
     conn = get_db()
