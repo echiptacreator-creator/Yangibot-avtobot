@@ -647,3 +647,51 @@ def find_user_any(query: str):
     row = cur.fetchone()
     conn.close()
     return row
+
+def get_campaign(campaign_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT
+            id,
+            user_id,
+            text,
+            groups,
+            interval_minutes,
+            duration_minutes,
+            start_time,
+            sent_count,
+            status,
+            chat_id,
+            status_message_id,
+            media_type,
+            media_file_id
+        FROM campaigns
+        WHERE id = %s
+    """, (campaign_id,))
+
+    row = cur.fetchone()
+    conn.close()
+
+    if not row:
+        return None
+
+    return {
+        "id": row[0],
+        "user_id": row[1],
+        "text": row[2],
+        "groups": json.loads(row[3]) if isinstance(row[3], str) else row[3],
+        "interval": row[4],
+        "duration": row[5],
+        "start_time": row[6],
+        "sent_count": row[7],
+        "status": row[8],
+        "chat_id": row[9],
+        "status_message_id": row[10],
+        "media_type": row[11],
+        "media_file_id": row[12],
+        "paused": row[8] == "paused",
+        "active": row[8] == "active"
+    }
+
