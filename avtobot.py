@@ -472,35 +472,32 @@ async def handle_text_steps(message: Message):
 
     step = state.get("step")
 
-    # =====================================
-    # ✍️ XABAR KIRITISH BOSQICHI
-    # =====================================
+    # =========================
+    # ✍️ XABAR KIRITISH
+    # =========================
     if step == "enter_text":
 
-        # 📸 FOTO BO‘LSA
+        # 📸 FOTO
         if message.photo:
             state["media_type"] = "photo"
             state["media_file_id"] = message.photo[-1].file_id
             state["text"] = message.caption or ""
-
             state["step"] = "enter_interval"
             await message.answer("⏱ Intervalni kiriting (daqiqada):")
             return
 
-        # 🎥 VIDEO BO‘LSA
+        # 🎥 VIDEO
         if message.video:
             state["media_type"] = "video"
             state["media_file_id"] = message.video.file_id
             state["text"] = message.caption or ""
-
             state["step"] = "enter_interval"
             await message.answer("⏱ Intervalni kiriting (daqiqada):")
             return
 
-        # 📝 MATN BO‘LSA
+        # 📝 MATN
         if message.text:
             text = message.text.strip()
-
             if len(text) < 3:
                 await message.answer("❌ Xabar juda qisqa. Qayta kiriting:")
                 return
@@ -508,17 +505,19 @@ async def handle_text_steps(message: Message):
             state["text"] = text
             state["media_type"] = None
             state["media_file_id"] = None
-
             state["step"] = "enter_interval"
             await message.answer("⏱ Intervalni kiriting (daqiqada):")
             return
 
-            # ❌ BOSHQA NARSA BO‘LSA
-            await message.answer("❌ Iltimos, matn yoki foto/video yuboring")
-            return
-        
-            if step == "enter_interval":
-        if not message.text.isdigit():
+        # ❌ BOSHQA NARSA
+        await message.answer("❌ Iltimos, matn yoki foto/video yuboring")
+        return
+
+    # =========================
+    # ⏱ INTERVAL
+    # =========================
+    if step == "enter_interval":
+        if not message.text or not message.text.isdigit():
             await message.answer("❌ Faqat raqam kiriting (daqiqada):")
             return
 
@@ -529,12 +528,14 @@ async def handle_text_steps(message: Message):
 
         state["interval"] = interval
         state["step"] = "enter_duration"
-
         await message.answer("⏳ Kampaniya qancha vaqt davom etsin? (daqiqada)")
         return
 
+    # =========================
+    # ⏳ DAVOMIYLIK
+    # =========================
     if step == "enter_duration":
-        if not message.text.isdigit():
+        if not message.text or not message.text.isdigit():
             await message.answer("❌ Faqat raqam kiriting:")
             return
 
@@ -545,7 +546,6 @@ async def handle_text_steps(message: Message):
 
         state["duration"] = duration
         state["step"] = "ready"
-
         await show_campaign_summary(message)
         return
 
