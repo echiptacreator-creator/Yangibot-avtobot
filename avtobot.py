@@ -143,6 +143,16 @@ def main_menu():
         ],
         resize_keyboard=True
     )
+   
+async def subscription_watcher():
+    while True:
+        await check_subscriptions()
+        await asyncio.sleep(24 * 60 * 60)  # har kuni
+
+async def admin_notification_worker():
+    while True:
+        await notify_admin_about_subscriptions()
+        await asyncio.sleep(24 * 60 * 60)  # har kuni 1 marta
 # =====================
 # /START
 # =====================
@@ -1176,25 +1186,16 @@ async def notify_admin_about_subscriptions():
 # =====================
 # RUN
 # =====================
+    
 async def main():
     print("🤖 Avtobot ishga tushdi")
-    
-async def subscription_watcher():
-    while True:
-        await check_subscriptions()
-        await asyncio.sleep(24 * 60 * 60)  # har kuni
 
-async def admin_notification_worker():
-    while True:
-        await notify_admin_about_subscriptions()
-        await asyncio.sleep(24 * 60 * 60)  # har kuni 1 marta
-    
     asyncio.create_task(subscription_watcher())
     asyncio.create_task(admin_notification_worker())
-    # 🔥 ENG MUHIM QATOR
-    await restore_campaigns()
 
+    await restore_campaigns()
     await dp.start_polling(bot)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
