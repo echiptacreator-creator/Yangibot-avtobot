@@ -40,6 +40,21 @@ def init_db():
     """)
 
     # =========================
+    # TARIFLI TOLOV
+    # =========================
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS payments (
+        id SERIAL PRIMARY KEY,
+        user_id BIGINT NOT NULL,
+        tariff TEXT NOT NULL,
+        price INTEGER NOT NULL,
+        months INTEGER NOT NULL,
+        status TEXT DEFAULT 'pending',
+        created_at BIGINT
+    );
+    """)
+
+    # =========================
     # USER PROFILE (AVTOBOT)
     # =========================
     cur.execute("""
