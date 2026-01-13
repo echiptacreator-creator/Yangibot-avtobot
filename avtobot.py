@@ -591,6 +591,7 @@ async def cancel_campaign(cb):
 # KOMPANIYANI BOSHLASH
 # =====================
 from database import create_campaign
+from database import get_user_limits, get_user_usage
 
 @dp.callback_query(F.data == "camp_start")
 async def start_campaign(cb):
@@ -601,6 +602,34 @@ async def start_campaign(cb):
         await cb.answer("Xatolik", show_alert=True)
         return
 
+    # 🔒 LIMITLARNI TEKSHIRAMIZ (AVVAL!)
+    from database import get_user_limits, get_user_usage
+
+    limits = get_user_limits(user_id)
+
+    if limits.get("blocked"):
+        await cb.answer("⛔ Siz bloklangansiz.", show_alert=True)
+        return
+
+    usage = get_user_usage(user_id)
+
+    if usage["total_campaigns"] >= limits["max_campaigns"]:
+        await cb.answer(
+            f"❌ Kampaniya limiti tugadi.\n"
+            f"Maksimal: {limits['max_campaigns']}",
+            show_alert=True
+        )
+        return
+
+    if usage["active_campaigns"] >= limits["max_active"]:
+        await cb.answer(
+            f"❌ Bir vaqtning o‘zida faol kampaniyalar limiti tugadi.\n"
+            f"Maksimal: {limits['max_active']}",
+            show_alert=True
+        )
+        return
+
+    # ✅ HAMMASI JOYIDA — ENDI BOSHLAYMIZ
     msg = await cb.message.edit_text(
         "🚀 Kampaniya ishga tushdi...\n📊 Yuborildi: 0"
     )
@@ -616,7 +645,6 @@ async def start_campaign(cb):
         media_type=state.get("media_type"),
         media_file_id=state.get("media_file_id")
     )
-
 
     asyncio.create_task(run_campaign(campaign_id))
 
@@ -879,6 +907,27 @@ async def show_statistics(message: Message):
         parse_mode="Markdown",
         reply_markup=main_menu()
     )
+
+# =====================
+# LIMITLAR
+# =====================
+@dp.message(F.text == "👤 Profil")
+async def show_profile(message: Message):
+    user_id = message.from_user.id
+
+    limits = get_user_limits(user_id)
+    usage = get_user_usage(user_id)
+
+    text = (
+        "👤 *Profil*\n\n"
+        f"📂 Jami kampaniyalar: {usage['total_campaigns']} / {limits.get('max_campaigns', '-')}\n"
+        f"🟢 Faol kampaniyalar: {usage['active_campaigns']} / {limits.get('max_active', '-')}\n"
+    )
+
+    if limits.get("blocked"):
+        text += "\n⛔ Hisob bloklangan"
+
+    await message.answer(text, parse_mode="Markdown")
 
 # =====================
 # RUN
