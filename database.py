@@ -260,11 +260,10 @@ def get_active_campaigns():
             "status": r[8],
             "chat_id": r[9],
             "status_message_id": r[10],
-            "paused": r[8] == "paused",
-            "active": r[8] == "active"
-            "media_type": row[11],
-            "media_file_id": row[12],
+            "media_type": r[11],
+            "media_file_id": r[12],
         })
+        )
 
     return campaigns
 
