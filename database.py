@@ -238,7 +238,8 @@ def get_active_campaigns():
             id, user_id, text, groups,
             interval_minutes, duration_minutes,
             start_time, sent_count,
-            status, chat_id, status_message_id
+            status, chat_id, status_message_id,
+            media_type, media_file_id
         FROM campaigns
         WHERE status IN ('active', 'paused')
     """)
@@ -263,9 +264,9 @@ def get_active_campaigns():
             "media_type": r[11],
             "media_file_id": r[12],
         })
-        )
 
     return campaigns
+
 
 def create_campaign(
     user_id: int,
