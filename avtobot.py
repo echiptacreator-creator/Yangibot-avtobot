@@ -31,10 +31,10 @@ user_state = {}
 # =====================
 # CONFIG
 # =====================
-BOT_TOKEN = "8485200508:AAEIwbb9HpGBUX_mWPGVplpxNRoXXnlSOrU"
-LOGIN_WEBAPP_URL = "https://web-production-5baaa.up.railway.app/miniapp"
-API_ID = 25780325
-API_HASH = "2c4cb6eee01a46dc648114813042c453"
+LOGIN_WEBAPP_URL = os.getenv("LOGIN_WEBAPP_URL") 
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+API_ID = int(os.getenv("API_ID"))
+API_HASH = os.getenv("API_HASH")
 
 bot = Bot(BOT_TOKEN)
 dp = Dispatcher()
