@@ -24,8 +24,6 @@ from database import (
 # STATE (XABAR YUBORISH)
 # =====================
 user_state = {}
-user_campaigns = {}
-
 
 # =====================
 # CONFIG
