@@ -284,112 +284,10 @@ async def unblock(call: CallbackQuery):
     await call.message.edit_text("🟢 Qayta faollashtirildi")
     await call.answer()
 
-
-# =====================
-# STATS
-# =====================
-@dp.message(F.text == "📊 Hisobotlar")
-async def stats_menu(message: Message):
-    if message.from_user.id != ADMIN_ID:
-        return
-
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="💰 Bugungi tushum", callback_data="stats_today")],
-        [InlineKeyboardButton(text="📅 Oylik tushum", callback_data="stats_month")]
-    ])
-
-    await message.answer("📊 Hisobotlar:", reply_markup=kb)
-
-
-@dp.callback_query(F.data == "stats_today")
-async def stats_today(call: CallbackQuery):
-    conn = get_db()
-    cur = conn.cursor()
-    today = time.strftime("%Y-%m-%d")
-
-    cur.execute("""
-        SELECT SUM(amount) FROM payments
-        WHERE to_timestamp(approved_at)::date = %s
-    """, (today,))
-    total = cur.fetchone()[0] or 0
-    conn.close()
-
-    await call.message.edit_text(f"💰 Bugungi tushum: {total} so‘m")
-    await call.answer()
-
 # =====================
 # LIMITLARNI KORISH
 # =====================
 
-@dp.callback_query(F.data == "stats_month")
-async def stats_month(call: CallbackQuery):
-    conn = get_db()
-    cur = conn.cursor()
-
-    cur.execute("""
-        SELECT SUM(amount) FROM payments
-        WHERE to_timestamp(approved_at) >= date_trunc('month', now())
-    """)
-    total = cur.fetchone()[0] or 0
-    conn.close()
-
-    await call.message.edit_text(f"📅 Oylik tushum: {total} so‘m")
-    await call.answer()
-
-from database import get_free_limits
-
-@dp.message(F.text == "/free_limit")
-async def show_free_limit(message: Message):
-    limits = get_free_limits()
-
-    text = (
-        "🆓 *Bepul limitlar*\n\n"
-        f"📦 Kampaniyalar: {limits['max_campaigns']}\n"
-        f"🟢 Aktiv kampaniyalar: {limits['max_active']}\n"
-        f"📨 Kunlik xabarlar: {limits['daily_limit']}"
-    )
-
-    await message.answer(text, parse_mode="Markdown")
-# =====================
-# LIMITNI OZGARTIRISH
-# =====================
-
-from database import get_db
-
-@dp.message(F.text.startswith("/set_free_limit"))
-async def set_free_limit(message: Message):
-    parts = message.text.split()
-
-    if len(parts) != 4:
-        await message.answer(
-            "❌ Format noto‘g‘ri.\n"
-            "To‘g‘ri format:\n"
-            "`/set_free_limit 3 1 200`",
-            parse_mode="Markdown"
-        )
-        return
-
-    max_campaigns = int(parts[1])
-    max_active = int(parts[2])
-    daily_limit = int(parts[3])
-
-    conn = get_db()
-    cur = conn.cursor()
-
-    cur.execute("""
-        INSERT INTO free_limits (max_campaigns, max_active, daily_limit)
-        VALUES (%s, %s, %s)
-    """, (max_campaigns, max_active, daily_limit))
-
-    conn.commit()
-    conn.close()
-
-    await message.answer(
-        "✅ Bepul limit yangilandi:\n\n"
-        f"📦 Kampaniyalar: {max_campaigns}\n"
-        f"🟢 Aktiv: {max_active}\n"
-        f"📨 Kunlik: {daily_limit}"
-    )
 from database import get_free_limits
 
 @dp.message(F.text == "🆓 Bepul limitlar")
@@ -412,6 +310,11 @@ async def show_free_limits(message: Message):
     )
 
     await message.answer(text, reply_markup=kb, parse_mode="Markdown")
+
+# =====================
+# LIMITLARNI KORISH
+# =====================
+
 @dp.message(F.text == "✏️ O‘zgartirish")
 async def edit_free_limits(message: Message):
     admin_state[message.from_user.id] = {"step": "max_campaigns"}
@@ -475,6 +378,31 @@ async def admin_back(message: Message):
     admin_state.pop(message.from_user.id, None)
     await message.answer("🛠 Admin panel", reply_markup=admin_menu())
 
+# =====================
+# UMUMI STATISTIKA
+# =====================
+
+from database import get_global_statistics
+
+@dp.message(F.text == "📊 Umumiy statistika")
+async def show_global_stats(message: Message):
+    stats = get_global_statistics()
+
+    text = (
+        "📊 *Umumiy statistika*\n\n"
+        f"👥 Jami foydalanuvchilar: {stats['total_users']}\n"
+        f"🆓 Bepul foydalanuvchilar: {stats['free_users']}\n"
+        f"💰 Premium foydalanuvchilar: {stats['premium_users']}\n\n"
+        f"📦 Jami kampaniyalar: {stats['total_campaigns']}\n"
+        f"🟢 Aktiv kampaniyalar: {stats['active_campaigns']}\n\n"
+        f"📨 Jami yuborilgan xabarlar: {stats['total_sent']}"
+    )
+
+    await message.answer(
+        text,
+        parse_mode="Markdown",
+        reply_markup=admin_menu()
+    )
 
 # =====================
 # RUN
