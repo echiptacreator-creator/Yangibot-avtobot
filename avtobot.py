@@ -497,13 +497,6 @@ async def handle_text_steps(message: Message):
         await message.answer("❌ Iltimos, matn yoki foto/video yuboring")
         return
 
-
-# =====================
-# VAQT INTERVAL
-# =====================
-    # =====================
-    # 2️⃣ INTERVAL
-    # =====================
     if step == "enter_interval":
         if not message.text.isdigit():
             await message.answer("❌ Faqat raqam kiriting (daqiqada):")
@@ -523,6 +516,23 @@ async def handle_text_steps(message: Message):
             "Masalan: 60 (daqiqada)"
         )
         return
+
+        if step == "enter_duration":
+            if not message.text.isdigit():
+                await message.answer("❌ Faqat raqam kiriting:")
+                return
+
+            duration = int(message.text)
+            if duration < 1 or duration > 10080:
+                await message.answer("❌ Davomiylik noto‘g‘ri:")
+                return
+
+            state["duration"] = duration
+            state["step"] = "ready"
+
+            await show_campaign_summary(message)
+            return
+
 # =====================
 # KOMPANIYA HOLATI
 # =====================
