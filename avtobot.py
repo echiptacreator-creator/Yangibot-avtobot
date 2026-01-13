@@ -170,13 +170,6 @@ async def start(message: Message):
 
     status, left = subscription_status(user_id)
 
-    if status == "none":
-        await message.answer(
-            "💳 Sizda obuna yo‘q.\n"
-            "Iltimos, to‘lov chekini yuboring."
-        )
-        return
-
     if status == "blocked":
         await message.answer("⛔ Siz bloklangansiz.")
         return
