@@ -294,6 +294,23 @@ async def show_free_limits(message: Message):
 
     await message.answer(text, reply_markup=kb, parse_mode="Markdown")
 
+@dp.message()
+async def handle_limit_input(message: Message):
+    user_id = message.from_user.id
+    state = admin_state.get(user_id)
+
+    if not state:
+        return
+
+    # 🔴 1-QADAM: ORTGA TEKSHIRUV
+    if message.text == "⬅️ Orqaga":
+        admin_state.pop(user_id, None)
+        await message.answer(
+            "🔙 Admin menyu:",
+            reply_markup=admin_main_menu()
+        )
+        return
+
 # =====================
 # LIMITLARNI KORISH
 # =====================
@@ -310,10 +327,22 @@ async def handle_admin_limits(message: Message):
     if not state:
         return
 
-    if state["step"] == "max_campaigns":
-        if not message.text.isdigit():
-            await message.answer("❌ Raqam kiriting:")
-            return
+    # 🔴 HAR DOIM ENG BIRINCHI
+    if message.text == "⬅️ Ortga":
+        admin_state.pop(message.from_user.id, None)
+        await message.answer(
+            "🔙 Admin menyu:",
+            reply_markup=admin_main_menu()
+        )
+        return
+    
+        # 2-QADAM: RAQAM TEKSHIRUV
+    if not message.text.isdigit():
+        await message.answer("❌ Iltimos, faqat raqam kiriting:")
+        return
+
+    value = int(message.text)
+
 
         state["max_campaigns"] = int(message.text)
         state["step"] = "max_active"
@@ -356,10 +385,6 @@ async def handle_admin_limits(message: Message):
             "✅ Bepul limitlar yangilandi!",
             reply_markup=admin_menu()
         )
-@dp.message(F.text == "⬅️ Orqaga")
-async def admin_back(message: Message):
-    admin_state.pop(message.from_user.id, None)
-    await message.answer("🛠 Admin panel", reply_markup=admin_menu())
 
 # =====================
 # UMUMI STATISTIKA
