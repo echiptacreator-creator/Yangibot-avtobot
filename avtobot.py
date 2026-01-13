@@ -275,17 +275,17 @@ async def choose_send_mode(message: Message):
     if not state or state.get("step") != "choose_mode":
         return
 
-    mode = "single" if "Bitta" in message.text else "multi"
-
-    state["mode"] = mode
+    state["mode"] = "single" if "Bitta" in message.text else "multi"
     state["step"] = "choose_group"
 
+    # ❗ ReplyKeyboardRemove faqat bu yerda
     await message.answer(
-        f"✅ Rejim tanlandi: {'Bitta guruh' if mode == 'single' else 'Ko‘p guruh'}\n\n"
-        "📌 Keyingi bosqichda guruhlarni tanlaymiz.",
+        "📂 Guruhlar yuklanmoqda...",
         reply_markup=ReplyKeyboardRemove()
     )
 
+    # 🔥 GURUH YUKLASHNI BEVOSITA CHAQIRAMIZ
+    await start_group_selection(message)
 
 async def get_client(user_id: int):
     session_file = os.path.join(SESSIONS_DIR, str(user_id))
@@ -300,6 +300,13 @@ async def get_client(user_id: int):
     return client
 
 # 🔥 GURUH YUKLAYMIZ
+async def start_group_selection(message: Message):
+    user_id = message.from_user.id
+    state = user_state.get(user_id)
+
+    if not state or state.get("step") != "choose_group":
+        return
+
     try:
         client = await get_client(user_id)
     except Exception:
@@ -312,14 +319,16 @@ async def get_client(user_id: int):
             dialogs.append(d)
 
     if not dialogs:
-        await message.answer("❌ Guruhlar topilmadi")
+        await message.answer("❌ Sizda guruhlar yo‘q")
         return
 
     state["groups"] = {str(d.id): d for d in dialogs}
     state["selected_ids"] = []
     state["offset"] = 0
 
+    # 🔥 INLINE TUGMALAR CHIQADI
     await show_group_page(message, user_id)
+
 
 # =====================
 # GURUH YUKLASH
@@ -371,7 +380,7 @@ async def show_group_page(message, user_id):
         ])
 
     await message.answer(
-        "📂 Guruhni tanlang:",
+        "📂 Guruhni tanlang (inline tugmalar orqali):",
         reply_markup=keyboard
     )
 
