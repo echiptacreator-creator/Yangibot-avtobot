@@ -94,10 +94,9 @@ def init_db():
         status TEXT NOT NULL,
         status_message_id BIGINT,
         chat_id BIGINT,
+        media_type TEXT,
+        media_file_id TEXT,
         created_at BIGINT
-        ALTER TABLE campaigns
-        ADD COLUMN IF NOT EXISTS media_type TEXT,
-        ADD COLUMN IF NOT EXISTS media_file_id TEXT;
     );
     """)
 
