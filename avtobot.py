@@ -442,34 +442,7 @@ async def pick_group(cb):
 # =====================
 # MATN KIRITISH
 # =====================
-@dp.message()
-async def handle_text_steps(message: Message):
-    user_id = message.from_user.id
-    state = user_state.get(user_id)
-
-    if not state:
-        return
-
-    step = state.get("step")
-
-    # =====================
-    # 1️⃣ MATN
-    # =====================
-    if step == "enter_text":
-        text = message.text.strip()
-
-        if len(text) < 3:
-            await message.answer("❌ Xabar juda qisqa. Qayta kiriting:")
-            return
-
-        state["text"] = text
-        state["step"] = "enter_interval"
-
-        await message.answer(
-            "⏱ Xabar qanchada bir yuborilsin?\n"
-            "Masalan: 5 (daqiqada)"
-        )
-        return
+async def handle_photo
 
 # =====================
 # VAQT INTERVAL
@@ -575,20 +548,6 @@ async def cancel_campaign(cb):
 # =====================
 # YUBORISHGA TAYYOR
 # =====================
-@dp.callback_query(F.data == "camp_start")
-async def start_campaign(cb):
-    user_id = cb.from_user.id
-    state = user_state.get(user_id)
-
-    if not state or state.get("step") != "ready":
-        await cb.answer("Xatolik", show_alert=True)
-        return
-
-    await cb.message.edit_text("🚀 Kampaniya ishga tushmoqda...")
-
-    # ❗ Keyingi bosqichda shu yerga run_campaign ulanadi
-
-    await cb.answer()
 
 # =====================
 # KOMPANIYANI BOSHLASH
@@ -611,18 +570,6 @@ async def start_campaign(cb):
         f"⏳ Davomiylik: {state['duration']} daqiqa\n"
         "📊 Yuborildi: 0"
     )
-
-    # 🔥 ASOSIY FARQ SHU YERDA
-    campaign_id = create_campaign(
-        user_id=user_id,
-        text=state["text"],
-        groups=state["selected_ids"],
-        interval=state["interval"],
-        duration=state["duration"],
-        chat_id=cb.message.chat.id,
-        status_message_id=msg.message_id
-    )
-
     # endi RAM emas, ID bilan ishlaymiz
     
     user_state.pop(user_id, None)
@@ -631,44 +578,50 @@ async def start_campaign(cb):
 # =====================
 # ISHLAYAPTI
 # =====================
-async def run_campaign(campaign: dict):
-    user_id = campaign["user_id"]
+from database import get_campaign
 
-    try:
-        client = await get_client(user_id)
-    except Exception:
-        campaign["active"] = False
-        return
+async def run_campaign(campaign_id: int):
+    while True:
+        campaign = get_campaign(campaign_id)
+        if not campaign:
+            break
 
-    end_time = campaign["start_time"] + campaign["duration"] * 60
+        if campaign["status"] == "stopped":
+            break
 
-    while campaign["active"] and time.time() < end_time:
-
-        if campaign["paused"]:
+        if campaign["status"] == "paused":
             await asyncio.sleep(3)
             continue
 
+        try:
+            client = await get_client(campaign["user_id"])
+        except Exception:
+            update_campaign_status(campaign_id, "stopped")
+            break
+
+        end_time = campaign["start_time"] + campaign["duration"] * 60
+        if time.time() >= end_time:
+            update_campaign_status(campaign_id, "finished")
+            break
+
         for group_id in campaign["groups"]:
-            if not campaign["active"]:
+            campaign = get_campaign(campaign_id)
+            if campaign["status"] != "active":
                 break
 
             try:
                 await client.send_message(group_id, campaign["text"])
-                campaign["sent_count"] += 1
-
+                increment_sent_count(campaign_id)
                 await update_status_message(campaign)
 
             except FloodWaitError as e:
-                # ❗ Telegram majburiy kut dedi
                 await asyncio.sleep(e.seconds)
 
             except Exception as e:
-                # bitta guruh xatosi butun kampaniyani to‘xtatmasin
                 print("SEND ERROR:", e)
 
         await asyncio.sleep(campaign["interval"] * 60)
 
-    campaign["active"] = False
 # =====================
 # STATUSNI YANGILASH
 # =====================
@@ -774,41 +727,6 @@ if campaign["status"] == "stopped":
 # RASM VA VIDEO
 # =====================
 
-@dp.message(F.photo)
-async def handle_photo(message: Message):
-    user_id = message.from_user.id
-    state = user_state.get(user_id)
-
-    if not state or state.get("step") != "enter_text":
-        return
-
-    state["media_type"] = "photo"
-    state["media_file_id"] = message.photo[-1].file_id
-    state["text"] = message.caption or ""
-
-    state["step"] = "enter_interval"
-
-    await message.answer(
-        "⏱ Xabar qanchada bir yuborilsin? (daqiqada)"
-    )
-
-@dp.message(F.video)
-async def handle_video(message: Message):
-    user_id = message.from_user.id
-    state = user_state.get(user_id)
-
-    if not state or state.get("step") != "enter_text":
-        return
-
-    state["media_type"] = "video"
-    state["media_file_id"] = message.video.file_id
-    state["text"] = message.caption or ""
-
-    state["step"] = "enter_interval"
-
-    await message.answer(
-        "⏱ Xabar qanchada bir yuborilsin? (daqiqada)"
-    )
 
 # =====================
 # RUN
