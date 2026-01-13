@@ -316,20 +316,19 @@ async def handle_limit_input(message: Message):
 # =====================
 
 @dp.message(F.text == "✏️ O‘zgartirish")
-async def edit_free_limits(message: Message):
+async def start_edit_limits(message: Message):
     admin_state[message.from_user.id] = {"step": "max_campaigns"}
     await message.answer("📦 Maksimal kampaniyalar sonini kiriting:")
 
 
 @dp.message()
-async def handle_admin_limits(message: Message):
+async def admin_limits_flow(message: Message):
     user_id = message.from_user.id
     state = admin_state.get(user_id)
 
     if not state:
         return
 
-    # ⬅️ ORQAGA
     if message.text == "⬅️ Orqaga":
         admin_state.pop(user_id, None)
         await message.answer(
@@ -339,7 +338,7 @@ async def handle_admin_limits(message: Message):
         return
 
     if not message.text.isdigit():
-        await message.answer("❌ Iltimos, faqat raqam kiriting:")
+        await message.answer("❌ Faqat raqam kiriting:")
         return
 
     value = int(message.text)
@@ -348,13 +347,13 @@ async def handle_admin_limits(message: Message):
     if step == "max_campaigns":
         state["max_campaigns"] = value
         state["step"] = "max_active"
-        await message.answer("🟢 Bir vaqtning o‘zida aktiv kampaniyalar soni:")
+        await message.answer("🟢 Aktiv kampaniyalar soni:")
         return
 
     if step == "max_active":
         state["max_active"] = value
         state["step"] = "daily_limit"
-        await message.answer("📨 Kunlik xabarlar limiti:")
+        await message.answer("📨 Kunlik limit:")
         return
 
     if step == "daily_limit":
@@ -377,7 +376,6 @@ async def handle_admin_limits(message: Message):
             "✅ Bepul limitlar saqlandi",
             reply_markup=admin_main_menu()
         )
-
 
 # =====================
 # UMUMI STATISTIKA
