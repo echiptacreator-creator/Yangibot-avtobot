@@ -91,29 +91,28 @@ def miniapp():
 # =====================
 @app.route("/send_code", methods=["POST"])
 def send_code():
-    phone = request.json.get("phone")
-
-    if not phone:
-        return jsonify({"status": "phone_required"})
+    data = request.json
+    phone = data.get("phone")
 
     try:
-        async def work():
-            client = TelegramClient(None, API_ID, API_HASH)
-            await client.connect()
-            sent = await client.send_code_request(phone)
-            await client.disconnect()
-            pending_codes[phone] = sent.phone_code_hash
+        client = TelegramClient(
+            os.path.join(SESSIONS_DIR, phone.replace("+", "")),
+            API_ID,
+            API_HASH
+        )
+        client.connect()
+        client.send_code_request(phone)
 
-        run_async(work())
-        return jsonify({"status": "code_sent"})
+        return jsonify({
+            "status": "ok",
+            "message": "Kod yuborildi"
+        })
 
-    except FloodWaitError as e:
-        return jsonify({"status": "flood_wait", "seconds": e.seconds})
-    except PhoneNumberInvalidError:
-        return jsonify({"status": "phone_invalid"})
     except Exception as e:
-        print("SEND_CODE ERROR:", e)
-        return jsonify({"status": "error"})
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        })
 
 
 # =====================
