@@ -55,6 +55,15 @@ def is_logged_in(user_id: int) -> bool:
     ok = cur.fetchone() is not None
     conn.close()
     return ok
+# =====================
+# NOTIFICATION XATO
+# =====================
+
+async def notify_user(chat_id: int, text: str):
+    try:
+        await bot.send_message(chat_id, text)
+    except Exception:
+        pass
 
 
 def get_subscription(user_id: int):
@@ -690,7 +699,13 @@ async def run_campaign(campaign_id: int):
                 await asyncio.sleep(e.seconds)
 
             except Exception as e:
-                print("SEND ERROR:", e)
+                update_campaign_status(campaign_id, "stopped")
+                await notify_user(
+                    campaign["chat_id"],
+                    "❌ Telegram akkauntga ulanib bo‘lmadi.\n"
+                    "Iltimos, qayta login qiling."
+                )
+                return
 
         # 9️⃣ Interval kutish
         await asyncio.sleep(campaign["interval"] * 60)
