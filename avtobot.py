@@ -284,15 +284,6 @@ async def get_client(user_id: int):
 
     return client
 
-# misol
-user_state[user_id] = {
-    "step": "choose_group",
-    "mode": "single",        # yoki "multi"
-    "groups": {},            # id -> dialog
-    "selected_ids": [],
-    "offset": 0
-}
-
 # =====================
 # GURUH YUKLASH
 # =====================
@@ -769,6 +760,8 @@ def campaign_controls(campaign_id: int, status: str):
 # =====================
 # QOSHIMCHA
 # =====================
+user_campaigns[user_id].append(campaign)
+campaign = get_campaign(campaign_id)
 
 if campaign["status"] == "paused":
     await asyncio.sleep(3)
