@@ -186,7 +186,7 @@ def verify_password():
     password = data.get("password")
 
     async def _verify():
-        session_path = os.path.join(SESSIONS_DIR, phone.replace("+", ""))
+        session_path = os.path.join(SESSIONS_DIR, str(me.id))
         client = TelegramClient(session_path, API_ID, API_HASH)
         await client.connect()
         await client.sign_in(password=password)
