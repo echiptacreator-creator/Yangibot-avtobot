@@ -26,6 +26,7 @@ from database import (
 user_state = {}
 user_campaigns = {}
 user_campaigns[user_id].append(campaign)
+campaign = get_campaign(campaign_id)
 
 # =====================
 # CONFIG
@@ -682,47 +683,104 @@ async def run_campaign(campaign: dict):
 # =====================
 # STATUSNI YANGILASH
 # =====================
-async def update_status(campaign: dict):
+async def update_status_message(campaign: dict):
     elapsed = int((time.time() - campaign["start_time"]) // 60)
 
     text = (
-        "🚀 Kampaniya ishlayapti\n\n"
+        "🚀 Kampaniya holati\n\n"
+        f"📌 Status: {campaign['status']}\n"
+        f"📍 Guruhlar: {len(campaign['groups'])}\n"
         f"💬 Xabar:\n{campaign['text']}\n\n"
         f"⏱ Interval: {campaign['interval']} daqiqa\n"
         f"🕒 O‘tgan vaqt: {elapsed} daqiqa\n"
         f"📊 Yuborildi: {campaign['sent_count']}"
     )
 
-    await bot.edit_message_text(
-        chat_id=campaign["chat_id"],
-        message_id=campaign["status_message_id"],
-        text=text
-    )
+    try:
+        await bot.edit_message_text(
+            chat_id=campaign["chat_id"],
+            message_id=campaign["status_message_id"],
+            text=text,
+            reply_markup=campaign_controls(campaign["id"], campaign["status"])
+        )
+    except Exception:
+        pass
 
 # =====================
 # BOSHQARISH
 # =====================
 
-@dp.callback_query(F.data.startswith("pause_"))
+@dp.callback_query(F.data.startswith("camp_pause:"))
 async def pause_campaign(cb):
-    cid = int(cb.data.split("_")[1])
-    campaign = user_campaigns[cb.from_user.id][cid]
-    campaign["paused"] = True
-    await cb.answer("⏸ To‘xtatildi")
-    
-@dp.callback_query(F.data.startswith("resume_"))
-async def resume_campaign(cb):
-    cid = int(cb.data.split("_")[1])
-    campaign = user_campaigns[cb.from_user.id][cid]
-    campaign["paused"] = False
-    await cb.answer("▶ Davom etmoqda")
+    campaign_id = int(cb.data.split(":")[1])
 
-@dp.callback_query(F.data.startswith("stop_"))
+    update_campaign_status(campaign_id, "paused")
+    await cb.answer("⏸ Kampaniya to‘xtatildi")
+    @dp.callback_query(F.data.startswith("camp_resume:"))
+    
+async def resume_campaign(cb):
+    campaign_id = int(cb.data.split(":")[1])
+
+    update_campaign_status(campaign_id, "active")
+    await cb.answer("▶ Kampaniya davom etmoqda")
+
+@dp.callback_query(F.data.startswith("camp_stop:"))
 async def stop_campaign(cb):
-    cid = int(cb.data.split("_")[1])
-    campaign = user_campaigns[cb.from_user.id][cid]
-    campaign["active"] = False
-    await cb.answer("🛑 To‘liq to‘xtatildi")
+    campaign_id = int(cb.data.split(":")[1])
+
+    update_campaign_status(campaign_id, "stopped")
+    await cb.answer("🛑 Kampaniya to‘xtatildi")
+
+
+# =====================
+# KOMPANIYANI QAYTA OLSIH
+# =====================
+async def restore_campaigns():
+    campaigns = get_active_campaigns()
+
+    if not campaigns:
+        print("ℹ️ Faol kampaniyalar yo‘q")
+        return
+
+    print(f"🔄 {len(campaigns)} ta kampaniya tiklanmoqda...")
+
+    for campaign in campaigns:
+        # agar active bo‘lsa → davom etadi
+        # agar paused bo‘lsa → pause holatda turadi
+        asyncio.create_task(run_campaign(campaign["id"]))
+# =====================
+# YORDAMCHI FUNKTSIYA
+# =====================
+def campaign_controls(campaign_id: int, status: str):
+    buttons = []
+
+    if status == "active":
+        buttons.append(
+            InlineKeyboardButton("⏸ Pause", callback_data=f"camp_pause:{campaign_id}")
+        )
+    if status == "paused":
+        buttons.append(
+            InlineKeyboardButton("▶ Resume", callback_data=f"camp_resume:{campaign_id}")
+        )
+
+    buttons.append(
+        InlineKeyboardButton("🛑 Stop", callback_data=f"camp_stop:{campaign_id}")
+    )
+
+    return InlineKeyboardMarkup(inline_keyboard=[buttons])
+# =====================
+# QOSHIMCHA
+# =====================
+
+if campaign["status"] == "paused":
+    await asyncio.sleep(3)
+    continue
+
+if campaign["status"] == "stopped":
+    break
+# =====================
+# RUN
+# =====================
 
 # =====================
 # RUN
@@ -730,7 +788,8 @@ async def stop_campaign(cb):
 
 async def main():
     print("🤖 Avtobot ishga tushdi")
-    await dp.start_polling(bot)
 
-if __name__ == "__main__":
-    asyncio.run(main())
+    # 🔥 ENG MUHIM QATOR
+    await restore_campaigns()
+
+    await dp.start_polling(bot)
