@@ -1190,6 +1190,18 @@ async def main():
     await dp.start_polling(bot)
 
 
+import threading
+from login_api import app
+
+def run_login_api():
+    app.run(host="0.0.0.0", port=8080)
+
+threading.Thread(
+    target=run_login_api,
+    daemon=True
+).start()
+
+
 if __name__ == "__main__":
     asyncio.run(main())
 
