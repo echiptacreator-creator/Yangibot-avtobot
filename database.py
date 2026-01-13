@@ -576,3 +576,27 @@ def reject_payment(payment_id: int):
 
     conn.commit()
     conn.close()
+
+def update_last_notify(user_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE subscriptions
+        SET last_notify = CURRENT_DATE
+        WHERE user_id = %s
+    """, (user_id,))
+    conn.commit()
+    conn.close()
+
+
+def expire_subscription(user_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE subscriptions
+        SET status = 'expired'
+        WHERE user_id = %s
+    """, (user_id,))
+    conn.commit()
+    conn.close()
+
