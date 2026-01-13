@@ -1139,6 +1139,7 @@ from datetime import date
 
 WARNING_DAYS = [7, 5, 3, 2, 1]
 ADMIN_ID = 515902673  # hozircha bitta admin
+NOTIFY_USER_IDS = [6840894477]
 
 async def notify_admin_about_subscriptions():
     conn = get_db()
