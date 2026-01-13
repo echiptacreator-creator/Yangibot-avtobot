@@ -511,3 +511,68 @@ def get_global_statistics():
         "free_users": free_users
     }
 
+def get_pending_payments():
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT id, user_id, price, months
+        FROM payments
+        WHERE status = 'pending'
+        ORDER BY id ASC
+    """)
+    rows = cur.fetchall()
+    conn.close()
+
+    return [
+        {"id": r[0], "user_id": r[1], "price": r[2], "months": r[3]}
+        for r in rows
+    ]
+
+
+def approve_payment(payment_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+
+    # payment ma’lumotlari
+    cur.execute("""
+        SELECT user_id, months
+        FROM payments
+        WHERE id = %s
+    """, (payment_id,))
+    user_id, months = cur.fetchone()
+
+    # paymentni approved qilamiz
+    cur.execute("""
+        UPDATE payments
+        SET status = 'approved'
+        WHERE id = %s
+    """, (payment_id,))
+
+    # obunani yoqamiz / uzaytiramiz
+    cur.execute("""
+        INSERT INTO subscriptions (user_id, status, paid_until)
+        VALUES (%s, 'active', CURRENT_DATE + (%s || ' days')::INTERVAL)
+        ON CONFLICT (user_id)
+        DO UPDATE SET
+            status = 'active',
+            paid_until = GREATEST(subscriptions.paid_until, CURRENT_DATE)
+                         + (%s || ' days')::INTERVAL
+    """, (user_id, months * 30, months * 30))
+
+    conn.commit()
+    conn.close()
+
+
+def reject_payment(payment_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE payments
+        SET status = 'rejected'
+        WHERE id = %s
+    """, (payment_id,))
+
+    conn.commit()
+    conn.close()
