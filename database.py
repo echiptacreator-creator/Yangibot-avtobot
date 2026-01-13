@@ -394,3 +394,29 @@ def get_user_limits(user_id: int):
         "max_active": 1,
         "daily_limit": 200
     }
+
+def get_user_usage(user_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+
+    # jami kampaniyalar
+    cur.execute(
+        "SELECT COUNT(*) FROM campaigns WHERE user_id = %s",
+        (user_id,)
+    )
+    total_campaigns = cur.fetchone()[0]
+
+    # aktiv kampaniyalar
+    cur.execute(
+        "SELECT COUNT(*) FROM campaigns WHERE user_id = %s AND status = 'active'",
+        (user_id,)
+    )
+    active_campaigns = cur.fetchone()[0]
+
+    conn.close()
+
+    return {
+        "total_campaigns": total_campaigns,
+        "active_campaigns": active_campaigns
+    }
+
