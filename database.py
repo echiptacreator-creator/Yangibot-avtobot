@@ -458,3 +458,41 @@ def get_free_limits():
         "daily_limit": row[2]
     }
 
+def get_global_statistics():
+    conn = get_db()
+    cur = conn.cursor()
+
+    # jami userlar
+    cur.execute("SELECT COUNT(*) FROM authorized_users")
+    total_users = cur.fetchone()[0]
+
+    # jami kampaniyalar
+    cur.execute("SELECT COUNT(*) FROM campaigns")
+    total_campaigns = cur.fetchone()[0]
+
+    # aktiv kampaniyalar
+    cur.execute("SELECT COUNT(*) FROM campaigns WHERE status = 'active'")
+    active_campaigns = cur.fetchone()[0]
+
+    # jami yuborilgan xabarlar
+    cur.execute("SELECT COALESCE(SUM(sent_count), 0) FROM campaigns")
+    total_sent = cur.fetchone()[0]
+
+    # premium userlar
+    cur.execute("SELECT COUNT(*) FROM subscriptions WHERE status = 'active'")
+    premium_users = cur.fetchone()[0]
+
+    # bepul userlar (authorized - premium)
+    free_users = total_users - premium_users
+
+    conn.close()
+
+    return {
+        "total_users": total_users,
+        "total_campaigns": total_campaigns,
+        "active_campaigns": active_campaigns,
+        "total_sent": total_sent,
+        "premium_users": premium_users,
+        "free_users": free_users
+    }
+
