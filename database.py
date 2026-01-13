@@ -600,3 +600,44 @@ def expire_subscription(user_id: int):
     conn.commit()
     conn.close()
 
+def find_user_any(query: str):
+    conn = get_db()
+    cur = conn.cursor()
+
+    # tozalaymiz
+    q = query.strip()
+
+    # 1️⃣ USER ID
+    if q.isdigit():
+        cur.execute("""
+            SELECT user_id, phone, username
+            FROM authorized_users
+            WHERE user_id = %s
+        """, (int(q),))
+        row = cur.fetchone()
+        conn.close()
+        return row
+
+    # 2️⃣ TELEFON
+    if q.startswith("+"):
+        cur.execute("""
+            SELECT user_id, phone, username
+            FROM authorized_users
+            WHERE phone = %s
+        """, (q,))
+        row = cur.fetchone()
+        conn.close()
+        return row
+
+    # 3️⃣ USERNAME
+    if q.startswith("@"):
+        q = q[1:]
+
+    cur.execute("""
+        SELECT user_id, phone, username
+        FROM authorized_users
+        WHERE username ILIKE %s
+    """, (q,))
+    row = cur.fetchone()
+    conn.close()
+    return row
