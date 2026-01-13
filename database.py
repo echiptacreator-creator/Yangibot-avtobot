@@ -351,3 +351,46 @@ def get_user_statistics(user_id: int):
         "total_sent": total_sent,
         **status_counts
     }
+
+def get_user_limits(user_id: int):
+    """
+    User tarifiga qarab limitlarni qaytaradi
+    """
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute(
+        "SELECT status FROM subscriptions WHERE user_id = %s",
+        (user_id,)
+    )
+    row = cur.fetchone()
+    conn.close()
+
+    # default — bepul
+    if not row:
+        return {
+            "max_campaigns": 3,
+            "max_active": 1,
+            "daily_limit": 200
+        }
+
+    status = row[0]
+
+    if status == "active":
+        return {
+            "max_campaigns": 50,
+            "max_active": 10,
+            "daily_limit": 5000
+        }
+
+    if status == "blocked":
+        return {
+            "blocked": True
+        }
+
+    # expired
+    return {
+        "max_campaigns": 3,
+        "max_active": 1,
+        "daily_limit": 200
+    }
