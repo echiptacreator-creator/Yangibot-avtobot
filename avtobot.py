@@ -136,6 +136,7 @@ def main_menu():
             [KeyboardButton(text="➕ Xabar yuborish")],
             [KeyboardButton(text="📋 Mening kampaniyalarim")],
             [KeyboardButton(text="📂 Guruhlar katalogi")],
+            [KeyboardButton(text="📊 Statistika")],
             [KeyboardButton(text="👤 Profil")],
             [KeyboardButton(text="🚪 Chiqish")]
         ],
@@ -852,9 +853,32 @@ async def my_campaigns(message: Message):
         )
    
 # =====================
-# RASM VA VIDEO
+# STATISTIKA
 # =====================
 
+from database import get_user_statistics
+
+@dp.message(F.text == "📊 Statistika")
+async def show_statistics(message: Message):
+    user_id = message.from_user.id
+
+    stats = get_user_statistics(user_id)
+
+    text = (
+        "📊 *Sizning statistikangiz*\n\n"
+        f"📂 Jami kampaniyalar: {stats['total_campaigns']}\n"
+        f"📨 Jami yuborilgan xabarlar: {stats['total_sent']}\n\n"
+        f"🟢 Faol: {stats['active']}\n"
+        f"⏸ Pauzada: {stats['paused']}\n"
+        f"✅ Tugagan: {stats['finished']}\n"
+        f"🛑 To‘xtatilgan: {stats['stopped']}"
+    )
+
+    await message.answer(
+        text,
+        parse_mode="Markdown",
+        reply_markup=main_menu()
+    )
 
 # =====================
 # RUN
