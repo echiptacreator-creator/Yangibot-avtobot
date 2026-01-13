@@ -614,11 +614,7 @@ async def start_campaign(cb):
     usage = get_user_usage(user_id)
 
     if usage["total_campaigns"] >= limits["max_campaigns"]:
-        await cb.answer(
-            f"❌ Kampaniya limiti tugadi.\n"
-            f"Maksimal: {limits['max_campaigns']}",
-            show_alert=True
-        )
+        await show_payment_offer(cb)
         return
 
     if usage["active_campaigns"] >= limits["max_active"]:
@@ -928,6 +924,50 @@ async def show_profile(message: Message):
         text += "\n⛔ Hisob bloklangan"
 
     await message.answer(text, parse_mode="Markdown")
+
+# =====================
+# TOLOV
+# =====================
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+def payment_keyboard():
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="💳 To‘lov qilish",
+                    callback_data="pay_start"
+                )
+            ]
+        ]
+    )
+async def show_payment_offer(message_or_cb):
+    text = (
+        "🚫 *Bepul limit tugadi*\n\n"
+        "Siz bepul imkoniyatlardan to‘liq foydalandingiz.\n\n"
+        "Botdan foydalanishni davom ettirish uchun "
+        "*premium obuna* sotib oling 👇\n\n"
+        "💰 Narx: *30 000 so‘m / oy*\n"
+        "💳 To‘lov: 9860260107680035 (Ilyos Ibrohimov)\n\n"
+        "To‘lovdan so‘ng chekni @shafyoradminbot ga yuboring."
+    )
+
+    if hasattr(message_or_cb, "message"):
+        await message_or_cb.message.answer(
+            text,
+            reply_markup=payment_keyboard(),
+            parse_mode="Markdown"
+        )
+    else:
+        await message_or_cb.answer(
+            text,
+            reply_markup=payment_keyboard(),
+            parse_mode="Markdown"
+        )
+
+# =====================
+# RUN
+# =====================
 
 # =====================
 # RUN
