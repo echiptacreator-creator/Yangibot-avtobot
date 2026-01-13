@@ -941,33 +941,82 @@ def payment_keyboard():
             ]
         ]
     )
-async def show_payment_offer(message_or_cb):
+async def show_payment_offer(cb):
     text = (
         "🚫 *Bepul limit tugadi*\n\n"
-        "Siz bepul imkoniyatlardan to‘liq foydalandingiz.\n\n"
-        "Botdan foydalanishni davom ettirish uchun "
-        "*premium obuna* sotib oling 👇\n\n"
-        "💰 Narx: *30 000 so‘m / oy*\n"
-        "💳 To‘lov: 9860260107680035 (Ilyos Ibrohimov)\n\n"
-        "To‘lovdan so‘ng chekni @shafyoradminbot ga yuboring."
+        "Davom etish uchun tarif tanlang 👇"
     )
 
-    if hasattr(message_or_cb, "message"):
-        await message_or_cb.message.answer(
-            text,
-            reply_markup=payment_keyboard(),
-            parse_mode="Markdown"
-        )
-    else:
-        await message_or_cb.answer(
-            text,
-            reply_markup=payment_keyboard(),
-            parse_mode="Markdown"
-        )
+    await cb.message.answer(
+        text,
+        reply_markup=tariff_keyboard(),
+        parse_mode="Markdown"
+    )
 
 # =====================
-# RUN
+# PREMIUM TARIFLAR
 # =====================
+def tariff_keyboard():
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton("1 oy — 30 000 so‘m", callback_data="tariff_1")],
+            [InlineKeyboardButton("3 oy — 80 000 so‘m", callback_data="tariff_3")],
+            [InlineKeyboardButton("6 oy — 160 000 so‘m", callback_data="tariff_6")],
+            [InlineKeyboardButton("12 oy — 300 000 so‘m", callback_data="tariff_12")]
+        ]
+    )
+
+TARIFFS = {
+    "tariff_1": (30000, 1),
+    "tariff_3": (80000, 3),
+    "tariff_6": (160000, 6),
+    "tariff_12": (300000, 12),
+}
+
+@dp.callback_query(F.data.startswith("tariff_"))
+async def select_tariff(cb):
+    price, months = TARIFFS[cb.data]
+
+    from database import get_db
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        INSERT INTO payments (user_id, tariff, price, months, created_at)
+        VALUES (%s, %s, %s, %s, %s)
+        RETURNING id
+    """, (
+        cb.from_user.id,
+        cb.data,
+        price,
+        months,
+        int(time.time())
+    ))
+
+    payment_id = cur.fetchone()[0]
+    conn.commit()
+    conn.close()
+
+    await cb.message.answer(
+        f"💳 *To‘lov qilish*\n\n"
+        f"Tarif: *{months} oy*\n"
+        f"Summa: *{price} so‘m*\n\n"
+        "💳 Karta: `8600 **** **** 1234`\n"
+        "👤 Ism: *Bot Egasi*\n\n"
+        "To‘lovdan so‘ng chekni yuboring.",
+        parse_mode="Markdown"
+    )
+
+    await cb.answer()
+    
+@dp.message(F.photo | F.document)
+async def receive_check(message: Message):
+    await message.answer(
+        "✅ Chek qabul qilindi.\n"
+        "Admin tomonidan tekshirilmoqda."
+    )
+
+    # Keyingi qadam: admin botga yuboriladi
 
 # =====================
 # RUN
