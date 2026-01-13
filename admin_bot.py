@@ -117,50 +117,32 @@ async def receive_receipt(message: Message):
 # =====================
 # APPROVE
 # =====================
-@dp.callback_query(F.data.startswith("approve:"))
-async def approve(call: CallbackQuery):
-    if call.from_user.id != ADMIN_ID:
-        return
+from database import approve_payment, reject_payment
 
-    user_id = call.data.split(":")[1]
+@dp.callback_query(F.data.startswith("pay_ok:"))
+async def approve_pay(cb):
+    payment_id = int(cb.data.split(":")[1])
 
-    activate_subscription(user_id, days=30)
+    approve_payment(payment_id)
 
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("""
-        INSERT INTO payments (user_id, amount, period_days, approved_at)
-        VALUES (%s, %s, %s, %s)
-    """, (int(user_id), PRICE, 30, int(time.time())))
-    conn.commit()
-    conn.close()
-
-    await bot.send_message(
-        int(user_id),
-        "✅ To‘lov tasdiqlandi.\nObunangiz faollashdi 🎉"
+    await cb.message.edit_caption(
+        cb.message.caption + "\n\n✅ *Tasdiqlandi*",
+        parse_mode="Markdown"
     )
-
-    await call.message.edit_text("✅ To‘lov tasdiqlandi")
-    await call.answer()
+    await cb.answer("Tasdiqlandi")
 
 
-# =====================
-# REJECT
-# =====================
-@dp.callback_query(F.data.startswith("reject:"))
-async def reject(call: CallbackQuery):
-    if call.from_user.id != ADMIN_ID:
-        return
+@dp.callback_query(F.data.startswith("pay_no:"))
+async def reject_pay(cb):
+    payment_id = int(cb.data.split(":")[1])
 
-    user_id = call.data.split(":")[1]
+    reject_payment(payment_id)
 
-    await bot.send_message(
-        int(user_id),
-        "❌ To‘lov cheki rad etildi.\nIltimos, qayta yuboring."
+    await cb.message.edit_caption(
+        cb.message.caption + "\n\n❌ *Rad etildi (summa noto‘g‘ri)*",
+        parse_mode="Markdown"
     )
-
-    await call.message.edit_text("❌ To‘lov rad etildi")
-    await call.answer()
+    await cb.answer("Rad etildi")
 
 
 # =====================
