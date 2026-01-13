@@ -778,9 +778,46 @@ if campaign["status"] == "paused":
 
 if campaign["status"] == "stopped":
     break
+    
 # =====================
-# RUN
+# RASM VA VIDEO@dp.message(F.photo)
 # =====================
+
+async def handle_photo(message: Message):
+    user_id = message.from_user.id
+    state = user_state.get(user_id)
+
+    if not state or state.get("step") != "enter_text":
+        return
+
+    state["media_type"] = "photo"
+    state["media_file_id"] = message.photo[-1].file_id
+    state["text"] = message.caption or ""
+
+    state["step"] = "enter_interval"
+
+    await message.answer(
+        "⏱ Xabar qanchada bir yuborilsin? (daqiqada)"
+    )
+
+@dp.message(F.video)
+async def handle_video(message: Message):
+    user_id = message.from_user.id
+    state = user_state.get(user_id)
+
+    if not state or state.get("step") != "enter_text":
+        return
+
+    state["media_type"] = "video"
+    state["media_file_id"] = message.video.file_id
+    state["text"] = message.caption or ""
+
+    state["step"] = "enter_interval"
+
+    await message.answer(
+        "⏱ Xabar qanchada bir yuborilsin? (daqiqada)"
+    )
+
 
 # =====================
 # RUN
