@@ -21,6 +21,8 @@ from database import (
     get_active_campaigns
 )
 from database import get_user_limits, get_user_usage
+from aiogram.types import ReplyKeyboardRemove
+
 # =====================
 # STATE (XABAR YUBORISH)
 # =====================
@@ -284,6 +286,7 @@ async def choose_send_mode(message: Message):
         reply_markup=ReplyKeyboardRemove()
     )
 
+
 async def get_client(user_id: int):
     session_file = os.path.join(SESSIONS_DIR, str(user_id))
 
@@ -295,6 +298,28 @@ async def get_client(user_id: int):
         raise Exception("Telegram login qilinmagan")
 
     return client
+
+# 🔥 GURUH YUKLAYMIZ
+    try:
+        client = await get_client(user_id)
+    except Exception:
+        await message.answer("❌ Telegram login topilmadi")
+        return
+
+    dialogs = []
+    async for d in client.iter_dialogs(limit=500):
+        if d.is_group or (d.is_channel and getattr(d.entity, "megagroup", False)):
+            dialogs.append(d)
+
+    if not dialogs:
+        await message.answer("❌ Guruhlar topilmadi")
+        return
+
+    state["groups"] = {str(d.id): d for d in dialogs}
+    state["selected_ids"] = []
+    state["offset"] = 0
+
+    await show_group_page(message, user_id)
 
 # =====================
 # GURUH YUKLASH
@@ -353,40 +378,6 @@ async def show_group_page(message, user_id):
 # =====================
 # GURUH TANLASHNI BOSHLASH
 # =====================
-
-@dp.message(F.text.in_(["📍 Bitta guruhga", "📍 Ko‘p guruhlarga"]))
-async def start_group_selection(message: Message):
-    user_id = message.from_user.id
-    state = user_state.get(user_id)
-
-    if not state:
-        return
-
-    try:
-        client = await get_client(user_id)
-    except Exception:
-        await message.answer(
-            "❌ Telegram akkauntingiz ulanmagan.\n"
-            "Iltimos, avval login qiling."
-        )
-        return
-
-    dialogs = []
-
-    async for d in client.iter_dialogs(limit=500):
-        if d.is_group or (d.is_channel and getattr(d.entity, "megagroup", False)):
-            dialogs.append(d)
-
-    if not dialogs:
-        await message.answer("❌ Sizda guruhlar topilmadi.")
-        return
-
-    state["groups"] = {str(d.id): d for d in dialogs}
-    state["selected_ids"] = []
-    state["offset"] = 0
-    state["step"] = "choose_group"
-
-    await show_group_page(message, user_id)
 
 # =====================
 # PAFINATION CALLBACK
