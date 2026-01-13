@@ -14,12 +14,18 @@ import os
 from database import init_db, get_db
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from telethon.errors import FloodWaitError
-
+from database import (
+    create_campaign,
+    update_campaign_status,
+    increment_sent_count,
+    get_active_campaigns
+)
 # =====================
 # STATE (XABAR YUBORISH)
 # =====================
 user_state = {}
 user_campaigns = {}
+user_campaigns[user_id].append(campaign)
 
 # =====================
 # CONFIG
@@ -596,6 +602,8 @@ async def start_campaign(cb):
 # =====================
 # KOMPANIYANI BOSHLASH
 # =====================
+from database import create_campaign
+
 @dp.callback_query(F.data == "camp_start")
 async def start_campaign(cb):
     user_id = cb.from_user.id
@@ -605,37 +613,31 @@ async def start_campaign(cb):
         await cb.answer("Xatolik", show_alert=True)
         return
 
-    campaign = {
-        "id": len(user_campaigns.get(user_id, [])),
-        "user_id": user_id,
-        "groups": state["selected_ids"],
-        "text": state["text"],
-        "interval": state["interval"],
-        "duration": state["duration"],
-        "start_time": time.time(),
-        "sent_count": 0,
-        "active": True,
-        "paused": False,
-        "status_message_id": None,
-        "chat_id": cb.message.chat.id
-    }
-
-    user_campaigns.setdefault(user_id, []).append(campaign)
-
     msg = await cb.message.edit_text(
         "🚀 Kampaniya ishga tushdi!\n\n"
-        f"📍 Guruhlar: {len(campaign['groups'])}\n"
-        f"⏱ Interval: {campaign['interval']} daqiqa\n"
-        f"⏳ Davomiylik: {campaign['duration']} daqiqa\n"
+        f"📍 Guruhlar: {len(state['selected_ids'])}\n"
+        f"⏱ Interval: {state['interval']} daqiqa\n"
+        f"⏳ Davomiylik: {state['duration']} daqiqa\n"
         "📊 Yuborildi: 0"
     )
 
-    campaign["status_message_id"] = msg.message_id
+    # 🔥 ASOSIY FARQ SHU YERDA
+    campaign_id = create_campaign(
+        user_id=user_id,
+        text=state["text"],
+        groups=state["selected_ids"],
+        interval=state["interval"],
+        duration=state["duration"],
+        chat_id=cb.message.chat.id,
+        status_message_id=msg.message_id
+    )
 
-    asyncio.create_task(run_campaign(campaign))
+    # endi RAM emas, ID bilan ishlaymiz
+    asyncio.create_task(run_campaign(campaign_id))
 
     user_state.pop(user_id, None)
     await cb.answer()
+
 # =====================
 # ISHLAYAPTI
 # =====================
