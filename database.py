@@ -95,6 +95,9 @@ def init_db():
         status_message_id BIGINT,
         chat_id BIGINT,
         created_at BIGINT
+        ALTER TABLE campaigns
+        ADD COLUMN IF NOT EXISTS media_type TEXT,
+        ADD COLUMN IF NOT EXISTS media_file_id TEXT;
     );
     """)
 
@@ -105,12 +108,6 @@ def init_db():
 # =========================
 # MEDIA
 # =========================
-
-    cur.execute("""
-    ALTER TABLE campaigns
-    ADD COLUMN IF NOT EXISTS media_type TEXT,
-    ADD COLUMN IF NOT EXISTS media_file_id TEXT;
-    """)
 
 
 # =========================
