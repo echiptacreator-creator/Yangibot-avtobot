@@ -614,38 +614,73 @@ async def start_campaign(cb):
 from database import get_campaign
 
 async def run_campaign(campaign_id: int):
+    """
+    DB-ga yozilgan kampaniyani ishga tushiradi.
+    Media (photo/video) va oddiy matnni qo‘llab-quvvatlaydi.
+    Pause / Resume / Stop restartdan keyin ham ishlaydi.
+    """
+
     while True:
+        # 1️⃣ Kampaniyani DB dan o‘qiymiz
         campaign = get_campaign(campaign_id)
         if not campaign:
-            break
+            return
 
+        # 2️⃣ STOP bosilgan bo‘lsa
         if campaign["status"] == "stopped":
-            break
+            return
 
+        # 3️⃣ PAUSE holati
         if campaign["status"] == "paused":
             await asyncio.sleep(3)
             continue
 
+        # 4️⃣ Telethon client olish
         try:
             client = await get_client(campaign["user_id"])
-        except Exception:
+        except Exception as e:
+            print("CLIENT ERROR:", e)
             update_campaign_status(campaign_id, "stopped")
-            break
+            return
 
+        # 5️⃣ Davomiylik tugaganmi?
         end_time = campaign["start_time"] + campaign["duration"] * 60
         if time.time() >= end_time:
             update_campaign_status(campaign_id, "finished")
-            break
+            await client.disconnect()
+            return
 
+        # 6️⃣ Guruhlarga yuborish
         for group_id in campaign["groups"]:
             campaign = get_campaign(campaign_id)
-            if campaign["status"] != "active":
+            if not campaign or campaign["status"] != "active":
                 break
 
             try:
-                await client.send_message(group_id, campaign["text"])
+                # =========================
+                # 📸🎥 MEDIA BOR BO‘LSA
+                # =========================
+                if campaign["media_type"] in ("photo", "video"):
+                    await client.send_file(
+                        group_id,
+                        campaign["media_file_id"],
+                        caption=campaign["text"]
+                    )
+
+                # =========================
+                # 📝 FAQAT MATN BO‘LSA
+                # =========================
+                else:
+                    await client.send_message(
+                        group_id,
+                        campaign["text"]
+                    )
+
+                # 7️⃣ Statistika
                 increment_sent_count(campaign_id)
-                await update_status_message(campaign)
+
+                # 8️⃣ Status xabarni yangilash
+                await update_status_message(get_campaign(campaign_id))
 
             except FloodWaitError as e:
                 await asyncio.sleep(e.seconds)
@@ -653,8 +688,8 @@ async def run_campaign(campaign_id: int):
             except Exception as e:
                 print("SEND ERROR:", e)
 
+        # 9️⃣ Interval kutish
         await asyncio.sleep(campaign["interval"] * 60)
-
 # =====================
 # STATUSNI YANGILASH
 # =====================
