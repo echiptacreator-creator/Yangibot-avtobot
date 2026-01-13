@@ -213,7 +213,7 @@ def get_active_campaigns():
             "id": r[0],
             "user_id": r[1],
             "text": r[2],
-            "groups": r[3],
+            "groups": json.loads(r[3]) if isinstance(r[3], str) else r[3],
             "interval": r[4],
             "duration": r[5],
             "start_time": r[6],
