@@ -306,3 +306,48 @@ def get_user_campaigns(user_id: int):
         })
 
     return campaigns
+
+def get_user_statistics(user_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+
+    # jami kampaniyalar
+    cur.execute(
+        "SELECT COUNT(*) FROM campaigns WHERE user_id = %s",
+        (user_id,)
+    )
+    total_campaigns = cur.fetchone()[0]
+
+    # statuslar bo‘yicha
+    cur.execute("""
+        SELECT status, COUNT(*)
+        FROM campaigns
+        WHERE user_id = %s
+        GROUP BY status
+    """, (user_id,))
+    rows = cur.fetchall()
+
+    status_counts = {
+        "active": 0,
+        "paused": 0,
+        "finished": 0,
+        "stopped": 0
+    }
+
+    for status, count in rows:
+        status_counts[status] = count
+
+    # jami yuborilgan xabarlar
+    cur.execute(
+        "SELECT COALESCE(SUM(sent_count), 0) FROM campaigns WHERE user_id = %s",
+        (user_id,)
+    )
+    total_sent = cur.fetchone()[0]
+
+    conn.close()
+
+    return {
+        "total_campaigns": total_campaigns,
+        "total_sent": total_sent,
+        **status_counts
+    }
