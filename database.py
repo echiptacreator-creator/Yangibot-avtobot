@@ -163,46 +163,6 @@ def activate_subscription(user_id: str, days: int = 30):
     conn.commit()
     conn.close()
 
-def create_campaign(
-    user_id: int,
-    text: str,
-    groups: list,
-    interval: int,
-    duration: int,
-    chat_id: int,
-    status_message_id: int
-) -> int:
-    conn = get_db()
-    cur = conn.cursor()
-
-    cur.execute("""
-        INSERT INTO campaigns (
-            user_id, text, groups,
-            interval_minutes, duration_minutes,
-            start_time, status,
-            chat_id, status_message_id,
-            created_at
-        )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        RETURNING id
-    """, (
-        user_id,
-        text,
-        json.dumps(groups),
-        interval,
-        duration,
-        int(time.time()),
-        "active",
-        chat_id,
-        status_message_id,
-        int(time.time())
-    ))
-
-    campaign_id = cur.fetchone()[0]
-    conn.commit()
-    conn.close()
-    return campaign_id
-
 def update_campaign_status(campaign_id: int, status: str):
     conn = get_db()
     cur = conn.cursor()
