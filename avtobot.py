@@ -134,6 +134,7 @@ def main_menu():
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="➕ Xabar yuborish")],
+            [KeyboardButton(text="📋 Mening kampaniyalarim")],
             [KeyboardButton(text="📂 Guruhlar katalogi")],
             [KeyboardButton(text="👤 Profil")],
             [KeyboardButton(text="🚪 Chiqish")]
@@ -652,8 +653,12 @@ async def run_campaign(campaign_id: int):
         try:
             client = await get_client(campaign["user_id"])
         except Exception as e:
-            print("CLIENT ERROR:", e)
             update_campaign_status(campaign_id, "stopped")
+            await notify_user(
+                campaign["chat_id"],
+                "❌ Telegram akkauntga ulanib bo‘lmadi.\n"
+                "Iltimos, qayta login qiling."
+            )
             return
 
         # 5️⃣ Davomiylik tugaganmi?
@@ -670,9 +675,9 @@ async def run_campaign(campaign_id: int):
                 break
 
             try:
-                # =========================
-                # 📸🎥 MEDIA BOR BO‘LSA
-                # =========================
+ # =========================
+ # 📸🎥 MEDIA BOR BO‘LSA
+ # =========================
                 if campaign["media_type"] in ("photo", "video"):
                     await client.send_file(
                         group_id,
@@ -680,9 +685,9 @@ async def run_campaign(campaign_id: int):
                         caption=campaign["text"]
                     )
 
-                # =========================
-                # 📝 FAQAT MATN BO‘LSA
-                # =========================
+ # =========================
+ # 📝 FAQAT MATN BO‘LSA
+ # =========================
                 else:
                     await client.send_message(
                         group_id,
@@ -695,15 +700,21 @@ async def run_campaign(campaign_id: int):
                 # 8️⃣ Status xabarni yangilash
                 await update_status_message(get_campaign(campaign_id))
 
+
             except FloodWaitError as e:
+                await notify_user(
+                    campaign["chat_id"],
+                    f"⏳ Telegram cheklovi (FloodWait).\n"
+                    f"{e.seconds} soniya kutilyapti."
+                )
                 await asyncio.sleep(e.seconds)
 
             except Exception as e:
-                update_campaign_status(campaign_id, "stopped")
                 await notify_user(
                     campaign["chat_id"],
-                    "❌ Telegram akkauntga ulanib bo‘lmadi.\n"
-                    "Iltimos, qayta login qiling."
+                    f"❌ Xabar yuborilmadi.\n"
+                    f"Guruh: {group_id}\n"
+                    f"Sabab: {str(e)}"
                 )
                 return
 
@@ -798,10 +809,48 @@ def campaign_controls(campaign_id: int, status: str):
 
     return InlineKeyboardMarkup(inline_keyboard=[buttons])
 # =====================
-# QOSHIMCHA
+# KOMPANIYALARIM
 # =====================
+from database import get_user_campaigns
 
-    
+@dp.message(F.text == "📋 Mening kampaniyalarim")
+async def my_campaigns(message: Message):
+    user_id = message.from_user.id
+
+    campaigns = get_user_campaigns(user_id)
+
+    if not campaigns:
+        await message.answer(
+            "📭 Sizda hali kampaniyalar yo‘q.",
+            reply_markup=main_menu()
+        )
+        return
+
+    for c in campaigns:
+        status_icon = {
+            "active": "🟢",
+            "paused": "⏸",
+            "finished": "✅",
+            "stopped": "🛑"
+        }.get(c["status"], "❔")
+
+        text = (
+            f"{status_icon} *Kampaniya #{c['id']}*\n\n"
+            f"📍 Guruhlar: {len(c['groups'])}\n"
+            f"📊 Yuborildi: {c['sent_count']}\n"
+            f"⏱ Interval: {c['interval']} daqiqa\n"
+            f"⏳ Davomiylik: {c['duration']} daqiqa\n"
+            f"📌 Status: {c['status']}"
+        )
+
+        kb = campaign_controls(c["id"], c["status"])
+
+        await message.answer(
+            text,
+            reply_markup=kb,
+            parse_mode="Markdown"
+        )
+   
 # =====================
 # RASM VA VIDEO
 # =====================
@@ -818,3 +867,7 @@ async def main():
     await restore_campaigns()
 
     await dp.start_polling(bot)
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
