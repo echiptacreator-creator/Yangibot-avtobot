@@ -26,12 +26,6 @@ def init_db():
         created_at TIMESTAMP DEFAULT NOW()
     );
     """)
-    
-    cur.execute("""
-    ALTER TABLE subscriptions
-    ADD COLUMN IF NOT EXISTS last_notify DATE;
-    );
-    """)
 
     # =========================
     # OBUNALAR
@@ -138,6 +132,12 @@ def init_db():
             INSERT INTO free_limits (max_campaigns, max_active, daily_limit)
             VALUES (3, 1, 200)
         """)
+
+        # 🔥 ENDI ALTER QILAMIZ — TO‘G‘RI JOY
+    cur.execute("""
+        ALTER TABLE subscriptions
+        ADD COLUMN IF NOT EXISTS last_notify DATE;
+    """)
         
     conn.commit()
     cur.close()
