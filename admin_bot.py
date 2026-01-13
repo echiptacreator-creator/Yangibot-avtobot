@@ -348,7 +348,10 @@ async def handle_admin_limits(message: Message):
         state["step"] = "max_active"
         await message.answer("🟢 Bir vaqtning o‘zida aktiv kampaniyalar soni:")
         return
-    if state["step"] == "max_active":
+    # =====================
+# MAX ACTIVE
+# =====================
+    if step == "max_active":
         if not message.text.isdigit():
             await message.answer("❌ Raqam kiriting:")
             return
@@ -358,7 +361,11 @@ async def handle_admin_limits(message: Message):
         await message.answer("📨 Kunlik xabarlar limiti:")
         return
 
-    if state["step"] == "daily_limit":
+
+    # =====================
+# DAILY LIMIT
+# =====================
+    if step == "daily_limit":
         if not message.text.isdigit():
             await message.answer("❌ Raqam kiriting:")
             return
@@ -381,11 +388,12 @@ async def handle_admin_limits(message: Message):
 
         admin_state.pop(user_id, None)
 
+        admin_state.pop(message.from_user.id, None)
         await message.answer(
-            "✅ Bepul limitlar yangilandi!",
-            reply_markup=admin_menu()
+            "✅ Limitlar muvaffaqiyatli saqlandi",
+            reply_markup=admin_main_menu()
         )
-
+        return
 # =====================
 # UMUMI STATISTIKA
 # =====================
