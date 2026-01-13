@@ -26,6 +26,12 @@ def init_db():
         created_at TIMESTAMP DEFAULT NOW()
     );
     """)
+    
+    cur.execute("""
+    ALTER TABLE subscriptions
+    ADD COLUMN IF NOT EXISTS last_notify DATE;
+    );
+    """)
 
     # =========================
     # OBUNALAR
