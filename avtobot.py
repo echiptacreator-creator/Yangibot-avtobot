@@ -25,8 +25,7 @@ from database import (
 # =====================
 user_state = {}
 user_campaigns = {}
-user_campaigns[user_id].append(campaign)
-campaign = get_campaign(campaign_id)
+
 
 # =====================
 # CONFIG
@@ -634,8 +633,7 @@ async def start_campaign(cb):
     )
 
     # endi RAM emas, ID bilan ishlaymiz
-    asyncio.create_task(run_campaign(campaign_id))
-
+    
     user_state.pop(user_id, None)
     await cb.answer()
 
@@ -667,7 +665,7 @@ async def run_campaign(campaign: dict):
                 await client.send_message(group_id, campaign["text"])
                 campaign["sent_count"] += 1
 
-                await update_status(campaign)
+                await update_status_message(campaign)
 
             except FloodWaitError as e:
                 # ❗ Telegram majburiy kut dedi
@@ -716,8 +714,8 @@ async def pause_campaign(cb):
 
     update_campaign_status(campaign_id, "paused")
     await cb.answer("⏸ Kampaniya to‘xtatildi")
-    @dp.callback_query(F.data.startswith("camp_resume:"))
-    
+
+@dp.callback_query(F.data.startswith("camp_resume:"))
 async def resume_campaign(cb):
     campaign_id = int(cb.data.split(":")[1])
 
