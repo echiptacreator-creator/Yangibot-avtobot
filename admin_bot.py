@@ -32,6 +32,7 @@ bot = Bot(ADMIN_BOT_TOKEN)
 dp = Dispatcher()
 init_db()
 
+admin_state = {}
 
 # =====================
 # HELPERS
@@ -58,12 +59,14 @@ async def start(message: Message):
             [KeyboardButton(text="🟢 Faol obunalar")],
             [KeyboardButton(text="🔴 Bloklangan obunalar")],
             [KeyboardButton(text="📊 Hisobotlar")]
+            [KeyboardButton(text="🆓 Bepul limitlar")],
+            [KeyboardButton(text="📊 Umumiy statistika")]
         ],
         resize_keyboard=True
     )
 
     await message.answer(
-        "👑 Admin panel\n\nKerakli bo‘limni tanlang:",
+        "👑🛠 Admin panel\n\nKerakli bo‘limni tanlang:",
         reply_markup=kb
     )
 
@@ -314,6 +317,9 @@ async def stats_today(call: CallbackQuery):
     await call.message.edit_text(f"💰 Bugungi tushum: {total} so‘m")
     await call.answer()
 
+# =====================
+# LIMITLARNI KORISH
+# =====================
 
 @dp.callback_query(F.data == "stats_month")
 async def stats_month(call: CallbackQuery):
@@ -329,6 +335,145 @@ async def stats_month(call: CallbackQuery):
 
     await call.message.edit_text(f"📅 Oylik tushum: {total} so‘m")
     await call.answer()
+
+from database import get_free_limits
+
+@dp.message(F.text == "/free_limit")
+async def show_free_limit(message: Message):
+    limits = get_free_limits()
+
+    text = (
+        "🆓 *Bepul limitlar*\n\n"
+        f"📦 Kampaniyalar: {limits['max_campaigns']}\n"
+        f"🟢 Aktiv kampaniyalar: {limits['max_active']}\n"
+        f"📨 Kunlik xabarlar: {limits['daily_limit']}"
+    )
+
+    await message.answer(text, parse_mode="Markdown")
+# =====================
+# LIMITNI OZGARTIRISH
+# =====================
+
+from database import get_db
+
+@dp.message(F.text.startswith("/set_free_limit"))
+async def set_free_limit(message: Message):
+    parts = message.text.split()
+
+    if len(parts) != 4:
+        await message.answer(
+            "❌ Format noto‘g‘ri.\n"
+            "To‘g‘ri format:\n"
+            "`/set_free_limit 3 1 200`",
+            parse_mode="Markdown"
+        )
+        return
+
+    max_campaigns = int(parts[1])
+    max_active = int(parts[2])
+    daily_limit = int(parts[3])
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        INSERT INTO free_limits (max_campaigns, max_active, daily_limit)
+        VALUES (%s, %s, %s)
+    """, (max_campaigns, max_active, daily_limit))
+
+    conn.commit()
+    conn.close()
+
+    await message.answer(
+        "✅ Bepul limit yangilandi:\n\n"
+        f"📦 Kampaniyalar: {max_campaigns}\n"
+        f"🟢 Aktiv: {max_active}\n"
+        f"📨 Kunlik: {daily_limit}"
+    )
+from database import get_free_limits
+
+@dp.message(F.text == "🆓 Bepul limitlar")
+async def show_free_limits(message: Message):
+    limits = get_free_limits()
+
+    text = (
+        "🆓 *Bepul limitlar*\n\n"
+        f"📦 Kampaniyalar: {limits['max_campaigns']}\n"
+        f"🟢 Aktiv: {limits['max_active']}\n"
+        f"📨 Kunlik: {limits['daily_limit']}"
+    )
+
+    kb = ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="✏️ O‘zgartirish")],
+            [KeyboardButton(text="⬅️ Orqaga")]
+        ],
+        resize_keyboard=True
+    )
+
+    await message.answer(text, reply_markup=kb, parse_mode="Markdown")
+@dp.message(F.text == "✏️ O‘zgartirish")
+async def edit_free_limits(message: Message):
+    admin_state[message.from_user.id] = {"step": "max_campaigns"}
+    await message.answer("📦 Maksimal kampaniyalar sonini kiriting:")
+@dp.message()
+async def handle_admin_limits(message: Message):
+    user_id = message.from_user.id
+    state = admin_state.get(user_id)
+
+    if not state:
+        return
+
+    if state["step"] == "max_campaigns":
+        if not message.text.isdigit():
+            await message.answer("❌ Raqam kiriting:")
+            return
+
+        state["max_campaigns"] = int(message.text)
+        state["step"] = "max_active"
+        await message.answer("🟢 Bir vaqtning o‘zida aktiv kampaniyalar soni:")
+        return
+    if state["step"] == "max_active":
+        if not message.text.isdigit():
+            await message.answer("❌ Raqam kiriting:")
+            return
+
+        state["max_active"] = int(message.text)
+        state["step"] = "daily_limit"
+        await message.answer("📨 Kunlik xabarlar limiti:")
+        return
+
+    if state["step"] == "daily_limit":
+        if not message.text.isdigit():
+            await message.answer("❌ Raqam kiriting:")
+            return
+
+        daily_limit = int(message.text)
+
+        from database import get_db
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO free_limits (max_campaigns, max_active, daily_limit)
+            VALUES (%s, %s, %s)
+        """, (
+            state["max_campaigns"],
+            state["max_active"],
+            daily_limit
+        ))
+        conn.commit()
+        conn.close()
+
+        admin_state.pop(user_id, None)
+
+        await message.answer(
+            "✅ Bepul limitlar yangilandi!",
+            reply_markup=admin_menu()
+        )
+@dp.message(F.text == "⬅️ Orqaga")
+async def admin_back(message: Message):
+    admin_state.pop(message.from_user.id, None)
+    await message.answer("🛠 Admin panel", reply_markup=admin_menu())
 
 
 # =====================
