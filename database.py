@@ -100,6 +100,24 @@ def init_db():
     );
     """)
 
+        # 🔥 BEPUL LIMITLAR
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS free_limits (
+        id SERIAL PRIMARY KEY,
+        max_campaigns INTEGER NOT NULL,
+        max_active INTEGER NOT NULL,
+        daily_limit INTEGER NOT NULL
+    )
+    """)
+
+    # agar bo‘sh bo‘lsa — DEFAULT qiymat qo‘yamiz
+    cur.execute("SELECT COUNT(*) FROM free_limits")
+    if cur.fetchone()[0] == 0:
+        cur.execute("""
+            INSERT INTO free_limits (max_campaigns, max_active, daily_limit)
+            VALUES (3, 1, 200)
+        """)
+        
     conn.commit()
     cur.close()
     conn.close()
@@ -395,28 +413,48 @@ def get_user_limits(user_id: int):
         "daily_limit": 200
     }
 
-def get_user_usage(user_id: int):
+def get_user_limits(user_id: int):
     conn = get_db()
     cur = conn.cursor()
 
-    # jami kampaniyalar
     cur.execute(
-        "SELECT COUNT(*) FROM campaigns WHERE user_id = %s",
+        "SELECT status FROM subscriptions WHERE user_id = %s",
         (user_id,)
     )
-    total_campaigns = cur.fetchone()[0]
+    row = cur.fetchone()
+    conn.close()
 
-    # aktiv kampaniyalar
-    cur.execute(
-        "SELECT COUNT(*) FROM campaigns WHERE user_id = %s AND status = 'active'",
-        (user_id,)
-    )
-    active_campaigns = cur.fetchone()[0]
+    # premium bo‘lsa
+    if row and row[0] == "active":
+        return {
+            "max_campaigns": 50,
+            "max_active": 10,
+            "daily_limit": 5000
+        }
 
+    # bloklangan
+    if row and row[0] == "blocked":
+        return {"blocked": True}
+
+    # ❗ aks holda — BEPUL LIMIT
+    return get_free_limits()
+
+def get_free_limits():
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT max_campaigns, max_active, daily_limit
+        FROM free_limits
+        ORDER BY id DESC
+        LIMIT 1
+    """)
+    row = cur.fetchone()
     conn.close()
 
     return {
-        "total_campaigns": total_campaigns,
-        "active_campaigns": active_campaigns
+        "max_campaigns": row[0],
+        "max_active": row[1],
+        "daily_limit": row[2]
     }
 
