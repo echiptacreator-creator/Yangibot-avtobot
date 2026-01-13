@@ -148,6 +148,12 @@ async def subscription_watcher():
         await asyncio.sleep(24 * 60 * 60)  # har kuni
 asyncio.create_task(subscription_watcher())
 
+async def admin_notification_worker():
+    while True:
+        await notify_admin_about_subscriptions()
+        await asyncio.sleep(24 * 60 * 60)  # har kuni 1 marta
+asyncio.create_task(admin_notification_worker())
+
 # =====================
 # /START
 # =====================
@@ -1126,8 +1132,59 @@ async def check_subscriptions():
 
 
 # =====================
-# RUN
+# ADMIN BILDIRISHNOMA
 # =====================
+
+from datetime import date
+
+WARNING_DAYS = [7, 5, 3, 2, 1]
+ADMIN_ID = 515902673  # hozircha bitta admin
+
+async def notify_admin_about_subscriptions():
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT
+            s.user_id,
+            s.status,
+            s.paid_until,
+            a.phone
+        FROM subscriptions s
+        LEFT JOIN authorized_users a ON a.user_id = s.user_id
+        WHERE s.paid_until IS NOT NULL
+    """)
+    rows = cur.fetchall()
+    conn.close()
+
+    today = date.today()
+
+    for user_id, status, paid_until, phone in rows:
+        days_left = (paid_until - today).days
+
+        # 🟡 Tugashiga yaqin
+        if status == "active" and days_left in WARNING_DAYS:
+            await bot.send_message(
+                ADMIN_ID,
+                "⏰ *Premium tugashiga yaqin*\n\n"
+                f"👤 User: tg://user?id={user_id}\n"
+                f"📞 Telefon: {phone or 'yo‘q'}\n\n"
+                f"⏳ Qoldi: *{days_left} kun*\n"
+                f"📌 Status: active",
+                parse_mode="Markdown"
+            )
+
+        # 🔴 Tugagan
+        if status == "active" and days_left < 0:
+            await bot.send_message(
+                ADMIN_ID,
+                "🔴 *Premium muddati tugadi*\n\n"
+                f"👤 User: tg://user?id={user_id}\n"
+                f"📞 Telefon: {phone or 'yo‘q'}\n\n"
+                f"📌 Status: expired",
+                parse_mode="Markdown"
+            )
+
 
 # =====================
 # RUN
