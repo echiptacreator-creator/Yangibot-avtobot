@@ -496,14 +496,13 @@ async def handle_text_steps(message: Message):
         # ❌ BOSHQA NARSA BO‘LSA
         await message.answer("❌ Iltimos, matn yoki foto/video yuboring")
         return
-
-    if step == "enter_interval":
+        
+            if step == "enter_interval":
         if not message.text.isdigit():
             await message.answer("❌ Faqat raqam kiriting (daqiqada):")
             return
 
         interval = int(message.text)
-
         if interval < 1 or interval > 1440:
             await message.answer("❌ Interval 1–1440 daqiqa oralig‘ida bo‘lishi kerak:")
             return
@@ -511,27 +510,24 @@ async def handle_text_steps(message: Message):
         state["interval"] = interval
         state["step"] = "enter_duration"
 
-        await message.answer(
-            "⏳ Kampaniya qancha vaqt davom etsin?\n"
-            "Masalan: 60 (daqiqada)"
-        )
+        await message.answer("⏳ Kampaniya qancha vaqt davom etsin? (daqiqada)")
         return
 
-        if step == "enter_duration":
-            if not message.text.isdigit():
-                await message.answer("❌ Faqat raqam kiriting:")
-                return
-
-            duration = int(message.text)
-            if duration < 1 or duration > 10080:
-                await message.answer("❌ Davomiylik noto‘g‘ri:")
-                return
-
-            state["duration"] = duration
-            state["step"] = "ready"
-
-            await show_campaign_summary(message)
+    if step == "enter_duration":
+        if not message.text.isdigit():
+            await message.answer("❌ Faqat raqam kiriting:")
             return
+
+        duration = int(message.text)
+        if duration < 1 or duration > 10080:
+            await message.answer("❌ Davomiylik noto‘g‘ri:")
+            return
+
+        state["duration"] = duration
+        state["step"] = "ready"
+
+        await show_campaign_summary(message)
+        return
 
 # =====================
 # KOMPANIYA HOLATI
