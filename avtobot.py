@@ -34,19 +34,12 @@ user_state = {}
 # =====================
 # CONFIG
 # =====================
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_BOT_TOKEN = os.getenv("ADMIN_BOT_TOKEN")
-
-API_HASH = os.getenv("API_HASH")
-
-API_ID_RAW = os.getenv("API_ID")
-API_ID = int(API_ID_RAW) if API_ID_RAW else None
-
-ADMIN_ID_RAW = os.getenv("ADMIN_ID")
-ADMIN_ID = int(ADMIN_ID_RAW) if ADMIN_ID_RAW else None
-
+BOT_TOKEN = "8485200508:AAEIwbb9HpGBUX_mWPGVplpxNRoXXnlSOrU"
+API_ID = 25780325
+API_HASH = "2c4cb6eee01a46dc648114813042c453"
+ADMIN_ID = 515902673
+ADMIN_BOT_TOKEN = "8455652640:AAE0Mf0haSpP_8yCjZTCKAqGQAcVF4kf02s"
 LOGIN_WEBAPP_URL = "https://yangibot-avtobot-production.up.railway.app/miniapp"
-
 
 bot = Bot(BOT_TOKEN)
 dp = Dispatcher()
