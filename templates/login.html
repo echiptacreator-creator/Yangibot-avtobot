@@ -160,30 +160,25 @@ function showMessage(text, type="info") {
 ===================== */
 function sendCode() {
   const phone = document.getElementById("phone").value.trim();
-  if (!phone.startsWith("+")) {
-    showMessage("❌ Telefon raqam + bilan boshlanishi kerak.", "error");
-    return;
-  }
-
-  showMessage("📨 Kod yuborilmoqda, iltimos kuting...", "info");
 
   fetch("/send_code", {
     method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ phone, code, password })
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ phone })
   })
   .then(r => r.json())
   .then(data => {
     if (data.status === "ok") {
       document.getElementById("step-phone").classList.add("hidden");
       document.getElementById("step-code").classList.remove("hidden");
-      showMessage("📩 Kod yuborildi. SMS ni tekshiring.", "success");
-      startResendTimer();
+      showMessage("📩 Kod yuborildi, SMS ni tekshiring", "success");
     } else {
-      showMessage(data.message || "❌ Kod yuborilmadi.", "error");
+      showMessage(data.message || "❌ Kod yuborilmadi", "error");
     }
   })
-  .catch(() => showMessage("❌ Server bilan bog‘lanib bo‘lmadi.", "error"));
+  .catch(() => {
+    showMessage("❌ Server bilan bog‘lanib bo‘lmadi", "error");
+  });
 }
 
 /* =====================
