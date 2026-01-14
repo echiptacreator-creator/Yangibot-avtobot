@@ -56,16 +56,11 @@ init_db()
 # HELPERS — ACCESS
 # =====================
 
+from database import get_session
+
 def is_logged_in(user_id: int) -> bool:
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute(
-        "SELECT 1 FROM authorized_users WHERE user_id = %s",
-        (user_id,)
-    )
-    ok = cur.fetchone() is not None
-    conn.close()
-    return ok
+    return get_session(user_id) is not None
+
 # =====================
 # NOTIFICATION XATO
 # =====================
