@@ -741,3 +741,42 @@ def find_user_any(query: str):
     row = cur.fetchone()
     conn.close()
     return row
+
+
+def approve_payment(payment_id: int):
+    from datetime import timedelta
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT user_id, months
+        FROM payments
+        WHERE id = %s
+    """, (payment_id,))
+    row = cur.fetchone()
+
+    if not row:
+        conn.close()
+        return
+
+    user_id, months = row
+
+    cur.execute("""
+        UPDATE payments
+        SET status = 'approved'
+        WHERE id = %s
+    """, (payment_id,))
+
+    cur.execute("""
+        INSERT INTO subscriptions (user_id, status, paid_until)
+        VALUES (%s, 'active', CURRENT_DATE + (%s || ' days')::INTERVAL)
+        ON CONFLICT (user_id)
+        DO UPDATE SET
+            status = 'active',
+            paid_until = GREATEST(subscriptions.paid_until, CURRENT_DATE)
+                         + (%s || ' days')::INTERVAL
+    """, (user_id, months * 30, months * 30))
+
+    conn.commit()
+    conn.close()
