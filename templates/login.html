@@ -228,7 +228,7 @@ async function verifyCode() {
     } else if (data.status === "2fa_required") {
       stepCode.classList.add("hidden");
       document.getElementById("step-password").classList.remove("hidden");
-      s howMsg("🔐 Telegram paroli kerak", "info");
+      showMsg("🔐 Telegram paroli kerak", "info");
     } else {
       showMsg(data.message || "❌ Kod noto‘g‘ri", "error");
     }
