@@ -31,10 +31,12 @@ user_state = {}
 # =====================
 # CONFIG
 # =====================
-LOGIN_WEBAPP_URL = os.getenv("LOGIN_WEBAPP_URL") 
+LOGIN_WEBAPP_URL = os.getenv("LOGIN_WEBAPP_URL")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-API_ID = int(os.getenv("API_ID"))
 API_HASH = os.getenv("API_HASH")
+
+API_ID_RAW = os.getenv("API_ID")
+API_ID = int(API_ID_RAW) if API_ID_RAW else None
 
 bot = Bot(BOT_TOKEN)
 dp = Dispatcher()
