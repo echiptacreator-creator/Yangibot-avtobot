@@ -31,24 +31,17 @@ def send_code():
     async def _send():
         client = TelegramClient(StringSession(), API_ID, API_HASH)
         await client.connect()
-        result = await client.send_code_request(phone)
+        await client.send_code_request(phone)
+        session_str = client.session.save()
         await client.disconnect()
-        return result.phone_code_hash
+        return session_str
 
     try:
-        phone_code_hash = asyncio.run(_send())
-
-        # 🔥 MAJBURIY — HASH NI DB GA SAQLAYMIZ
-        save_login_code(phone, phone_code_hash)
-
+        session_str = asyncio.run(_send())
+        save_temp_session(phone, session_str)
         return jsonify({"status": "ok"})
-
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": "Kod yuborilmadi, qayta urinib ko‘ring"
-        })
-
+        return jsonify({"status": "error", "message": "Kod yuborilmadi"})
 
 # =========================
 # VERIFY CODE
@@ -58,67 +51,34 @@ def verify_code():
     phone = request.json.get("phone")
     code = request.json.get("code")
 
-    phone_code_hash = get_login_code(phone)
-    if not phone_code_hash:
-        return jsonify({
-            "status": "error",
-            "message": "Kod eskirgan, qayta yuboring"
-        })
+    session_str = get_temp_session(phone)
+    if not session_str:
+        return jsonify({"status": "error", "message": "Kod eskirgan"})
 
     async def _verify():
-        client = TelegramClient(StringSession(), API_ID, API_HASH)
+        client = TelegramClient(StringSession(session_str), API_ID, API_HASH)
         await client.connect()
-
         try:
-            await client.sign_in(
-                phone=phone,
-                code=code,
-                phone_code_hash=phone_code_hash
-            )
+            await client.sign_in(phone=phone, code=code)
         except SessionPasswordNeededError:
             await client.disconnect()
             return "2fa"
 
         me = await client.get_me()
-        session_str = client.session.save()
-
+        final_session = client.session.save()
         await client.disconnect()
-        return me, session_str
+        return me, final_session
 
-    try:
-        result = asyncio.run(_verify())
+    result = asyncio.run(_verify())
 
-        if result == "2fa":
-            return jsonify({"status": "2fa_required"})
+    if result == "2fa":
+        return jsonify({"status": "2fa_required"})
 
-        me, session_str = result
+    me, final_session = result
+    save_session(me.id, final_session)
+    delete_temp_session(phone)
 
-        # 🔥 DOIMIY SESSION
-        save_session(me.id, session_str)
-
-        # 🔥 KODNI O‘CHIRAMIZ
-        delete_login_code(phone)
-
-        # userni ro‘yxatga olamiz
-        conn = get_db()
-        cur = conn.cursor()
-        cur.execute("""
-            INSERT INTO authorized_users (user_id, phone, username)
-            VALUES (%s, %s, %s)
-            ON CONFLICT (user_id) DO NOTHING
-        """, (me.id, phone, me.username))
-        conn.commit()
-        conn.close()
-
-        return jsonify({"status": "ok"})
-
-    except Exception:
-        return jsonify({
-            "status": "error",
-            "message": "Kod noto‘g‘ri"
-        })
-
-
+    return jsonify({"status": "ok"})
 # =========================
 # VERIFY PASSWORD (2FA)
 # =========================
