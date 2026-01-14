@@ -147,7 +147,15 @@ def init_db():
         created_at TIMESTAMP DEFAULT NOW()
     );
     """)
-        
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS login_codes (
+        phone TEXT PRIMARY KEY,
+        phone_code_hash TEXT NOT NULL,
+        created_at BIGINT NOT NULL
+    );
+    """)
+    
     conn.commit()
     cur.close()
     conn.close()
