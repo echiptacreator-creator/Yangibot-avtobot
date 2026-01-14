@@ -86,6 +86,20 @@ def send_code():
         print("SEND_CODE ERROR:", repr(e))
         return jsonify({"status": "error", "message": str(e)})
 
+    sent = await client.send_code_request(phone)
+
+    if not sent:
+        return jsonify({
+            "status": "error",
+            "message": "Telegram kod yubormadi"
+        }), 500
+    
+    except FloodWaitError as e:
+        return jsonify({
+            "status": "error",
+            "message": f"{e.seconds} soniya kuting, Telegram blok qo‘ydi"
+        }), 429
+
 # =====================
 # VERIFY CODE
 # =====================
