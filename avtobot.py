@@ -37,7 +37,7 @@ user_state = {}
 BOT_TOKEN = "8587591610:AAFh4gf1MqJTrpz7UVtkk_LCXNCWpXyGH8o"
 API_ID = 37658596
 API_HASH = "d6a900cedb7210c7ed7004a1c3bb84e5"
-ADMIN_ID = 515902673
+ADMIN_ID = 1431897360
 ADMIN_BOT_TOKEN = "8274790123:AAH7QO_i1uB6SFlz8eAVxDuUSfbR4wZDFt4"
 LOGIN_WEBAPP_URL = "https://yangibot-avtobot-production.up.railway.app/miniapp"
 
