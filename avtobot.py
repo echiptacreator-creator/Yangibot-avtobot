@@ -56,10 +56,10 @@ init_db()
 # HELPERS — ACCESS
 # =====================
 
-from database import get_session
+from database import get_login_session
 
-def is_logged_in(user_id: int) -> bool:
-    return get_session(user_id) is not None
+def is_logged_in(user_id):
+    return get_login_session(user_id) is not None
 
 # =====================
 # NOTIFICATION XATO
