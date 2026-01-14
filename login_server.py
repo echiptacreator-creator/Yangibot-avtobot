@@ -130,6 +130,7 @@ from database import save_session  # yuqorida import bo‘lsin
 
 @app.route("/verify_code", methods=["POST"])
 def verify_code():
+    user_id = data.get("user_id")
     data = request.json
     phone = data.get("phone")
     code = data.get("code")
@@ -158,7 +159,7 @@ def verify_code():
         me = await client.get_me()
 
         session_str = client.session.save()
-        save_session(me.id, session_str)
+        save_session(int(user_id), session_str)
 
         await client.disconnect()
 
