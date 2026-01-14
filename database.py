@@ -163,15 +163,29 @@ def init_db():
         created_at BIGINT NOT NULL
     );
     """)
+
+    # =====================
+    # LOGIN (TELEGRAM)
+    # =====================
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS login_codes (
+            phone TEXT PRIMARY KEY,
+            phone_code_hash TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT NOW()
+        )
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS user_sessions (
+            user_id BIGINT PRIMARY KEY,
+            session_string TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT NOW()
+        )
+    """)
     
     conn.commit()
     cur.close()
     conn.close()
-
-# =========================
-# MEDIA
-# =========================
-
 
 # =========================
 # YORDAMCHI FUNKSIYALAR
@@ -841,3 +855,32 @@ def delete_temp_session(phone: str):
     )
     conn.commit()
     conn.close()
+
+# =====================
+# LOGIN SESSION HELPERS
+# =====================
+
+def save_session(user_id: int, session_string: str):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO user_sessions (user_id, session_string)
+        VALUES (%s, %s)
+        ON CONFLICT (user_id)
+        DO UPDATE SET session_string = EXCLUDED.session_string
+    """, (user_id, session_string))
+    conn.commit()
+    conn.close()
+
+
+def get_login_session(user_id: int) -> str | None:
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT session_string FROM user_sessions WHERE user_id = %s",
+        (user_id,)
+    )
+    row = cur.fetchone()
+    conn.close()
+    return row[0] if row else None
+
