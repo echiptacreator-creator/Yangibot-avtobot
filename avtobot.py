@@ -22,6 +22,9 @@ from database import (
 )
 from database import get_user_limits, get_user_usage
 from aiogram.types import ReplyKeyboardRemove
+from telethon.sessions import StringSession
+from database import get_session
+
 
 # =====================
 # STATE (XABAR YUBORISH)
@@ -296,15 +299,16 @@ async def choose_send_mode(message: Message):
     await start_group_selection(message)
 
 async def get_client(user_id: int):
-    session_file = os.path.join(SESSIONS_DIR, str(user_id))
+    session_str = get_session(user_id)
+    if not session_str:
+        raise Exception("Telegram login topilmadi")
 
-    client = TelegramClient(session_file, API_ID, API_HASH)
+    client = TelegramClient(
+        StringSession(session_str),
+        API_ID,
+        API_HASH
+    )
     await client.connect()
-
-    if not await client.is_user_authorized():
-        await client.disconnect()
-        raise Exception("Telegram login qilinmagan")
-
     return client
 
 # 🔥 GURUH YUKLAYMIZ
