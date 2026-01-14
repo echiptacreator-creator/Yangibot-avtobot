@@ -125,6 +125,14 @@ def init_db():
     )
     """)
 
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS temp_login_sessions (
+        phone TEXT PRIMARY KEY,
+        session TEXT NOT NULL,
+        created_at BIGINT NOT NULL
+    )
+    """)
+    
     # agar bo‘sh bo‘lsa — DEFAULT qiymat qo‘yamiz
     cur.execute("SELECT COUNT(*) FROM free_limits")
     if cur.fetchone()[0] == 0:
@@ -783,5 +791,53 @@ def delete_login_code(phone: str):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("DELETE FROM login_codes WHERE phone = %s", (phone,))
+    conn.commit()
+    conn.close()
+
+
+
+def save_temp_session(phone: str, session: str):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO temp_login_sessions (phone, session, created_at)
+        VALUES (%s, %s, %s)
+        ON CONFLICT (phone)
+        DO UPDATE SET
+            session = EXCLUDED.session,
+            created_at = EXCLUDED.created_at
+    """, (phone, session, int(time.time())))
+    conn.commit()
+    conn.close()
+
+
+def get_temp_session(phone: str, ttl: int = 300):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT session, created_at
+        FROM temp_login_sessions
+        WHERE phone = %s
+    """, (phone,))
+    row = cur.fetchone()
+    conn.close()
+
+    if not row:
+        return None
+
+    session, created_at = row
+    if time.time() - created_at > ttl:
+        return None
+
+    return session
+
+
+def delete_temp_session(phone: str):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "DELETE FROM temp_login_sessions WHERE phone = %s",
+        (phone,)
+    )
     conn.commit()
     conn.close()
