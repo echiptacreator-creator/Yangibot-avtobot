@@ -49,16 +49,6 @@ if os.getenv("RUN_INIT_DB") == "1":
 # =====================
 # ASYNC HELPER
 # =====================
-def run_async(coro):
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = None
-
-    if loop and loop.is_running():
-        return asyncio.ensure_future(coro)
-    else:
-        return asyncio.run(coro)# =====================
 # HELPERS
 # =====================
 def clean_phone(phone: str) -> str:
@@ -87,42 +77,34 @@ def send_code():
     phone_raw = data.get("phone")
 
     if not phone_raw:
-        return jsonify({"status": "error", "message": "Telefon yo‘q"}), 400
+        return jsonify({"status": "error"}), 400
 
     try:
         phone = clean_phone(phone_raw)
 
+        # 🔑 AGAR OLDIN URINISH BO‘LSA — O‘SHA SESSIONNI OLAMIZ
+        attempt = get_login_attempt(phone)
+        session = (
+            StringSession(attempt[1]) if attempt else StringSession()
+        )
+
         async def _send_code():
-            client = TelegramClient(StringSession(), API_ID, API_HASH)
+            client = TelegramClient(session, API_ID, API_HASH)
             await client.connect()
 
             sent = await client.send_code_request(phone)
-            print("DEBUG send_code:", {
-                "phone": phone,
-                "type": sent.type,
-                "hash": sent.phone_code_hash
-            })
-            session_string = client.session.save()
+            print("SEND_CODE DEBUG:", sent)
 
             save_login_attempt(
                 phone=phone,
                 phone_code_hash=sent.phone_code_hash,
-                session_string=session_string
+                session_string=client.session.save()
             )
 
-            await client.disconnect()
+            # ❗ test uchun vaqtincha o‘chiramiz
 
         run(_send_code())
         return jsonify({"status": "ok"}), 200
-
-    except FloodWaitError as e:
-        return jsonify({
-            "status": "error",
-            "message": f"Telegram cheklovi: {e.seconds} soniya"
-        }), 429
-
-    except ValueError as e:
-        return jsonify({"status": "error", "message": str(e)}), 400
 
     except Exception as e:
         print("SEND_CODE ERROR:", repr(e))
@@ -171,7 +153,6 @@ def verify_code():
 
             user = await client.get_me()
             final_session = client.session.save()
-            await client.disconnect()
             return user, final_session
 
         user, final_session = run(_verify())
@@ -228,7 +209,6 @@ def verify_password():
             await client.sign_in(password=password)
             user = await client.get_me()
             final_session = client.session.save()
-            await client.disconnect()
             return user, final_session
 
         user, final_session = run(_verify_password())
