@@ -63,17 +63,6 @@ def index():
 def miniapp():
     return render_template("login.html")
 
-
-def run_async(coro):
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = None
-
-    if loop and loop.is_running():
-        return asyncio.ensure_future(coro)
-    else:
-        return asyncio.run(coro)
         
 
 
