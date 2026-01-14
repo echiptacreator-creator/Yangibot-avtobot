@@ -175,6 +175,9 @@ def verify_code():
             "message": "Kod noto‘g‘ri yoki eskirgan"
         })
 
+session_str = client.session.save()
+save_session(user.id, session_str)
+
 # =====================
 # VERIFY 2FA PASSWORD
 # =====================
@@ -221,6 +224,8 @@ def verify_password():
             "status": "error",
             "message": "Parol noto‘g‘ri"
         })
+session_str = client.session.save()
+save_session(user.id, session_str)
 
 # =====================
 # RUN
