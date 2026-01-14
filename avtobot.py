@@ -45,7 +45,7 @@ API_ID = int(API_ID_RAW) if API_ID_RAW else None
 ADMIN_ID_RAW = os.getenv("ADMIN_ID")
 ADMIN_ID = int(ADMIN_ID_RAW) if ADMIN_ID_RAW else None
 
-LOGIN_WEBAPP_URL = "https://just-youthfulness-production-5d78.up.railway.app/miniapp"
+LOGIN_WEBAPP_URL = "https://yangibot-avtobot-production.up.railway.app/miniapp"
 
 
 bot = Bot(BOT_TOKEN)
