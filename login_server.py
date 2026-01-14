@@ -27,8 +27,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # =====================
 # INIT
 # =====================
-app = Flask(__name__, template_folder="templates")
-init_db()
+if os.getenv("RUN_INIT_DB") == "1":
+    init_db()
 
 # =====================
 # ASYNC HELPER
