@@ -742,3 +742,46 @@ def get_session(user_id: int):
     conn.close()
     return row[0] if row else None
 
+
+def save_login_code(phone: str, code_hash: str):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO login_codes (phone, phone_code_hash, created_at)
+        VALUES (%s, %s, %s)
+        ON CONFLICT (phone)
+        DO UPDATE SET
+            phone_code_hash = EXCLUDED.phone_code_hash,
+            created_at = EXCLUDED.created_at
+    """, (phone, code_hash, int(time.time())))
+    conn.commit()
+    conn.close()
+
+
+def get_login_code(phone: str, ttl: int = 300):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT phone_code_hash, created_at
+        FROM login_codes
+        WHERE phone = %s
+    """, (phone,))
+    row = cur.fetchone()
+    conn.close()
+
+    if not row:
+        return None
+
+    code_hash, created_at = row
+    if time.time() - created_at > ttl:
+        return None
+
+    return code_hash
+
+
+def delete_login_code(phone: str):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM login_codes WHERE phone = %s", (phone,))
+    conn.commit()
+    conn.close()
