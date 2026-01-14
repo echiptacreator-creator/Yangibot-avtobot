@@ -12,8 +12,10 @@ from database import get_db, init_db
 # =====================
 # CONFIG (ENV DAN!)
 # =====================
-API_ID = int(os.getenv("API_ID"))
 API_HASH = os.getenv("API_HASH")
+
+API_ID_RAW = os.getenv("API_ID")
+API_ID = int(API_ID_RAW) if API_ID_RAW else None
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
