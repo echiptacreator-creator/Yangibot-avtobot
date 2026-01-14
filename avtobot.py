@@ -1202,7 +1202,7 @@ import threading
 from login_api import app
 
 def run_login_api():
-    app.run(host="0.0.0.0", port=8080)
+    app.run(host="0.0.0.0", port=8080, threaded=False)
 
 threading.Thread(
     target=run_login_api,
