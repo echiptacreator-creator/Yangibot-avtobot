@@ -163,42 +163,35 @@ function showMessage(text, type="info") {
 /* =====================
    KOD YUBORISH
 ===================== */
-function sendCode() {
+function verifyCode() {
   const phone = document.getElementById("phone").value.trim();
+  const code = document.getElementById("code").value.trim();
 
-  if (!phone) {
-    showMessage("Telefon raqamni kiriting", "error");
-    return;
-  }
+  showMessage("🔍 Kod tekshirilmoqda...", "info");
 
-  const tgUser = tg.initDataUnsafe?.user;
-  if (!tgUser) {
-    showMessage("Telegram orqali ochilmagan", "error");
-    return;
-  }
-
-  fetch("/send_code", {
+  fetch("/verify_code", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {"Content-Type": "application/json"},
     body: JSON.stringify({
       phone: phone,
-      user_id: tgUser.id
+      code: code,
+      user_id: tg.initDataUnsafe.user.id
     })
-  })
+  })  // 🔥 MANA SHU QAVS YETISHMAYOTGAN EDI
   .then(r => r.json())
   .then(data => {
     if (data.status === "ok") {
-      document.getElementById("step-phone").classList.add("hidden");
-      document.getElementById("step-code").classList.remove("hidden");
-      showMessage("📩 Kod yuborildi, SMS ni tekshiring", "success");
-      startResendTimer(); // 🔥 timer
+      showMessage("✅ Muvaffaqiyatli kirdingiz.", "success");
+      setTimeout(() => tg.close(), 1200);
+    } else if (data.status === "2fa_required") {
+      document.getElementById("step-code").classList.add("hidden");
+      document.getElementById("step-password").classList.remove("hidden");
+      showMessage("🔐 Ikki bosqichli himoya yoqilgan. Parolni kiriting.", "info");
     } else {
-      showMessage(data.message || "❌ Kod yuborilmadi", "error");
+      showMessage("❌ Kod noto‘g‘ri yoki eskirgan.", "error");
     }
   })
-  .catch(() => {
-    showMessage("❌ Server bilan bog‘lanib bo‘lmadi", "error");
-  });
+  .catch(() => showMessage("❌ Server xatosi.", "error"));
 }
 
 /* =====================
