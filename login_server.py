@@ -17,6 +17,14 @@ from database import (
     save_user,
     save_user_session
 )
+from telethon import TelegramClient
+from telethon.sessions import StringSession
+from telethon.errors import (
+    PhoneCodeInvalidError,
+    SessionPasswordNeededError,
+    PasswordHashInvalidError
+)
+
 
 # =====================
 # CONFIG
