@@ -1,3 +1,6 @@
+# =====================
+# IMPORTS
+# =====================
 import os
 import asyncio
 from flask import Flask, request, jsonify, render_template
@@ -5,27 +8,32 @@ from telethon import TelegramClient
 from telethon.sessions import StringSession
 from telethon.errors import (
     PhoneCodeInvalidError,
-    SessionPasswordNeededError
+    SessionPasswordNeededError,
+    FloodWaitError
 )
-from database import get_db, init_db
+
 from database import (
+    get_db,
+    init_db,
     save_temp_session, get_temp_session, delete_temp_session,
     save_login_code, get_login_code, delete_login_code,
     save_session
 )
 
 # =====================
-# CONFIG (ENV DAN!)
+# CONFIG
 # =====================
 API_HASH = os.getenv("API_HASH")
-
 API_ID_RAW = os.getenv("API_ID")
 API_ID = int(API_ID_RAW) if API_ID_RAW else None
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# =====================
+# FLASK APP — SHART!
+# =====================
+app = Flask(__name__, template_folder="templates")
 
 # =====================
-# INIT
+# INIT DB (FAQAT AGAR KERAK BO‘LSA)
 # =====================
 if os.getenv("RUN_INIT_DB") == "1":
     init_db()
@@ -34,11 +42,27 @@ if os.getenv("RUN_INIT_DB") == "1":
 # ASYNC HELPER
 # =====================
 def run_async(coro):
-    return asyncio.get_event_loop().run_until_complete(coro)
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+
+    if loop and loop.is_running():
+        return asyncio.ensure_future(coro)
+    else:
+        return asyncio.run(coro)
 
 # =====================
 # ROUTES
 # =====================
+@app.route("/")
+def index():
+    return "LOGIN SERVER WORKING"
+
+@app.route("/miniapp")
+def miniapp():
+    return render_template("login.html")
+
 
 def run_async(coro):
     try:
@@ -51,15 +75,6 @@ def run_async(coro):
     else:
         return asyncio.run(coro)
         
-@app.route("/")
-def index():
-    return "LOGIN SERVER WORKING"
-
-@app.route("/miniapp")
-def miniapp():
-    return render_template("login.html")
-
-
 
 
 @app.route("/send_code", methods=["POST"])
