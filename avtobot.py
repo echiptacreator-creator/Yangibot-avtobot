@@ -52,10 +52,6 @@ bot = Bot(BOT_TOKEN)
 dp = Dispatcher()
 init_db()
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SESSIONS_DIR = os.path.join(BASE_DIR, "sessions")
-os.makedirs(SESSIONS_DIR, exist_ok=True)
-
 # =====================
 # HELPERS — ACCESS
 # =====================
