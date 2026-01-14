@@ -88,7 +88,6 @@ def get_subscription(user_id: int):
         "status": status
     }
 
-
 def subscription_status(user_id: int):
     sub = get_subscription(user_id)
     if not sub:
