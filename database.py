@@ -138,6 +138,15 @@ def init_db():
         ALTER TABLE subscriptions
         ADD COLUMN IF NOT EXISTS last_notify DATE;
     """)
+
+    #Telegram session
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS telegram_sessions (
+        user_id BIGINT PRIMARY KEY,
+        session TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+    );
+    """)
         
     conn.commit()
     cur.close()
@@ -700,4 +709,28 @@ def get_campaign(campaign_id: int):
         "paused": row[8] == "paused",
         "active": row[8] == "active"
     }
+
+def save_session(user_id: int, session_str: str):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO telegram_sessions (user_id, session)
+        VALUES (%s, %s)
+        ON CONFLICT (user_id)
+        DO UPDATE SET session = EXCLUDED.session
+    """, (user_id, session_str))
+    conn.commit()
+    conn.close()
+
+
+def get_session(user_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT session FROM telegram_sessions
+        WHERE user_id = %s
+    """, (user_id,))
+    row = cur.fetchone()
+    conn.close()
+    return row[0] if row else None
 
