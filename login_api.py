@@ -103,7 +103,9 @@ def verify_code():
         return ("ok", me, final_session)
 
     try:
-        result = asyncio.run(_verify())
+        import asyncio
+        loop = asyncio.get_event_loop()
+        result = loop.run_until_complete(_verify())
     except Exception as e:
         print("VERIFY_CODE CRASH:", e)
         return jsonify({
