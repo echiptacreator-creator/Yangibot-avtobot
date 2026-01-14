@@ -25,8 +25,7 @@ from database import (
 # CONFIG
 # =====================
 
-API_ID_RAW = os.getenv("API_ID")
-API_ID = int(API_ID_RAW) if API_ID_RAW else None
+ADMIN_BOT_TOKEN = os.getenv("ADMIN_BOT_TOKEN")
 
 ADMIN_ID_RAW = os.getenv("ADMIN_ID")
 ADMIN_ID = int(ADMIN_ID_RAW) if ADMIN_ID_RAW else None
