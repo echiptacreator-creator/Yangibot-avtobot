@@ -24,7 +24,10 @@ from database import (
 # =====================
 # CONFIG
 # =====================
-ADMIN_ID = 515902673
+ADMIN_ID_RAW = os.getenv("ADMIN_ID")
+ADMIN_ID = int(ADMIN_ID_RAW) if ADMIN_ID_RAW else None
+ADMIN_BOT_TOKEN = os.getenv("ADMIN_BOT_TOKEN")
+
 ADMIN_BOT_TOKEN = "8455652640:AAE0Mf0haSpP_8yCjZTCKAqGQAcVF4kf02s"
 PRICE = 30000
 
