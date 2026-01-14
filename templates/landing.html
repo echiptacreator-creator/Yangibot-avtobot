@@ -1,147 +1,212 @@
 <!DOCTYPE html>
 <html lang="uz">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Avtopost Taxi — Shafyorlar uchun qulay bot</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Avtopost Taxi — Shafyorlar uchun aqlli bot</title>
 
-    <style>
-        * {
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
-        }
+<style>
+:root {
+    --bg1: #0b1320;
+    --bg2: #111827;
+    --accent: #00e676;
+    --text: #ffffff;
+    --muted: #b6c2cf;
+}
 
-        body {
-            margin: 0;
-            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-            color: #fff;
-        }
+* {
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+}
 
-        .container {
-            max-width: 420px;
-            margin: auto;
-            padding: 24px;
-        }
+body {
+    margin: 0;
+    background: radial-gradient(circle at top, #1f2937, #020617);
+    color: var(--text);
+}
 
-        .hero {
-            text-align: center;
-            margin-top: 20px;
-        }
+.container {
+    max-width: 420px;
+    margin: auto;
+    padding: 22px;
+}
 
-        .hero h1 {
-            font-size: 26px;
-            margin-bottom: 10px;
-        }
+/* HERO */
+.hero {
+    text-align: center;
+    padding: 30px 10px 20px;
+}
 
-        .hero p {
-            font-size: 15px;
-            color: #d1e9ff;
-        }
+.hero h1 {
+    font-size: 28px;
+    line-height: 1.2;
+    margin-bottom: 12px;
+}
 
-        .card {
-            background: rgba(255,255,255,0.08);
-            border-radius: 16px;
-            padding: 18px;
-            margin-top: 18px;
-        }
+.hero p {
+    font-size: 15px;
+    color: var(--muted);
+}
 
-        .feature {
-            display: flex;
-            align-items: flex-start;
-            margin-bottom: 14px;
-        }
+/* GLASS CARD */
+.card {
+    margin-top: 22px;
+    padding: 20px;
+    border-radius: 20px;
+    background: linear-gradient(
+        180deg,
+        rgba(255,255,255,0.08),
+        rgba(255,255,255,0.02)
+    );
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.08);
+}
 
-        .feature span {
-            font-size: 20px;
-            margin-right: 10px;
-        }
+/* FEATURE */
+.feature {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 16px;
+}
 
-        .feature p {
-            margin: 0;
-            font-size: 14px;
-            line-height: 1.4;
-        }
+.icon {
+    min-width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: rgba(0,230,118,0.15);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
 
-        .cta {
-            margin-top: 22px;
-            text-align: center;
-        }
+.feature b {
+    display: block;
+    font-size: 15px;
+    margin-bottom: 3px;
+}
 
-        .cta a {
-            display: block;
-            background: #00c853;
-            color: #000;
-            text-decoration: none;
-            padding: 14px;
-            border-radius: 14px;
-            font-weight: 700;
-            font-size: 16px;
-        }
+.feature span {
+    font-size: 13px;
+    color: var(--muted);
+}
 
-        .cta small {
-            display: block;
-            margin-top: 10px;
-            font-size: 12px;
-            color: #cfe9ff;
-        }
+/* CTA */
+.cta {
+    margin-top: 26px;
+}
 
-        .footer {
-            text-align: center;
-            margin-top: 30px;
-            font-size: 12px;
-            color: #cfd8dc;
-        }
-    </style>
+.cta a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-decoration: none;
+    padding: 15px;
+    font-size: 17px;
+    font-weight: 700;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #00e676, #00c853);
+    color: #04140a;
+    box-shadow: 0 10px 30px rgba(0,230,118,0.35);
+}
+
+.cta small {
+    display: block;
+    margin-top: 10px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+}
+
+/* TRUST */
+.trust {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+}
+
+/* FOOTER */
+.footer {
+    margin-top: 30px;
+    text-align: center;
+    font-size: 11px;
+    color: #9aa4b2;
+}
+</style>
 </head>
+
 <body>
 
 <div class="container">
 
+    <!-- HERO -->
     <div class="hero">
         <h1>🚕 Avtopost Taxi Bot</h1>
         <p>
-            Shafyorlar uchun maxsus bot — buyurtmalarni <b>avtomatik</b> joylaydi va
-            sizni ortiqcha ovora qilmaydi
+            Shafyorlar uchun maxsus bot — buyurtmalarni
+            <b>avtomatik joylaydi</b> va sizga
+            <b>ko‘proq mijoz</b> olib keladi
         </p>
     </div>
 
+    <!-- FEATURES -->
     <div class="card">
+
         <div class="feature">
-            <span>⚡</span>
-            <p><b>Avtomatik e’lonlar</b><br>
-            Guruhlarga buyurtmalarni o‘zi joylaydi</p>
+            <div class="icon">⚡</div>
+            <div>
+                <b>Avtomatik postlar</b>
+                <span>Buyurtmalar guruhlarga o‘zi joylanadi</span>
+            </div>
         </div>
 
         <div class="feature">
-            <span>⏱️</span>
-            <p><b>Vaqtni tejaydi</b><br>
-            Har safar qo‘lda yozish shart emas</p>
+            <div class="icon">⏱️</div>
+            <div>
+                <b>Vaqtni tejaydi</b>
+                <span>Qo‘lda yozish va spam yo‘q</span>
+            </div>
         </div>
 
         <div class="feature">
-            <span>📍</span>
-            <p><b>Ko‘proq mijoz</b><br>
-            Buyurtmalar ko‘proq odamga yetadi</p>
+            <div class="icon">📍</div>
+            <div>
+                <b>Ko‘proq buyurtma</b>
+                <span>E’lonlar ko‘proq odamga yetadi</span>
+            </div>
         </div>
 
         <div class="feature">
-            <span>🔒</span>
-            <p><b>Xavfsiz va ishonchli</b><br>
-            Telegram orqali ishlaydi</p>
+            <div class="icon">🔒</div>
+            <div>
+                <b>Xavfsiz ishlash</b>
+                <span>Telegram qoidalariga mos</span>
+            </div>
         </div>
+
     </div>
 
+    <!-- CTA -->
     <div class="cta">
         <a href="https://t.me/shafyorrobot">
             🚀 Botni ishga tushirish
         </a>
         <small>
-            Ulanish bepul • Oson • 1 daqiqa
+            Bepul ishlatib ko'rish • Oson sozlash • Barchasi 1 daqiqada
         </small>
     </div>
 
+    <!-- TRUST -->
+    <div class="trust">
+        🔐 Shaxsiy ma’lumotlar saqlanmaydi • 24/7 ishlaydi
+    </div>
+
+    <!-- FOOTER -->
     <div class="footer">
-        © Avtopost Taxi • Shafyorlar uchun aqlli yechim
+        © Avtopost Taxi — Shafyorlar uchun aqlli avtomatika
     </div>
 
 </div>
