@@ -25,7 +25,7 @@ from database import (
 # CONFIG
 # =====================
 
-ADMIN_BOT_TOKEN = "8455652640:AAE0Mf0haSpP_8yCjZTCKAqGQAcVF4kf02s"
+ADMIN_BOT_TOKEN = "8485200508:AAEIwbb9HpGBUX_mWPGVplpxNRoXXnlSOrU"
 ADMIN_ID = 515902673
 
 
