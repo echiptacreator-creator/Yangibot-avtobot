@@ -221,8 +221,11 @@ function verifyCode() {
   fetch("/verify_code", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ phone, code })
-  })
+    body: JSON.stringify({
+      phone: phone,
+      code: code,
+      user_id: Telegram.WebApp.initDataUnsafe.user.id
+    })
   .then(r => r.json())
   .then(data => {
     if (data.status === "ok") {
