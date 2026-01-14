@@ -785,7 +785,7 @@ def get_login_code(phone: str, ttl: int = 300):
         return None
 
     code_hash, created_at = row
-    if time.time() - created_at > ttl:
+    if (datetime.utcnow() - created_at).total_seconds() > ttl:
         return None
 
     return code_hash
