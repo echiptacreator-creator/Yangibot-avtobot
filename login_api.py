@@ -87,25 +87,34 @@ def verify_password():
     password = request.json.get("password")
 
     async def _verify():
-    # 1️⃣ vaqtinchalik phone-session
-    temp_session = os.path.join(SESSIONS_DIR, phone.replace("+", ""))
-    client = TelegramClient(temp_session, API_ID, API_HASH)
+        # 1️⃣ vaqtinchalik phone-session
+        temp_session = os.path.join(SESSIONS_DIR, phone.replace("+", ""))
+        client = TelegramClient(temp_session, API_ID, API_HASH)
 
-    await client.connect()
-    await client.sign_in(password=password)
+        await client.connect()
+        await client.sign_in(password=password)
 
-    me = await client.get_me()
-    await client.disconnect()
+        me = await client.get_me()
+        await client.disconnect()
 
-    # 2️⃣ ASOSIY session — USER_ID bilan
-    final_session = os.path.join(SESSIONS_DIR, str(me.id))
-    client = TelegramClient(final_session, API_ID, API_HASH)
+        # 2️⃣ asosiy session — USER_ID bilan
+        final_session = os.path.join(SESSIONS_DIR, str(me.id))
+        client = TelegramClient(final_session, API_ID, API_HASH)
 
-    await client.connect()
-    client.session.save()
-    await client.disconnect()
+        await client.connect()
+        client.session.save()   # ❗ argument YO‘Q
+        await client.disconnect()
 
-    return me
+        return me
+
+    try:
+        me = asyncio.run(_verify())
+        return jsonify({"status": "ok"})
+
+    except Exception as e:
+        print("VERIFY_PASSWORD ERROR:", repr(e))
+        return jsonify({"status": "error", "message": str(e)})
+
 
 
 @app.route("/")
