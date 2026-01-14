@@ -62,7 +62,7 @@ def clean_phone(phone: str) -> str:
 # =====================
 @app.route("/")
 def index():
-    return "LOGIN SERVER WORKING"
+    return render_template("landing.html")
 
 @app.route("/miniapp")
 def miniapp():
