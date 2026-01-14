@@ -86,7 +86,7 @@ def send_code():
             if await client.is_user_authorized():
                 await client.log_out()
 
-            sent = await client.send_code_request(phone)
+            sent = await client.send_code_request(phone, force_sms=True)
             print("SEND_CODE DEBUG:", sent)
 
             save_login_attempt(
