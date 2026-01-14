@@ -16,7 +16,6 @@ def init_db():
     conn = get_db()
     cur = conn.cursor()
 
-    cur.execute("DROP TABLE IF EXISTS login_codes;")
     # =========================
     # LOGIN QILGAN USERLAR
     # =========================
