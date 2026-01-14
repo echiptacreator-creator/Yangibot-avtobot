@@ -97,6 +97,11 @@ def send_code():
             await client.connect()
 
             sent = await client.send_code_request(phone)
+            print("DEBUG send_code:", {
+                "phone": phone,
+                "type": sent.type,
+                "hash": sent.phone_code_hash
+            })
             session_string = client.session.save()
 
             save_login_attempt(
