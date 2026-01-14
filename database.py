@@ -164,17 +164,6 @@ def init_db():
     );
     """)
 
-    # =====================
-    # LOGIN (TELEGRAM)
-    # =====================
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS login_codes (
-            phone TEXT PRIMARY KEY,
-            phone_code_hash TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT NOW()
-        )
-    """)
-
     cur.execute("""
         CREATE TABLE IF NOT EXISTS user_sessions (
             user_id BIGINT PRIMARY KEY,
