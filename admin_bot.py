@@ -26,7 +26,7 @@ from database import (
 # =====================
 
 ADMIN_BOT_TOKEN = "8274790123:AAH7QO_i1uB6SFlz8eAVxDuUSfbR4wZDFt4"
-ADMIN_ID = 515902673
+ADMIN_ID = 1431897360
 
 
 bot = Bot(ADMIN_BOT_TOKEN)
