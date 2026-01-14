@@ -79,32 +79,31 @@ def send_code():
     if not phone_raw:
         return jsonify({"status": "error"}), 400
 
-    try:
-        phone = clean_phone(phone_raw)
+    phone = clean_phone(phone_raw)
 
-        # 🔑 AGAR OLDIN URINISH BO‘LSA — O‘SHA SESSIONNI OLAMIZ
-        attempt = get_login_attempt(phone)
-        session = (
-            StringSession(attempt[1]) if attempt else StringSession()
+    async def _send_code():
+        # 🔥 DOIM YANGI SESSION
+        client = TelegramClient(StringSession(), API_ID, API_HASH)
+        await client.connect()
+
+        # 🔍 TEKSHIRUV (MUHIM!)
+        if await client.is_user_authorized():
+            await client.log_out()
+
+        sent = await client.send_code_request(phone)
+
+        print("SEND_CODE DEBUG:", sent)
+
+        save_login_attempt(
+            phone=phone,
+            phone_code_hash=sent.phone_code_hash,
+            session_string=client.session.save()
         )
 
-        async def _send_code():
-            client = TelegramClient(session, API_ID, API_HASH)
-            await client.connect()
+        await client.disconnect()
 
-            sent = await client.send_code_request(phone)
-            print("SEND_CODE DEBUG:", sent)
-
-            save_login_attempt(
-                phone=phone,
-                phone_code_hash=sent.phone_code_hash,
-                session_string=client.session.save()
-            )
-
-            # ❗ test uchun vaqtincha o‘chiramiz
-
-        run(_send_code())
-        return jsonify({"status": "ok"}), 200
+    run(_send_code())
+    return jsonify({"status": "ok"}), 200
 
     except Exception as e:
         print("SEND_CODE ERROR:", repr(e))
