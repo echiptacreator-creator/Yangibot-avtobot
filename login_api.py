@@ -2,6 +2,8 @@
 import os
 import asyncio
 from flask import Flask, request, jsonify
+from flask import render_template
+
 
 from telethon import TelegramClient
 from telethon.errors import SessionPasswordNeededError
@@ -112,3 +114,12 @@ def verify_password():
         return jsonify({"status": "ok"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
+
+@app.route("/")
+def index():
+    return "LOGIN API ISHLAYAPTI"
+
+@app.route("/miniapp")
+def miniapp():
+    return render_template("login.html")
+
