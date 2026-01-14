@@ -85,7 +85,7 @@ def send_code():
             await client.disconnect()
 
     try:
-        phone_code_hash = run_async(_send())
+        phone_code_hash = asyncio.run(_send())
         save_login_code(phone, phone_code_hash)
         return jsonify({"status": "ok"}), 200
 
@@ -142,7 +142,7 @@ def verify_code():
             await client.disconnect()
 
     try:
-        result = run_async(_verify())
+        result = asyncio.run(_verify())
         if result[0] == "2fa_required":
             return jsonify({"status": "2fa_required"})
 
