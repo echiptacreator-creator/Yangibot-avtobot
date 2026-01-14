@@ -76,6 +76,7 @@ def send_code():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route("/verify_code", methods=["POST"])
+
 def verify_code():
     phone = request.json.get("phone")
     code = request.json.get("code")
