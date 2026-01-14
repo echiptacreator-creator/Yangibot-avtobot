@@ -3,6 +3,7 @@ import psycopg2
 from datetime import date
 import json
 import time
+from datetime import datetime
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -161,7 +162,7 @@ def init_db():
     CREATE TABLE IF NOT EXISTS login_codes (
         phone TEXT PRIMARY KEY,
         phone_code_hash TEXT NOT NULL,
-        created_at BIGINT NOT NULL
+        created_at TIMESTAMP DEFAULT NOW()
     );
     """)
 
@@ -755,12 +756,12 @@ def get_session(user_id: int):
     return row[0] if row else None
 
 
-def save_login_code(phone: str, code_hash: str):
+def save_login_code(phone: str, phone_code_hash: str):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
-        INSERT INTO login_codes (phone, phone_code_hash, created_at)
-        VALUES (%s, %s, NOW())
+        INSERT INTO login_codes (phone, phone_code_hash)
+        VALUES (%s, %s)
         ON CONFLICT (phone)
         DO UPDATE SET
             phone_code_hash = EXCLUDED.phone_code_hash,
