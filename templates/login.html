@@ -164,10 +164,18 @@ function showMsg(text, type="info") {
 
 async function sendCode() {
   const phone = phoneEl.value.trim();
-  const user = tg.initDataUnsafe?.user;
+  const tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user;
 
-  if (!phone || !user) {
-    showMsg("❌ Telefon yoki Telegram user topilmadi", "error");
+  if (!tgUser) {
+    showMsg(
+      "❌ Mini App bot orqali ochilmagan.\nIltimos, botdagi tugma orqali kiring.",
+      "error"
+    );
+    return;
+  }
+
+  if (!phone) {
+    showMsg("❌ Telefon raqamni kiriting", "error");
     return;
   }
 
@@ -179,7 +187,7 @@ async function sendCode() {
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
         phone,
-        user_id: user.id
+        user_id: tgUser.id
       })
     });
 
@@ -188,7 +196,6 @@ async function sendCode() {
     if (data.status === "ok") {
       stepPhone.classList.add("hidden");
       stepCode.classList.remove("hidden");
-      stepCode.classList.add("fade");
       showMsg("📩 Kod yuborildi, SMS ni tekshiring", "success");
     } else {
       showMsg(data.message || "❌ Kod yuborilmadi", "error");
