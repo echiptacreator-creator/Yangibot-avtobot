@@ -39,6 +39,18 @@ def run_async(coro):
 # =====================
 # ROUTES
 # =====================
+
+def run_async(coro):
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+
+    if loop and loop.is_running():
+        return asyncio.ensure_future(coro)
+    else:
+        return asyncio.run(coro)
+        
 @app.route("/")
 def index():
     return "LOGIN SERVER WORKING"
@@ -69,7 +81,7 @@ def send_code():
             await client.disconnect()
 
     try:
-        phone_code_hash = asyncio.run(_send())
+        phone_code_hash = run_async(_send())
         save_login_code(phone, phone_code_hash)
         return jsonify({"status": "ok"}), 200
 
@@ -126,7 +138,7 @@ def verify_code():
             await client.disconnect()
 
     try:
-        result = asyncio.run(_verify())
+        result = run_async(_verify())
         if result[0] == "2fa_required":
             return jsonify({"status": "2fa_required"})
 
