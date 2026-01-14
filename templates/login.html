@@ -167,10 +167,10 @@ function sendCode() {
 
   showMessage("📨 Kod yuborilmoqda, iltimos kuting...", "info");
 
-  fetch("/send_code", {
+  fetch("/login", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ phone })
+    body: JSON.stringify({ phone, code, password })
   })
   .then(r => r.json())
   .then(data => {
