@@ -23,8 +23,8 @@ from database import (
 # =====================
 # CONFIG
 # =====================
-API_ID = 25780325
-API_HASH = "2c4cb6eee01a46dc648114813042c453"
+API_ID = 37658596
+API_HASH = "d6a900cedb7210c7ed7004a1c3bb84e5"
 
 # =====================
 # ASYNC LOOP (BITTA!)
