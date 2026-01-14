@@ -1,6 +1,13 @@
 import os
 import psycopg2
 from datetime import datetime
+from database import (
+    init_db,
+    get_db,
+    is_logged_in_user,
+    get_all_subs,
+    activate_subscription
+)
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -637,3 +644,119 @@ def get_global_statistics():
         "premium_users": premium_users,
         "free_users": free_users
     }
+
+
+def is_logged_in_user(user_id: int) -> bool:
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT 1 FROM authorized_users WHERE user_id = %s",
+        (user_id,)
+    )
+    ok = cur.fetchone() is not None
+    conn.close()
+    return ok
+
+
+
+def get_all_subs():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT user_id, paid_until, status
+        FROM subscriptions
+    """)
+    rows = cur.fetchall()
+    conn.close()
+
+    subs = {}
+    for user_id, paid_until, status in rows:
+        subs[str(user_id)] = {
+            "paid_until": paid_until.isoformat() if paid_until else None,
+            "status": status
+        }
+    return subs
+
+
+
+def activate_subscription(user_id: int, days: int = 30):
+    from datetime import timedelta
+
+    paid_until = date.today() + timedelta(days=days)
+
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO subscriptions (user_id, paid_until, status)
+        VALUES (%s, %s, %s)
+        ON CONFLICT (user_id)
+        DO UPDATE SET
+            paid_until = EXCLUDED.paid_until,
+            status = EXCLUDED.status
+    """, (int(user_id), paid_until, "active"))
+
+    conn.commit()
+    conn.close()
+
+
+
+def get_free_limits():
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT max_campaigns, max_active, daily_limit
+        FROM free_limits
+        ORDER BY id DESC
+        LIMIT 1
+    """)
+    row = cur.fetchone()
+    conn.close()
+
+    return {
+        "max_campaigns": row[0],
+        "max_active": row[1],
+        "daily_limit": row[2]
+    }
+
+
+def find_user_any(query: str):
+    conn = get_db()
+    cur = conn.cursor()
+
+    q = query.strip()
+
+    # 1️⃣ USER ID
+    if q.isdigit():
+        cur.execute("""
+            SELECT user_id, phone, username
+            FROM authorized_users
+            WHERE user_id = %s
+        """, (int(q),))
+        row = cur.fetchone()
+        conn.close()
+        return row
+
+    # 2️⃣ TELEFON
+    if q.startswith("+"):
+        cur.execute("""
+            SELECT user_id, phone, username
+            FROM authorized_users
+            WHERE phone = %s
+        """, (q,))
+        row = cur.fetchone()
+        conn.close()
+        return row
+
+    # 3️⃣ USERNAME
+    if q.startswith("@"):
+        q = q[1:]
+
+    cur.execute("""
+        SELECT user_id, phone, username
+        FROM authorized_users
+        WHERE username ILIKE %s
+    """, (q,))
+    row = cur.fetchone()
+    conn.close()
+    return row
