@@ -45,36 +45,39 @@ def miniapp():
 # =====================
 @app.route("/send_code", methods=["POST"])
 def send_code():
-    phone = request.json.get("phone")
+    data = request.json
+    phone = data.get("phone")
 
     if not phone:
         return jsonify({"status": "error", "message": "Telefon raqam yo‘q"})
 
-    async def _send():
-        client = TelegramClient(StringSession(), API_ID, API_HASH)
-        await client.connect()
-        result = await client.send_code_request(phone)
-        await client.disconnect()
-        return result.phone_code_hash
-
     try:
-        phone_code_hash = asyncio.run(_send())
+        # ❗ async emas — oddiy sync ishlatamiz
+        client = TelegramClient("login_sender", API_ID, API_HASH)
+        client.connect()
 
-        # 🔐 HASH NI DB GA YOZAMIZ
+        sent = client.send_code_request(phone)
+
+        # DB ga yozamiz (created_at avtomatik)
         conn = get_db()
         cur = conn.cursor()
         cur.execute("""
             INSERT INTO login_codes (phone, phone_code_hash)
             VALUES (%s, %s)
             ON CONFLICT (phone)
-            DO UPDATE SET phone_code_hash = EXCLUDED.phone_code_hash
-        """, (phone, phone_code_hash))
+            DO UPDATE SET
+                phone_code_hash = EXCLUDED.phone_code_hash,
+                created_at = NOW()
+        """, (phone, sent.phone_code_hash))
         conn.commit()
         conn.close()
+
+        client.disconnect()
 
         return jsonify({"status": "ok"})
 
     except Exception as e:
+        print("SEND_CODE ERROR:", e)
         return jsonify({"status": "error", "message": str(e)})
 
 # =====================
