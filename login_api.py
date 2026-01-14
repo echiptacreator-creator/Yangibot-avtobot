@@ -16,27 +16,6 @@ API_ID = int(API_ID_RAW) if API_ID_RAW else None
 app = Flask(__name__)
 pending_codes = {}  # phone -> phone_code_hash
 
-
-@app.route("/send_code", methods=["POST"])
-def send_code():
-    phone = request.json.get("phone")
-
-    async def _send():
-        client = TelegramClient(StringSession(), API_ID, API_HASH)
-        await client.connect()
-        result = await client.send_code_request(phone)
-        await client.disconnect()
-        return result.phone_code_hash
-
-    try:
-        phone_code_hash = asyncio.run(_send())
-        save_login_code(phone, phone_code_hash)
-        return jsonify({"status": "ok"})
-
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
-
-
 @app.route("/send_code", methods=["POST"])
 def send_code():
     phone = request.json.get("phone")
