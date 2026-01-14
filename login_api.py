@@ -12,8 +12,14 @@ from database import get_db
 
 API_HASH = os.getenv("API_HASH")
 
+API_HASH = os.getenv("API_HASH")
+
 API_ID_RAW = os.getenv("API_ID")
 API_ID = int(API_ID_RAW) if API_ID_RAW else None
+
+LOGIN_WEBAPP_URL = os.getenv("LOGIN_WEBAPP_URL")
+
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SESSIONS_DIR = os.path.join(BASE_DIR, "sessions")
