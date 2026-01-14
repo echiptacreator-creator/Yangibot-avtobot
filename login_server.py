@@ -123,54 +123,7 @@ def verify_code():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
-@app.route("/verify_code", methods=["POST"])
-def verify_code():
-    phone = request.json.get("phone")
-    code = request.json.get("code")
-    password = request.json.get("password")  # agar bo‘lsa
 
-    phone_code_hash = get_login_code(phone)
-    session_string = get_temp_session(phone)
-
-    if not phone_code_hash or not session_string:
-        return jsonify({"status": "error", "message": "Sessiya eskirgan"}), 400
-
-    async def _verify():
-        client = TelegramClient(StringSession(session_string), API_ID, API_HASH)
-        await client.connect()
-
-        try:
-            await client.sign_in(
-                phone=phone,
-                code=code,
-                phone_code_hash=phone_code_hash
-            )
-        except SessionPasswordNeededError:
-            if not password:
-                return "2fa_required", None
-            await client.sign_in(password=password)
-
-        user = await client.get_me()
-        session = client.session.save()
-        await client.disconnect()
-        return user.id, session
-
-    try:
-        result = asyncio.run(_verify())
-        if result[0] == "2fa_required":
-            return jsonify({"status": "2fa_required"})
-
-        user_id, session_string = result
-        save_session(user_id, session_string)
-        delete_login_code(phone)
-        delete_temp_session(phone)
-        return jsonify({"status": "ok"})
-
-    except PhoneCodeInvalidError:
-        return jsonify({"status": "error", "message": "Kod noto‘g‘ri"})
-
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
 
 # =====================
 # RUN
