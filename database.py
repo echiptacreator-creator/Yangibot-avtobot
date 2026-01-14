@@ -770,12 +770,12 @@ def save_login_code(phone: str, code_hash: str):
     cur = conn.cursor()
     cur.execute("""
         INSERT INTO login_codes (phone, phone_code_hash, created_at)
-        VALUES (%s, %s, %s)
+        VALUES (%s, %s, NOW())
         ON CONFLICT (phone)
         DO UPDATE SET
             phone_code_hash = EXCLUDED.phone_code_hash,
-            created_at = EXCLUDED.created_at
-    """, (phone, code_hash, int(time.time())))
+            created_at = NOW()
+    """, (phone, phone_code_hash))
     conn.commit()
     conn.close()
 
