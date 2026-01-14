@@ -149,7 +149,9 @@
 
 <script>
 const tg = window.Telegram.WebApp;
-let resendTimer = null;
+tg.ready();
+
+  let resendTimer = null;
 let resendLeft = 60;
 
 function showMessage(text, type="info") {
@@ -164,10 +166,24 @@ function showMessage(text, type="info") {
 function sendCode() {
   const phone = document.getElementById("phone").value.trim();
 
+  if (!phone) {
+    showMessage("Telefon raqamni kiriting", "error");
+    return;
+  }
+
+  const tgUser = tg.initDataUnsafe?.user;
+  if (!tgUser) {
+    showMessage("Telegram orqali ochilmagan", "error");
+    return;
+  }
+
   fetch("/send_code", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ phone })
+    body: JSON.stringify({
+      phone: phone,
+      user_id: tgUser.id
+    })
   })
   .then(r => r.json())
   .then(data => {
@@ -175,6 +191,7 @@ function sendCode() {
       document.getElementById("step-phone").classList.add("hidden");
       document.getElementById("step-code").classList.remove("hidden");
       showMessage("📩 Kod yuborildi, SMS ni tekshiring", "success");
+      startResendTimer(); // 🔥 timer
     } else {
       showMessage(data.message || "❌ Kod yuborilmadi", "error");
     }
