@@ -61,6 +61,12 @@ def send_code():
 # =========================
 # VERIFY CODE
 # =========================
+from telethon.errors import (
+    PhoneCodeInvalidError,
+    PhoneCodeExpiredError,
+    SessionPasswordNeededError
+)
+
 @app.route("/verify_code", methods=["POST"])
 def verify_code():
     phone = request.json.get("phone")
@@ -68,32 +74,63 @@ def verify_code():
 
     session_str = get_temp_session(phone)
     if not session_str:
-        return jsonify({"status": "error", "message": "Kod eskirgan"})
+        return jsonify({
+            "status": "error",
+            "message": "Kod eskirgan, qayta yuboring"
+        })
 
     async def _verify():
         client = TelegramClient(StringSession(session_str), API_ID, API_HASH)
         await client.connect()
+
         try:
             await client.sign_in(phone=phone, code=code)
-        except SessionPasswordNeededError:
+        except PhoneCodeInvalidError:
             await client.disconnect()
-            return "2fa"
+            return ("error", "Kod noto‘g‘ri")
+        except PhoneCodeExpiredError:
+            await client.disconnect()
+            return ("error", "Kod eskirgan")
+        except SessionPasswordNeededError:
+            # 2FA holati — BU XATO EMAS
+            final_session = client.session.save()
+            await client.disconnect()
+            return ("2fa", final_session)
 
         me = await client.get_me()
         final_session = client.session.save()
         await client.disconnect()
-        return me, final_session
+        return ("ok", me, final_session)
 
-    result = asyncio.run(_verify())
+    try:
+        result = asyncio.run(_verify())
+    except Exception as e:
+        print("VERIFY_CODE CRASH:", e)
+        return jsonify({
+            "status": "error",
+            "message": "Server xatosi"
+        })
 
-    if result == "2fa":
+    # ===== NATIJANI TARTIB BILAN QAYTARAMIZ =====
+
+    if result[0] == "error":
+        return jsonify({
+            "status": "error",
+            "message": result[1]
+        })
+
+    if result[0] == "2fa":
+        # vaqtinchalik sessionni 2FA uchun saqlab qolamiz
+        save_temp_session(phone, result[1])
         return jsonify({"status": "2fa_required"})
 
-    me, final_session = result
-    save_session(me.id, final_session)
+    # OK holat
+    _, me, session_str = result
+    save_session(me.id, session_str)
     delete_temp_session(phone)
 
     return jsonify({"status": "ok"})
+    
 # =========================
 # VERIFY PASSWORD (2FA)
 # =========================
