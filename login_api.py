@@ -8,8 +8,10 @@ from telethon.errors import SessionPasswordNeededError
 
 from database import get_db
 
-API_ID = 25780325
-API_HASH = "2c4cb6eee01a46dc648114813042c453"
+API_HASH = os.getenv("API_HASH")
+
+API_ID_RAW = os.getenv("API_ID")
+API_ID = int(API_ID_RAW) if API_ID_RAW else None
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SESSIONS_DIR = os.path.join(BASE_DIR, "sessions")
