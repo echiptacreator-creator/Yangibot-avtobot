@@ -34,11 +34,11 @@ user_state = {}
 # =====================
 # CONFIG
 # =====================
-BOT_TOKEN = "8485200508:AAEIwbb9HpGBUX_mWPGVplpxNRoXXnlSOrU"
+BOT_TOKEN = "8455652640:AAE0Mf0haSpP_8yCjZTCKAqGQAcVF4kf02s"
 API_ID = 25780325
 API_HASH = "2c4cb6eee01a46dc648114813042c453"
 ADMIN_ID = 515902673
-ADMIN_BOT_TOKEN = "8455652640:AAE0Mf0haSpP_8yCjZTCKAqGQAcVF4kf02s"
+ADMIN_BOT_TOKEN = "8485200508:AAEIwbb9HpGBUX_mWPGVplpxNRoXXnlSOrU"
 LOGIN_WEBAPP_URL = "https://yangibot-avtobot-production.up.railway.app/miniapp"
 
 bot = Bot(BOT_TOKEN)
