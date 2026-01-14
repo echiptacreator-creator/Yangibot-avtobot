@@ -38,21 +38,26 @@ def send_code():
 
     try:
         session_str = asyncio.run(_send())
-        save_temp_session(phone, session_str)
-
-        # 🔥 MUHIM: frontend KUTADIGAN format
-        return jsonify({
-            "status": "ok",
-            "message": "Kod yuborildi"
-        })
-
     except Exception as e:
-        print("SEND_CODE ERROR:", e)
+        # ❌ agar bu joyga tushsa — SMS ham KELMAGAN bo‘ladi
+        print("SEND_CODE FAILED:", e)
         return jsonify({
             "status": "error",
             "message": "Kod yuborilmadi"
         })
 
+    # 🔥 MUHIM: BU JOYDA ENDI XATO BO‘LSA HAM SMS ALLAQACHON YUBORILGAN
+    try:
+        save_temp_session(phone, session_str)
+    except Exception as e:
+        # faqat log qilamiz
+        print("SAVE TEMP SESSION ERROR:", e)
+
+    # 🔥 FRONTENDGA DOIM OK QAYTARAMIZ
+    return jsonify({
+        "status": "ok",
+        "message": "Kod yuborildi"
+    })
 # =========================
 # VERIFY CODE
 # =========================
