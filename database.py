@@ -1,13 +1,6 @@
 import os
 import psycopg2
 from datetime import datetime
-from database import (
-    init_db,
-    get_db,
-    is_logged_in_user,
-    get_all_subs,
-    activate_subscription
-)
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -128,18 +121,6 @@ def init_db():
         );
     """)
     
-    campaign_id = create_campaign(
-        user_id=user_id,
-        text=state["text"],
-        groups=state["selected_ids"],
-        interval=state["interval"],
-        duration=state["duration"],
-        chat_id=cb.message.chat.id,
-        status_message_id=msg.message_id,
-        media_type=state.get("media_type"),
-        media_file_id=state.get("media_file_id")
-    )
-
     conn.commit()
     cur.close()
     conn.close()
