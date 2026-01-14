@@ -36,11 +36,29 @@ def run(coro):
     return loop.run_until_complete(coro)
 
 # =====================
-# APP
+# FLASK APP — SHART!
 # =====================
 app = Flask(__name__, template_folder="templates")
 
 # =====================
+# INIT DB (FAQAT AGAR KERAK BO‘LSA)
+# =====================
+if os.getenv("RUN_INIT_DB") == "1":
+    init_db()
+
+# =====================
+# ASYNC HELPER
+# =====================
+def run_async(coro):
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+
+    if loop and loop.is_running():
+        return asyncio.ensure_future(coro)
+    else:
+        return asyncio.run(coro)# =====================
 # HELPERS
 # =====================
 def clean_phone(phone: str) -> str:
