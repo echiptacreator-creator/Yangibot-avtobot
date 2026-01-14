@@ -118,7 +118,7 @@
       <div class="field">
         <input id="phone" placeholder="+998901234567" />
       </div>
-      <button onclick="sendCode()">Kod yuborish</button>
+      <button id="sendCodeBtn">Kod yuborish</button>
     </div>
 
     <!-- SMS KOD -->
@@ -126,7 +126,7 @@
       <div class="field">
         <input id="code" placeholder="SMS orqali kelgan kod" />
       </div>
-      <button onclick="verifyCode()">Tasdiqlash</button>
+      <button id="verifyCodeBtn">Tasdiqlash</button>
       <button id="resendBtn" class="secondary" onclick="resendCode()" disabled>
         Qayta kod yuborish (60s)
       </button>
@@ -145,11 +145,27 @@
 </div>
 
 <script>
-const tg = window.Telegram.WebApp;
-tg.ready();
+
+  const tg = window.Telegram.WebApp;
+  tg.ready();
+
+  document.addEventListener("DOMContentLoaded", () => {
+
+  document
+    .getElementById("sendCodeBtn")
+    .addEventListener("click", sendCode);
+
+  document
+    .getElementById("verifyCodeBtn")
+    .addEventListener("click", verifyCode);
+
+});
+  
+  const tg = window.Telegram.WebApp;
+  tg.ready();
 
   let resendTimer = null;
-let resendLeft = 60;
+  let resendLeft = 60;
 
 function showMessage(text, type="info") {
   const el = document.getElementById("message");
