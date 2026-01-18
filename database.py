@@ -795,3 +795,31 @@ def approve_payment(payment_id: int):
 
     conn.commit()
     conn.close()
+
+from datetime import date
+
+def increment_daily_usage(user_id: int, count: int = 1):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO daily_usage (user_id, usage_date, sent_count)
+        VALUES (%s, CURRENT_DATE, %s)
+        ON CONFLICT (user_id, usage_date)
+        DO UPDATE SET sent_count = daily_usage.sent_count + %s
+    """, (user_id, count, count))
+    conn.commit()
+    conn.close()
+
+
+def get_today_usage(user_id: int) -> int:
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT sent_count
+        FROM daily_usage
+        WHERE user_id = %s AND usage_date = CURRENT_DATE
+    """, (user_id,))
+    row = cur.fetchone()
+    conn.close()
+    return row[0] if row else 0
+
