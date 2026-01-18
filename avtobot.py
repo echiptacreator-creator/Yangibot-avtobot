@@ -578,7 +578,8 @@ async def handle_numbers(message: Message):
         if value < 1:
             await message.answer("❌ Davomiylik noto‘g‘ri")
             return
-
+        data["duration"] = value  # ✅ SHU YO‘Q EDI
+        
         # 🎛 AVVAL XABAR YUBORAMIZ
         msg = await message.answer(
             "🚀 *Kampaniya boshlandi*",
@@ -753,7 +754,7 @@ async def update_status_message(campaign: dict):
             chat_id=campaign["chat_id"],
             message_id=campaign["status_message_id"],
             text=text,
-            reply_markup=campaign_controls(campaign["id"], campaign["status"])
+            reply_markup=campaign_controls_keyboard(campaign["id"], campaign["status"])
         )
     except Exception:
         pass
@@ -969,7 +970,7 @@ async def my_campaigns(message: Message):
             f"📌 Status: {c['status']}"
         )
 
-        kb = campaign_controls(c["id"], c["status"])
+        kb = campaign_controls_keyboard(c["id"], c["status"])
 
         await message.answer(
             text,
