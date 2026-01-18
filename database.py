@@ -863,3 +863,51 @@ def reset_campaign_error(campaign_id: int):
     conn.commit()
     conn.close()
 
+import json
+
+def save_user_flow(user_id: int, step: str, data: dict):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO user_flows (user_id, step, data)
+        VALUES (%s, %s, %s)
+        ON CONFLICT (user_id)
+        DO UPDATE SET
+            step = EXCLUDED.step,
+            data = EXCLUDED.data,
+            updated_at = NOW()
+    """, (user_id, step, json.dumps(data)))
+    conn.commit()
+    conn.close()
+
+
+def get_user_flow(user_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT step, data
+        FROM user_flows
+        WHERE user_id = %s
+    """, (user_id,))
+    row = cur.fetchone()
+    conn.close()
+
+    if not row:
+        return None
+
+    step, data = row
+    return {
+        "step": step,
+        "data": data
+    }
+
+
+def clear_user_flow(user_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "DELETE FROM user_flows WHERE user_id = %s",
+        (user_id,)
+    )
+    conn.commit()
+    conn.close()
