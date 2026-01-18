@@ -575,35 +575,53 @@ async def handle_numbers(message: Message):
 
     # ⏳ DURATION — SHU JOYDA START QILAMIZ
     if step == "enter_duration":
-        if value < 1:
-            await message.answer("❌ Davomiylik noto‘g‘ri")
-            return
         data["duration"] = value
-
+    
+        # 1️⃣ STATUS XABARI (OLDINDAN)
+        status_msg = await bot.send_message(
+            chat_id=message.chat.id,
+            text="🚀 Kampaniya boshlanmoqda..."
+        )
+    
+        # 2️⃣ KAMPANIYA YARATAMIZ
         campaign_id = create_campaign(
-        user_id=user_id,
-        text=data.get("text", ""),
-        groups=data["selected_ids"],
-        interval=data["interval"],
-        duration=data["duration"],
-        chat_id=message.chat.id,
-        status_message_id=None,
-        media_type=data.get("media_type"),
-        media_file_id=data.get("media_file_id")
+            user_id=user_id,
+            text=data.get("text", ""),
+            groups=data["selected_ids"],
+            interval=data["interval"],
+            duration=data["duration"],
+            chat_id=message.chat.id,
+            status_message_id=status_msg.message_id,
+            media_type=data.get("media_type"),
+            media_file_id=data.get("media_file_id")
+        )
+    
+        clear_user_flow(user_id)
+    
+        # 3️⃣ STATUS XABARINI TO‘LDIRAMIZ
+        await bot.edit_message_text(
+            chat_id=message.chat.id,
+            message_id=status_msg.message_id,
+            text=build_campaign_status_text(campaign_id),
+            reply_markup=campaign_control_keyboard(campaign_id, "active")
+        )
+    
+        # 4️⃣ ISHGA TUSHIRAMIZ
+        asyncio.create_task(run_campaign(campaign_id))
+
+def build_campaign_status_text(campaign_id: int) -> str:
+    c = get_campaign(campaign_id)
+
+    return (
+        "🚀 *Kampaniya holati*\n\n"
+        f"📌 Status: {'🟢 Faol' if c['status']=='active' else c['status']}\n"
+        f"📍 Guruhlar: {len(c['groups'])}\n"
+        f"📊 Yuborildi: {c['sent_count']}\n\n"
+        f"⏱ Interval: {c['interval']} daqiqa\n"
+        f"⏳ Davomiylik: {c['duration']} daqiqa"
     )
-    
-    clear_user_flow(user_id)
-    
-    asyncio.create_task(run_campaign(campaign_id))
-    
-    # 🔥 MUHIM JOY
-    await bot.send_message(
-        chat_id=message.chat.id,
-        text="🚀 *Kampaniya boshlandi*",
-        reply_markup=campaign_control_keyboard(campaign_id, "active"),
-        parse_mode="Markdown"
-    )
-# =====================
+
+    # =====================
 # YUBORISHGA TAYYOR
 # =====================
 
@@ -938,6 +956,18 @@ async def handle_edit_input(message: Message):
         "✅ O‘zgarish saqlandi",
         reply_markup=campaign_control_keyboard(campaign_id, campaign["status"])
     )
+
+@dp.callback_query(F.data.startswith("camp_stats:"))
+async def camp_stats(cb: CallbackQuery):
+    campaign_id = int(cb.data.split(":")[1])
+
+    await cb.message.edit_text(
+        build_campaign_status_text(campaign_id),
+        reply_markup=campaign_control_keyboard(campaign_id, "active"),
+        parse_mode="Markdown"
+    )
+    await cb.answer()
+
 
 @dp.callback_query(F.data.startswith("camp_stats:"))
 async def camp_stats_handler(cb: CallbackQuery):
