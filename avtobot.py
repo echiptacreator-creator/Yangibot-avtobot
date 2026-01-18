@@ -763,7 +763,6 @@ def build_campaign_status_text(campaign_id: int) -> str:
         f"⏳ Davomiylik: {c['duration']} daqiqa"
     )
 
-
     try:
         await bot.edit_message_text(
             chat_id=campaign["chat_id"],
@@ -1008,15 +1007,23 @@ async def restart_campaign(cb: CallbackQuery):
 
 
 async def render_campaign(campaign_id: int):
-    c = get_campaign(campaign_id)
+    campaign = get_campaign(campaign_id)
 
-    await bot.edit_message_text(
-        chat_id=c["chat_id"],
-        message_id=c["status_message_id"],
-        text=build_campaign_status_text(campaign_id),
-        reply_markup=campaign_control_keyboard(campaign_id, c["status"]),
-        parse_mode="Markdown"
-    )
+    text = build_campaign_status_text(campaign_id)
+
+    try:
+        await bot.edit_message_text(
+            chat_id=campaign["chat_id"],
+            message_id=campaign["status_message_id"],
+            text=text,
+            reply_markup=campaign_control_keyboard(
+                campaign["id"], campaign["status"]
+            ),
+            parse_mode="Markdown"
+        )
+    except Exception as e:
+        print("Render error:", e)
+
 
 
 # =====================
