@@ -1022,3 +1022,22 @@ def reset_campaign_stats(campaign_id: int):
     """, (campaign_id,))
     conn.commit()
     conn.close()
+
+def get_all_campaigns():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT id, status
+        FROM campaigns
+    """)
+    rows = cur.fetchall()
+    conn.close()
+
+    return [
+        {
+            "id": row[0],
+            "status": row[1]
+        }
+        for row in rows
+    ]
+
