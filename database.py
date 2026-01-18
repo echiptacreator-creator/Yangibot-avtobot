@@ -980,8 +980,8 @@ def get_campaign_stats(campaign_id: int):
             status,
             sent_count,
             error_count,
-            interval,
-            duration,
+            interval_minutes,
+            duration_minutes,
             started_at
         FROM campaigns
         WHERE id = %s
