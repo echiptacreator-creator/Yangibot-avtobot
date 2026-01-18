@@ -575,61 +575,23 @@ async def handle_numbers(message: Message):
         )
         return
 
-    # ⏳ DURATION
-    if step == "enter_duration":
-        if value < 1:
-            await message.answer("❌ Davomiylik noto‘g‘ri")
-            return
-
-        data["duration"] = value
-        save_user_flow(user_id, "confirm_campaign", data)
-
-        await message.answer(
-            "🚀 Kampaniyani boshlashga tayyormisiz?",
-            reply_markup=InlineKeyboardMarkup(
-                inline_keyboard=[
-                    [
-                        InlineKeyboardButton(
-                            text="▶ Boshlash",
-                            callback_data="camp_start"
-                        ),
-                        InlineKeyboardButton(
-                            text="❌ Bekor qilish",
-                            callback_data="camp_cancel"
-                        )
-                    ]
-                ]
-            )
-        )
+    # ⏳ DURATION — SHU JOYDA START QILAMIZ
+if step == "enter_duration":
+    if value < 1:
+        await message.answer("❌ Davomiylik noto‘g‘ri")
         return
 
+    data["duration"] = value
 
-# =====================
-# KOMPANIYA HOLATI
-# =====================
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-
-@dp.callback_query(F.data == "camp_start")
-async def start_campaign(cb: CallbackQuery):
-    user_id = cb.from_user.id
-    flow = get_user_flow(user_id)
-
-    print("🔥 camp_start pressed", flow)
-
-    if not flow or flow["step"] != "confirm_campaign":
-        await cb.answer("❌ Kampaniya holati noto‘g‘ri", show_alert=True)
-        return
-
-    data = flow["data"]
-
+    # 🔥 KAMPANIYA YARATAMIZ
     campaign_id = create_campaign(
         user_id=user_id,
         text=data.get("text", ""),
         groups=data["selected_ids"],
         interval=data["interval"],
         duration=data["duration"],
-        chat_id=cb.message.chat.id,
-        status_message_id=cb.message.message_id,
+        chat_id=message.chat.id,
+        status_message_id=None,
         media_type=data.get("media_type"),
         media_file_id=data.get("media_file_id"),
         status="active"
@@ -637,15 +599,19 @@ async def start_campaign(cb: CallbackQuery):
 
     clear_user_flow(user_id)
 
+    # 🚀 ISHGA TUSHIRAMIZ
     asyncio.create_task(run_campaign(campaign_id))
 
-    await cb.message.edit_text(
-        "🚀 Kampaniya boshlandi",
-        reply_markup=campaign_control_keyboard(campaign_id, "active")
+    # 🎛 BOSHQARUV TUGMALARI BILAN XABAR
+    await message.answer(
+        "🚀 *Kampaniya boshlandi*",
+        reply_markup=campaign_control_keyboard(campaign_id, "active"),
+        parse_mode="Markdown"
     )
-    await cb.answer("Boshlandi")
+    return
 
 
+№ ===========================================
 
 def campaign_control_keyboard(campaign_id: int, status: str):
     buttons = []
@@ -682,15 +648,6 @@ def campaign_control_keyboard(campaign_id: int, status: str):
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
-
-# =====================
-# KOMPANIYA BEKOR QILISH
-# =====================
-@dp.callback_query(F.data == "camp_cancel")
-async def cancel_campaign(cb: CallbackQuery):
-    clear_user_flow(cb.from_user.id)
-    await cb.message.edit_text("❌ Kampaniya bekor qilindi")
-    await cb.answer()
 
 # =====================
 # YUBORISHGA TAYYOR
