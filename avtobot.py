@@ -613,42 +613,6 @@ if step == "enter_duration":
 
 № ===========================================
 
-def campaign_control_keyboard(campaign_id: int, status: str):
-    buttons = []
-
-    if status == "active":
-        buttons.append([
-            InlineKeyboardButton(
-                text="⏸ Pauza qilish",
-                callback_data=f"camp_pause:{campaign_id}"
-            )
-        ])
-    else:
-        buttons.append([
-            InlineKeyboardButton(
-                text="▶ Davom etish",
-                callback_data=f"camp_resume:{campaign_id}"
-            ),
-            InlineKeyboardButton(
-                text="✏️ Tahrirlash",
-                callback_data=f"camp_edit:{campaign_id}"
-            )
-        ])
-
-    buttons.append([
-        InlineKeyboardButton(
-            text="📊 Statistika",
-            callback_data=f"camp_stats:{campaign_id}"
-        ),
-        InlineKeyboardButton(
-            text="⛔ Yakunlash",
-            callback_data=f"camp_stop:{campaign_id}"
-        )
-    ])
-
-    return InlineKeyboardMarkup(inline_keyboard=buttons)
-
-
 # =====================
 # YUBORISHGA TAYYOR
 # =====================
