@@ -494,7 +494,7 @@ async def pick_group(cb: CallbackQuery):
 
 from database import get_user_flow, save_user_flow
 
-@dp.message(F.text)
+@dp.message(F.text & ~F.text.regexp(r"^\d+$"))
 async def handle_enter_text(message: Message):
     user_id = message.from_user.id
     flow = get_user_flow(user_id)
@@ -516,6 +516,7 @@ async def handle_enter_text(message: Message):
         "Masalan: `10`",
         parse_mode="Markdown"
     )
+
 
 @dp.message(F.photo | F.video)
 async def handle_media(message: Message):
