@@ -790,60 +790,6 @@ async def send_to_group(client, campaign, group_id):
 # =====================
 # KOMPANIYANI BOSHLASH
 # =====================
-@dp.callback_query(F.data == "camp_start")
-async def start_campaign(cb):
-    user_id = cb.from_user.id
-    state = user_state.get(user_id)
-
-    if not state or state.get("step") != "ready":
-        await cb.answer("Xatolik", show_alert=True)
-        return
-
-    # 🔒 LIMITLARNI TEKSHIRAMIZ (AVVAL!)
-    from database import get_user_limits, get_user_usage
-
-    limits = get_user_limits(user_id)
-
-    if limits.get("blocked"):
-        await cb.answer("⛔ Siz bloklangansiz.", show_alert=True)
-        return
-
-    usage = get_user_usage(user_id)
-
-    if usage["total_campaigns"] >= limits["max_campaigns"]:
-        await show_payment_offer(cb)
-        return
-
-    if usage["active_campaigns"] >= limits["max_active"]:
-        await cb.answer(
-            f"❌ Bir vaqtning o‘zida faol kampaniyalar limiti tugadi.\n"
-            f"Maksimal: {limits['max_active']}",
-            show_alert=True
-        )
-        return
-
-    # ✅ HAMMASI JOYIDA — ENDI BOSHLAYMIZ
-    msg = await cb.message.edit_text(
-        "🚀 Kampaniya ishga tushdi...\n📊 Yuborildi: 0"
-    )
-
-    campaign_id = create_campaign(
-        user_id=user_id,
-        text=state["text"],
-        groups=state["selected_ids"],
-        interval=state["interval"],
-        duration=state["duration"],
-        chat_id=cb.message.chat.id,
-        status_message_id=msg.message_id,
-        media_type=state.get("media_type"),
-        media_file_id=state.get("media_file_id")
-    )
-
-    asyncio.create_task(run_campaign(campaign_id))
-
-    user_state.pop(user_id, None)
-    await cb.answer()
-
 # =====================
 # ISHLAYAPTI
 # =====================
