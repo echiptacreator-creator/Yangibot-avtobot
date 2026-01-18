@@ -593,9 +593,9 @@ async def handle_numbers(message: Message):
             chat_id=message.chat.id,
             status_message_id=None,
             media_type=data.get("media_type"),
-            media_file_id=data.get("media_file_id"),
-            status="active"
+            media_file_id=data.get("media_file_id")
         )
+
 
         clear_user_flow(user_id)
 
