@@ -324,14 +324,9 @@ async def start_group_selection(message: Message):
 
     data = flow["data"]
 
-    try:
-        client = await get_client(user_id)
-    except Exception:
-        await message.answer("❌ Telegram login topilmadi")
-        return
+    client = await get_client(user_id)
 
     groups = {}
-
     async for d in client.iter_dialogs(limit=500):
         if d.is_group or (d.is_channel and getattr(d.entity, "megagroup", False)):
             groups[str(d.id)] = {
@@ -339,49 +334,14 @@ async def start_group_selection(message: Message):
                 "name": d.name
             }
 
-    if not groups:
-        await message.answer("❌ Sizda guruhlar yo‘q")
-        return
-
     data.update({
         "groups": groups,
         "selected_ids": [],
         "offset": 0
     })
 
-    save_user_flow(
-        user_id=user_id,
-        step="choose_group",
-        data=data
-    )
+    save_user_flow(user_id, "choose_group", data)
 
-    await show_group_page(message, user_id)
-
-    state = user_state.get(user_id)
-
-    if not state or state.get("step") != "choose_group":
-        return
-
-    try:
-        client = await get_client(user_id)
-    except Exception:
-        await message.answer("❌ Telegram login topilmadi")
-        return
-
-    dialogs = []
-    async for d in client.iter_dialogs(limit=500):
-        if d.is_group or (d.is_channel and getattr(d.entity, "megagroup", False)):
-            dialogs.append(d)
-
-    if not dialogs:
-        await message.answer("❌ Sizda guruhlar yo‘q")
-        return
-
-    state["groups"] = {str(d.id): d for d in dialogs}
-    state["selected_ids"] = []
-    state["offset"] = 0
-
-    # 🔥 INLINE TUGMALAR CHIQADI
     await show_group_page(message, user_id)
 
 
