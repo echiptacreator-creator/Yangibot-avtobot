@@ -220,24 +220,34 @@ async def logout(message: Message):
 # XABAR YUBORISH
 # =====================
 
+from database import save_user_flow, clear_user_flow
+
 @dp.message(F.text == "➕ Xabar yuborish")
 async def send_message_start(message: Message):
+    user_id = message.from_user.id
+
+    # eski flow bo‘lsa — tozalaymiz
+    clear_user_flow(user_id)
+
+    # yangi flow boshlaymiz
     save_user_flow(
-        user_id=message.from_user.id,
+        user_id=user_id,
         step="choose_mode",
         data={}
     )
 
+    keyboard = ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="📍 Bitta guruhga")],
+            [KeyboardButton(text="📍 Ko‘p guruhlarga")],
+            [KeyboardButton(text="⬅️ Bekor qilish")]
+        ],
+        resize_keyboard=True
+    )
+
     await message.answer(
         "Xabar yuborish rejimini tanlang:",
-        reply_markup=ReplyKeyboardMarkup(
-            keyboard=[
-                [KeyboardButton(text="📍 Bitta guruhga")],
-                [KeyboardButton(text="📍 Ko‘p guruhlarga")],
-                [KeyboardButton(text="⬅️ Bekor qilish")]
-            ],
-            resize_keyboard=True
-        )
+        reply_markup=keyboard
     )
 
 
