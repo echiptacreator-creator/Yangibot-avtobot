@@ -581,27 +581,28 @@ async def handle_numbers(message: Message):
         data["duration"] = value
 
         campaign_id = create_campaign(
-            user_id=user_id,
-            text=data.get("text", ""),
-            groups=data["selected_ids"],
-            interval=data["interval"],
-            duration=data["duration"],
-            chat_id=message.chat.id,
-            status_message_id=None,
-            media_type=data.get("media_type"),
-            media_file_id=data.get("media_file_id")
-        )
-        
-        clear_user_flow(user_id)
-        
-        asyncio.create_task(run_campaign(campaign_id))
-        
-        await message.answer(
-            "🚀 *Kampaniya boshlandi*",
-            reply_markup=campaign_control_keyboard(campaign_id, "active"),
-            parse_mode="Markdown"
-        )
-
+        user_id=user_id,
+        text=data.get("text", ""),
+        groups=data["selected_ids"],
+        interval=data["interval"],
+        duration=data["duration"],
+        chat_id=message.chat.id,
+        status_message_id=None,
+        media_type=data.get("media_type"),
+        media_file_id=data.get("media_file_id")
+    )
+    
+    clear_user_flow(user_id)
+    
+    asyncio.create_task(run_campaign(campaign_id))
+    
+    # 🔥 MUHIM JOY
+    await bot.send_message(
+        chat_id=message.chat.id,
+        text="🚀 *Kampaniya boshlandi*",
+        reply_markup=campaign_control_keyboard(campaign_id, "active"),
+        parse_mode="Markdown"
+    )
 # =====================
 # YUBORISHGA TAYYOR
 # =====================
