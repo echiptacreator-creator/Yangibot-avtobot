@@ -1238,6 +1238,19 @@ async def notify_admin_about_subscriptions():
                 f"📌 Status: expired",
                 parse_mode="Markdown"
             )
+async def daily_resume_worker():
+    while True:
+        await asyncio.sleep(60 * 60 * 24)
+
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE campaigns
+            SET status = 'active'
+            WHERE status = 'paused'
+        """)
+        conn.commit()
+        conn.close()
 
 
 # =====================
@@ -1249,6 +1262,7 @@ async def main():
 
     asyncio.create_task(subscription_watcher())
     asyncio.create_task(admin_notification_worker())
+    asyncio.create_task(daily_resume_worker())
 
     await restore_campaigns()
     await dp.start_polling(bot)
