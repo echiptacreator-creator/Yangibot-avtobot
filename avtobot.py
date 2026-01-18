@@ -720,8 +720,9 @@ async def run_campaign(campaign_id: int):
 
         # 3️⃣ PAUSE holati
         if campaign["status"] == "paused":
-            await asyncio.sleep(3)
+            await asyncio.sleep(5)
             continue
+
 
         # 4️⃣ Telethon client olish
         try:
