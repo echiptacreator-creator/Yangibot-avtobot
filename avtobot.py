@@ -257,12 +257,13 @@ async def send_message_start(message: Message):
 
 @dp.message(F.text == "⬅️ Bekor qilish")
 async def cancel_send(message: Message):
-    user_state.pop(message.from_user.id, None)
+    clear_user_flow(message.from_user.id)
 
     await message.answer(
         "❌ Amal bekor qilindi.",
         reply_markup=main_menu()
     )
+
     
 # =====================
 # REJIM TANLASH
