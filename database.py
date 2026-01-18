@@ -122,10 +122,12 @@ def init_db():
     """)
     
     cur.execute("""
-        ALTER TABLE payments
-        ADD COLUMN IF NOT EXISTS receipt_file_id TEXT,
-        ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP;
+    ALTER TABLE payments
+    ADD COLUMN IF NOT EXISTS receipt_file_id TEXT,
+    ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP;
+    
     """)
+    
     cur.execute("""
     CREATE TABLE IF NOT EXISTS daily_usage (
         user_id BIGINT NOT NULL,
@@ -133,12 +135,23 @@ def init_db():
         sent_count INTEGER DEFAULT 0,
         PRIMARY KEY (user_id, usage_date)
     );
+    
     """)
+    
     cur.execute("""
     ALTER TABLE campaigns
     ADD COLUMN IF NOT EXISTS error_count INTEGER DEFAULT 0;
+    
     """)
-
+    
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS user_flows (
+        user_id BIGINT PRIMARY KEY,
+        step TEXT NOT NULL,
+        data JSONB NOT NULL,
+        updated_at TIMESTAMP DEFAULT NOW()
+    );
+    """)
     
     conn.commit()
     cur.close()
