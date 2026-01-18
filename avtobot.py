@@ -586,6 +586,43 @@ async def cancel_campaign(cb):
 # YUBORISHGA TAYYOR
 # =====================
 
+async def send_to_group(client, campaign, group_id):
+    try:
+        if campaign["media_type"] in ("photo", "video"):
+            await client.send_file(
+                group_id,
+                campaign["media_file_id"],
+                caption=campaign["text"]
+            )
+        else:
+            await client.send_message(
+                group_id,
+                campaign["text"]
+            )
+
+        increment_sent_count(campaign["id"])
+        return True
+
+    except FloodWaitError as e:
+        await notify_user(
+            campaign["chat_id"],
+            f"⏳ FloodWait\n"
+            f"Guruh: {group_id}\n"
+            f"{e.seconds} soniya kutilmoqda"
+        )
+        await asyncio.sleep(e.seconds)
+        return False
+
+    except Exception as e:
+        await notify_user(
+            campaign["chat_id"],
+            f"❌ Xabar yuborilmadi\n"
+            f"Guruh: {group_id}\n"
+            f"Sabab: {str(e)}"
+        )
+        return False
+
+
 # =====================
 # KOMPANIYANI BOSHLASH
 # =====================
@@ -690,10 +727,19 @@ async def run_campaign(campaign_id: int):
             return
 
         # 6️⃣ Guruhlarga yuborish
-        for group_id in campaign["groups"]:
-            campaign = get_campaign(campaign_id)
-            if not campaign or campaign["status"] != "active":
-                break
+        # 6️⃣ Guruhlarga PARALLEL yuborish
+            tasks = []
+            
+            for group_id in campaign["groups"]:
+                tasks.append(
+                    send_to_group(client, campaign, group_id)
+                )
+            
+            results = await asyncio.gather(*tasks)
+            
+            # 7️⃣ Status xabarni yangilash
+            await update_status_message(get_campaign(campaign_id))
+
 
             try:
  # =========================
@@ -741,6 +787,7 @@ async def run_campaign(campaign_id: int):
 
         # 9️⃣ Interval kutish
         await asyncio.sleep(campaign["interval"] * 60)
+
 # =====================
 # STATUSNI YANGILASH
 # =====================
