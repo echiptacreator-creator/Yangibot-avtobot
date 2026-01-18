@@ -675,17 +675,15 @@ async def send_to_group(client, campaign, group_id):
 from database import get_campaign
 
 async def restore_campaigns():
-    campaigns = get_active_campaigns()
-
-    if not campaigns:
-        print("ℹ️ Faol kampaniyalar yo‘q")
-        return
-
-    print(f"🔄 {len(campaigns)} ta kampaniya tiklanmoqda")
+    campaigns = get_all_campaigns()
 
     for c in campaigns:
-        campaign_id = c["id"]
-        asyncio.create_task(run_campaign(campaign_id))
+        if c["status"] == "active":
+            # 🔒 restartdan keyin avtomatik yurmasin
+            update_campaign_status(c["id"], "paused")
+
+    print("🔒 All active campaigns set to paused after restart")
+
 
 
 async def run_campaign(campaign_id: int):
@@ -765,12 +763,24 @@ async def pause_campaign(cb: CallbackQuery):
 @dp.callback_query(F.data.startswith("camp_resume:"))
 async def resume_campaign(cb: CallbackQuery):
     campaign_id = int(cb.data.split(":")[1])
-    update_campaign_status(campaign_id, "active")
 
-    await cb.message.edit_reply_markup(
-        reply_markup=campaign_control_keyboard(campaign_id, "active")
-    )
-    await cb.answer("▶ Davom etmoqda")
+    c = get_campaign(campaign_id)
+    if not c:
+        await cb.answer("Kampaniya topilmadi", show_alert=True)
+        return
+
+    if c["status"] != "paused":
+        await cb.answer("Kampaniya pauzada emas", show_alert=True)
+        return
+
+    update_campaign_status(campaign_id, "active")
+    await render_campaign(campaign_id)
+
+    # 🔥 FAQAT SHU JOYDA TASK YARATILADI
+    asyncio.create_task(run_campaign(campaign_id))
+
+    await cb.answer("▶ Kampaniya davom ettirildi")
+
 
 
 @dp.callback_query(F.data.startswith("camp_stop:"))
