@@ -821,6 +821,37 @@ def campaign_control_keyboard(campaign_id: int, status: str):
 
     return keyboard
 
+def campaign_edit_keyboard(campaign_id: int):
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="✍️ Matnni o‘zgartirish",
+                    callback_data=f"edit_text:{campaign_id}"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="⏱ Intervalni o‘zgartirish",
+                    callback_data=f"edit_interval:{campaign_id}"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="⏳ Davomiylikni o‘zgartirish",
+                    callback_data=f"edit_duration:{campaign_id}"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="⬅️ Orqaga",
+                    callback_data=f"camp_back:{campaign_id}"
+                )
+            ]
+        ]
+    )
+
+
 @dp.callback_query(F.data.startswith("camp_edit:"))
 async def edit_campaign_menu(cb: CallbackQuery):
     campaign_id = int(cb.data.split(":")[1])
@@ -835,6 +866,9 @@ async def edit_campaign_menu(cb: CallbackQuery):
         reply_markup=campaign_edit_keyboard(campaign_id)
     )
     await cb.answer()
+
+editing_campaign = {}
+
 
 @dp.callback_query(F.data.startswith("edit_text:"))
 async def edit_text(cb: CallbackQuery):
