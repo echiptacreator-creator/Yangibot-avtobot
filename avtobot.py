@@ -745,108 +745,47 @@ async def send_to_group(client, campaign, group_id):
 from database import get_campaign
 
 async def run_campaign(campaign_id: int):
-    """
-    DB-ga yozilgan kampaniyani ishga tushiradi.
-    Media (photo/video) va oddiy matnni qo‘llab-quvvatlaydi.
-    Pause / Resume / Stop restartdan keyin ham ishlaydi.
-    """
+    print(f"🚀 run_campaign started for {campaign_id}")
 
-    while True:
-        # 1️⃣ Kampaniyani DB dan o‘qiymiz
+    campaign = get_campaign(campaign_id)
+    if not campaign:
+        print("❌ campaign not found")
+        return
+
+    # 🔴 MAJBURIY: status active bo‘lsin
+    if campaign["status"] != "active":
+        update_campaign_status(campaign_id, "active")
+        campaign["status"] = "active"
+
+    client = await get_client(campaign["user_id"])
+
+    start_time = time.time()
+    duration_sec = campaign["duration"] * 60
+    interval_sec = campaign["interval"] * 60
+
+    while time.time() - start_time < duration_sec:
         campaign = get_campaign(campaign_id)
-        if not campaign:
-            return
 
-        # 2️⃣ STOP bosilgan bo‘lsa
-        if campaign["status"] == "stopped":
-            return
-
-        # 3️⃣ PAUSE holati
-        if campaign["status"] == "paused":
+        if campaign["status"] != "active":
+            print("⏸ campaign paused")
             await asyncio.sleep(5)
             continue
 
+        tasks = []
 
-        # 4️⃣ Telethon client olish
-        try:
-            client = await get_client(campaign["user_id"])
-        except Exception as e:
-            update_campaign_status(campaign_id, "stopped")
-            await notify_user(
-                campaign["chat_id"],
-                "❌ Telegram akkauntga ulanib bo‘lmadi.\n"
-                "Iltimos, qayta login qiling."
+        for group_id in campaign["groups"]:
+            tasks.append(
+                send_to_group(client, campaign, group_id)
             )
-            return
 
-        # 5️⃣ Davomiylik tugaganmi?
-        end_time = campaign["start_time"] + campaign["duration"] * 60
-        if time.time() >= end_time:
-            update_campaign_status(campaign_id, "finished")
-            await client.disconnect()
-            return
+        print(f"📤 Sending to {len(tasks)} groups")
+        await asyncio.gather(*tasks)
 
-        # 6️⃣ Guruhlarga yuborish
-        # 6️⃣ Guruhlarga PARALLEL yuborish
-            tasks = []
-            
-            for group_id in campaign["groups"]:
-                tasks.append(
-                    send_to_group(client, campaign, group_id)
-                )
-            
-            results = await asyncio.gather(*tasks)
-            
-            # 7️⃣ Status xabarni yangilash
-            await update_status_message(get_campaign(campaign_id))
+        await asyncio.sleep(interval_sec)
 
+    update_campaign_status(campaign_id, "finished")
+    print("✅ campaign finished")
 
-            try:
- # =========================
- # 📸🎥 MEDIA BOR BO‘LSA
- # =========================
-                if campaign["media_type"] in ("photo", "video"):
-                    await client.send_file(
-                        group_id,
-                        campaign["media_file_id"],
-                        caption=campaign["text"]
-                    )
-
- # =========================
- # 📝 FAQAT MATN BO‘LSA
- # =========================
-                else:
-                    await client.send_message(
-                        group_id,
-                        campaign["text"]
-                    )
-
-                # 7️⃣ Statistika
-                increment_sent_count(campaign_id)
-
-                # 8️⃣ Status xabarni yangilash
-                await update_status_message(get_campaign(campaign_id))
-
-
-            except FloodWaitError as e:
-                await notify_user(
-                    campaign["chat_id"],
-                    f"⏳ Telegram cheklovi (FloodWait).\n"
-                    f"{e.seconds} soniya kutilyapti."
-                )
-                await asyncio.sleep(e.seconds)
-
-            except Exception as e:
-                await notify_user(
-                    campaign["chat_id"],
-                    f"❌ Xabar yuborilmadi.\n"
-                    f"Guruh: {group_id}\n"
-                    f"Sabab: {str(e)}"
-                )
-                return
-
-        # 9️⃣ Interval kutish
-        await asyncio.sleep(campaign["interval"] * 60)
 
 # =====================
 # STATUSNI YANGILASH
