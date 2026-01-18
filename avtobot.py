@@ -647,7 +647,7 @@ async def start_campaign(cb: CallbackQuery):
     flow = get_user_flow(user_id)
 
     if not flow or flow["step"] != "confirm_campaign":
-        await cb.answer()
+        await cb.answer("Bu kampaniya allaqachon boshlangan", show_alert=True)
         return
 
     data = flow["data"]
@@ -659,17 +659,56 @@ async def start_campaign(cb: CallbackQuery):
         interval=data["interval"],
         duration=data["duration"],
         chat_id=cb.message.chat.id,
-        status_message_id=cb.message.message_id,
+        status_message_id=None,
         media_type=data.get("media_type"),
-        media_file_id=data.get("media_file_id")
+        media_file_id=data.get("media_file_id"),
+        status="active"
     )
 
     clear_user_flow(user_id)
 
     asyncio.create_task(run_campaign(campaign_id))
 
-    await cb.message.edit_text("✅ Kampaniya boshlandi!")
+    await cb.message.edit_text(
+        "🚀 Kampaniya boshlandi",
+        reply_markup=campaign_control_keyboard(campaign_id, status="active")
+    )
     await cb.answer()
+
+def campaign_control_keyboard(campaign_id: int, status: str):
+    buttons = []
+
+    if status == "active":
+        buttons.append([
+            InlineKeyboardButton(
+                text="⏸ Pauza qilish",
+                callback_data=f"camp_pause:{campaign_id}"
+            )
+        ])
+    else:
+        buttons.append([
+            InlineKeyboardButton(
+                text="▶ Davom etish",
+                callback_data=f"camp_resume:{campaign_id}"
+            ),
+            InlineKeyboardButton(
+                text="✏️ Tahrirlash",
+                callback_data=f"camp_edit:{campaign_id}"
+            )
+        ])
+
+    buttons.append([
+        InlineKeyboardButton(
+            text="📊 Statistika",
+            callback_data=f"camp_stats:{campaign_id}"
+        ),
+        InlineKeyboardButton(
+            text="⛔ Yakunlash",
+            callback_data=f"camp_stop:{campaign_id}"
+        )
+    ])
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
 # =====================
@@ -818,45 +857,166 @@ async def update_status_message(campaign: dict):
 # =====================
 
 @dp.callback_query(F.data.startswith("camp_pause:"))
-async def pause_campaign(cb):
+async def pause_campaign(cb: CallbackQuery):
     campaign_id = int(cb.data.split(":")[1])
-
     update_campaign_status(campaign_id, "paused")
-    await cb.answer("⏸ Kampaniya to‘xtatildi")
+
+    await cb.message.edit_reply_markup(
+        reply_markup=campaign_control_keyboard(campaign_id, "paused")
+    )
+    await cb.answer("⏸ Pauzaga qo‘yildi")
+
 
 @dp.callback_query(F.data.startswith("camp_resume:"))
-async def resume_campaign(cb):
+async def resume_campaign(cb: CallbackQuery):
     campaign_id = int(cb.data.split(":")[1])
-
     update_campaign_status(campaign_id, "active")
-    await cb.answer("▶ Kampaniya davom etmoqda")
+
+    await cb.message.edit_reply_markup(
+        reply_markup=campaign_control_keyboard(campaign_id, "active")
+    )
+    await cb.answer("▶ Davom etmoqda")
+
 
 @dp.callback_query(F.data.startswith("camp_stop:"))
-async def stop_campaign(cb):
+async def stop_campaign(cb: CallbackQuery):
+    campaign_id = int(cb.data.split(":")[1])
+    update_campaign_status(campaign_id, "finished")
+
+    await cb.message.edit_text("⛔ Kampaniya yakunlandi")
+    await cb.answer()
+
+@dp.callback_query(F.data.startswith("camp_stats:"))
+async def campaign_stats(cb: CallbackQuery):
+    campaign_id = int(cb.data.split(":")[1])
+    stats = get_campaign_stats(campaign_id)
+
+    await cb.answer()
+    await cb.message.answer(
+        f"📊 Kampaniya statistikasi\n\n"
+        f"📤 Yuborildi: {stats['sent']}\n"
+        f"❌ Xatolar: {stats['errors']}"
+    )
+def campaign_edit_keyboard(campaign_id: int):
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="✍️ Matnni o‘zgartirish",
+                    callback_data=f"edit_text:{campaign_id}"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="⏱ Intervalni o‘zgartirish",
+                    callback_data=f"edit_interval:{campaign_id}"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="⏳ Davomiylikni o‘zgartirish",
+                    callback_data=f"edit_duration:{campaign_id}"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="⬅️ Orqaga",
+                    callback_data=f"edit_back:{campaign_id}"
+                )
+            ]
+        ]
+    )
+
+
+editing_campaign = {}  # user_id -> {"campaign_id": int, "field": None}
+
+@dp.callback_query(F.data.startswith("camp_edit:"))
+async def edit_campaign_menu(cb: CallbackQuery):
     campaign_id = int(cb.data.split(":")[1])
 
-    update_campaign_status(campaign_id, "stopped")
-    await cb.answer("🛑 Kampaniya to‘xtatildi")
+    editing_campaign[cb.from_user.id] = {
+        "campaign_id": campaign_id,
+        "field": None
+    }
+
+    await cb.message.edit_text(
+        "✏️ Nimani tahrirlamoqchisiz?",
+        reply_markup=campaign_edit_keyboard(campaign_id)
+    )
+    await cb.answer()
+
+@dp.callback_query(F.data.startswith("edit_text:"))
+async def edit_text(cb: CallbackQuery):
+    campaign_id = int(cb.data.split(":")[1])
+
+    editing_campaign[cb.from_user.id] = {
+        "campaign_id": campaign_id,
+        "field": "text"
+    }
+
+    await cb.message.answer("✍️ Yangi xabar matnini kiriting:")
+    await cb.answer()
+
+@dp.callback_query(F.data.startswith("edit_interval:"))
+async def edit_interval(cb: CallbackQuery):
+    campaign_id = int(cb.data.split(":")[1])
+
+    editing_campaign[cb.from_user.id] = {
+        "campaign_id": campaign_id,
+        "field": "interval"
+    }
+
+    await cb.message.answer("⏱ Yangi intervalni kiriting (daqiqada):")
+    await cb.answer()
+
+@dp.callback_query(F.data.startswith("edit_duration:"))
+async def edit_duration(cb: CallbackQuery):
+    campaign_id = int(cb.data.split(":")[1])
+
+    editing_campaign[cb.from_user.id] = {
+        "campaign_id": campaign_id,
+        "field": "duration"
+    }
+
+    await cb.message.answer("⏳ Yangi davomiylikni kiriting (daqiqada):")
+    await cb.answer()
+
+@dp.message()
+async def handle_edit_input(message: Message):
+    user_id = message.from_user.id
+
+    if user_id not in editing_campaign:
+        return
+
+    edit = editing_campaign[user_id]
+    campaign_id = edit["campaign_id"]
+    field = edit["field"]
+
+    if not field:
+        return
+
+    value = message.text
+
+    if field in ("interval", "duration"):
+        if not value.isdigit() or int(value) < 1:
+            await message.answer("❌ Noto‘g‘ri qiymat")
+            return
+        value = int(value)
+
+    update_campaign_field(campaign_id, field, value)
+
+    del editing_campaign[user_id]
+
+    campaign = get_campaign(campaign_id)
+
+    await message.answer(
+        "✅ O‘zgarish saqlandi",
+        reply_markup=campaign_control_keyboard(campaign_id, campaign["status"])
+    )
 
 
 # =====================
 # KOMPANIYANI QAYTA OLSIH
-# =====================
-async def restore_campaigns():
-    campaigns = get_active_campaigns()
-
-    if not campaigns:
-        print("ℹ️ Faol kampaniyalar yo‘q")
-        return
-
-    print(f"🔄 {len(campaigns)} ta kampaniya tiklanmoqda...")
-
-    for campaign in campaigns:
-        # agar active bo‘lsa → davom etadi
-        # agar paused bo‘lsa → pause holatda turadi
-        asyncio.create_task(run_campaign(campaign["id"]))
-# =====================
-# YORDAMCHI FUNKTSIYA
 # =====================
 def campaign_controls(campaign_id: int, status: str):
     buttons = []
