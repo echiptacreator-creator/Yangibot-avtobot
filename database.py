@@ -827,3 +827,26 @@ def get_today_usage(user_id: int) -> int:
     conn.close()
     return row[0] if row else 0
 
+def increment_campaign_error(campaign_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE campaigns
+        SET error_count = error_count + 1
+        WHERE id = %s
+    """, (campaign_id,))
+    conn.commit()
+    conn.close()
+
+
+def reset_campaign_error(campaign_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE campaigns
+        SET error_count = 0
+        WHERE id = %s
+    """, (campaign_id,))
+    conn.commit()
+    conn.close()
+
