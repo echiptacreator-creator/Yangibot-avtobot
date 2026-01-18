@@ -578,15 +578,8 @@ async def handle_numbers(message: Message):
         if value < 1:
             await message.answer("❌ Davomiylik noto‘g‘ri")
             return
-        data["duration"] = value  # ✅ SHU YO‘Q EDI
-        
-        # 🎛 AVVAL XABAR YUBORAMIZ
-        msg = await message.answer(
-            "🚀 *Kampaniya boshlandi*",
-            parse_mode="Markdown"
-        )
-        
-        # 🔥 KEYIN KAMPANIYA YARATAMIZ
+        data["duration"] = value
+
         campaign_id = create_campaign(
             user_id=user_id,
             text=data.get("text", ""),
@@ -594,24 +587,20 @@ async def handle_numbers(message: Message):
             interval=data["interval"],
             duration=data["duration"],
             chat_id=message.chat.id,
-            status_message_id=msg.message_id,  # ✅ MUHIM
+            status_message_id=None,
             media_type=data.get("media_type"),
             media_file_id=data.get("media_file_id")
         )
         
         clear_user_flow(user_id)
         
-        # 🚀 ISHGA TUSHIRAMIZ
         asyncio.create_task(run_campaign(campaign_id))
         
-        # 🎛 TUGMALARNI QO‘SHAMIZ
-        await msg.edit_reply_markup(
-            reply_markup=campaign_control_keyboard(campaign_id, "active")
+        await message.answer(
+            "🚀 *Kampaniya boshlandi*",
+            reply_markup=campaign_control_keyboard(campaign_id, "active"),
+            parse_mode="Markdown"
         )
-
-
-
-#===========================================
 
 # =====================
 # YUBORISHGA TAYYOR
