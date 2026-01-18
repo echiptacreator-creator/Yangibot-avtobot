@@ -973,13 +973,12 @@ TARIFFS = {
 async def select_tariff(cb):
     price, months = TARIFFS[cb.data]
 
-    from database import get_db
     conn = get_db()
     cur = conn.cursor()
 
     cur.execute("""
-        INSERT INTO payments (user_id, tariff, price, months, created_at)
-        VALUES (%s, %s, %s, %s, %s)
+        INSERT INTO payments (user_id, tariff, price, months, status, created_at)
+        VALUES (%s, %s, %s, %s, 'pending', %s)
         RETURNING id
     """, (
         cb.from_user.id,
@@ -994,68 +993,78 @@ async def select_tariff(cb):
     conn.close()
 
     await cb.message.answer(
-        f"💳 *To‘lov qilish*\n\n"
-        f"Tarif: *{months} oy*\n"
-        f"Summa: *{price} so‘m*\n\n"
-        "💳 Karta: `8600 **** **** 1234`\n"
-        "👤 Ism: *Bot Egasi*\n\n"
-        "To‘lovdan so‘ng chekni yuboring.",
+        f"💳 *To‘lov ma’lumotlari*\n\n"
+        f"💰 Summa: *{price} so‘m*\n"
+        f"💳 Karta: *8600 **** **** 1234*\n\n"
+        f"📸 To‘lovdan so‘ng chek rasmini yuboring.\n"
+        f"🆔 To‘lov ID: `{payment_id}`",
         parse_mode="Markdown"
     )
 
     await cb.answer()
-    
-ADMIN_ID = 515902673  # admin Telegram ID
 
-@dp.message(F.photo | F.document)
-async def receive_check(message: Message):
+
+@dp.message(F.photo)
+async def receive_payment_receipt(message: Message):
     user_id = message.from_user.id
 
-    from database import get_db
     conn = get_db()
     cur = conn.cursor()
-
-    # oxirgi pending paymentni olamiz
     cur.execute("""
-        SELECT id, price, months
+        SELECT id
         FROM payments
         WHERE user_id = %s AND status = 'pending'
-        ORDER BY id DESC
+        ORDER BY created_at DESC
         LIMIT 1
     """, (user_id,))
     row = cur.fetchone()
-    conn.close()
 
     if not row:
-        await message.answer("❌ Sizda tekshiriladigan to‘lov topilmadi.")
+        conn.close()
         return
 
-    payment_id, price, months = row
+    payment_id = row[0]
+    file_id = message.photo[-1].file_id
 
-    caption = (
-        "🧾 *Yangi to‘lov cheki*\n\n"
-        f"👤 User ID: `{user_id}`\n"
-        f"📦 Tarif: *{months} oy*\n"
-        f"💰 Kutilgan summa: *{price} so‘m*\n"
-        f"🆔 Payment ID: `{payment_id}`"
-    )
+    cur.execute("""
+        UPDATE payments
+        SET receipt_file_id = %s
+        WHERE id = %s
+    """, (file_id, payment_id))
 
+    conn.commit()
+    conn.close()
+
+    # ADMIN’GA YUBORAMIZ
     kb = InlineKeyboardMarkup(
-        inline_keyboard=[[
-            InlineKeyboardButton("✅ Tasdiqlash", callback_data=f"pay_ok:{payment_id}"),
-            InlineKeyboardButton("❌ Rad etish", callback_data=f"pay_no:{payment_id}")
-        ]]
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="✅ Tasdiqlash",
+                    callback_data=f"pay_ok:{payment_id}"
+                ),
+                InlineKeyboardButton(
+                    text="❌ Rad etish",
+                    callback_data=f"pay_no:{payment_id}"
+                )
+            ]
+        ]
     )
 
-    # chekni admin botga yuboramiz
-    if message.photo:
-        await bot.send_photo(ADMIN_ID, message.photo[-1].file_id, caption=caption, reply_markup=kb, parse_mode="Markdown")
-    else:
-        await bot.send_document(ADMIN_ID, message.document.file_id, caption=caption, reply_markup=kb, parse_mode="Markdown")
-
-    await message.answer(
-        "✅ Chek qabul qilindi.\nAdmin tomonidan tekshirilmoqda."
+    await bot.send_photo(
+        ADMIN_ID,
+        file_id,
+        caption=(
+            "🧾 *Yangi to‘lov*\n\n"
+            f"👤 User ID: `{user_id}`\n"
+            f"🆔 Payment ID: `{payment_id}`"
+        ),
+        reply_markup=kb,
+        parse_mode="Markdown"
     )
+
+    await message.answer("✅ Chek qabul qilindi. Admin tekshiradi.")
+
 
 # =====================
 # OGOHLANTIRISH
