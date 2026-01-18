@@ -121,31 +121,75 @@ async def receive_receipt(message: Message):
 # =====================
 from database import approve_payment, reject_payment
 
+def approve_payment(payment_id: int):
+    from datetime import timedelta
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT user_id, months
+        FROM payments
+        WHERE id = %s AND status = 'pending'
+    """, (payment_id,))
+    row = cur.fetchone()
+
+    if not row:
+        conn.close()
+        return False
+
+    user_id, months = row
+
+    # payment tasdiqlanadi
+    cur.execute("""
+        UPDATE payments
+        SET status = 'approved', approved_at = NOW()
+        WHERE id = %s
+    """, (payment_id,))
+
+    # subscription faollashadi
+    cur.execute("""
+        INSERT INTO subscriptions (user_id, paid_until, status)
+        VALUES (%s, CURRENT_DATE + INTERVAL '%s days', 'active')
+        ON CONFLICT (user_id)
+        DO UPDATE SET
+            paid_until = COALESCE(subscriptions.paid_until, CURRENT_DATE)
+                         + INTERVAL '%s days',
+            status = 'active'
+    """, (user_id, months * 30, months * 30))
+
+    conn.commit()
+    conn.close()
+    return True
+
+
 @dp.callback_query(F.data.startswith("pay_ok:"))
-async def approve_pay(cb):
+async def admin_approve(cb: CallbackQuery):
     payment_id = int(cb.data.split(":")[1])
 
-    approve_payment(payment_id)
+    ok = approve_payment(payment_id)
 
-    await cb.message.edit_caption(
-        cb.message.caption + "\n\n✅ *Tasdiqlandi*",
-        parse_mode="Markdown"
-    )
-    await cb.answer("Tasdiqlandi")
+    if ok:
+        await cb.message.edit_caption(
+            cb.message.caption + "\n\n✅ *Tasdiqlandi*",
+            parse_mode="Markdown"
+        )
+        await cb.answer("Tasdiqlandi")
+    else:
+        await cb.answer("Xatolik", show_alert=True)
 
 
 @dp.callback_query(F.data.startswith("pay_no:"))
-async def reject_pay(cb):
+async def admin_reject(cb: CallbackQuery):
     payment_id = int(cb.data.split(":")[1])
 
     reject_payment(payment_id)
 
     await cb.message.edit_caption(
-        cb.message.caption + "\n\n❌ *Rad etildi (summa noto‘g‘ri)*",
+        cb.message.caption + "\n\n❌ *Rad etildi*",
         parse_mode="Markdown"
     )
     await cb.answer("Rad etildi")
-
 
 # =====================
 # FAOL OBUNALAR
