@@ -783,6 +783,20 @@ async def send_to_group(client, campaign, group_id):
 # =====================
 from database import get_campaign
 
+async def restore_campaigns():
+    campaigns = get_active_campaigns()
+
+    if not campaigns:
+        print("ℹ️ Faol kampaniyalar yo‘q")
+        return
+
+    print(f"🔄 {len(campaigns)} ta kampaniya tiklanmoqda")
+
+    for c in campaigns:
+        campaign_id = c["id"]
+        asyncio.create_task(run_campaign(campaign_id))
+
+
 async def run_campaign(campaign_id: int):
     print(f"🚀 run_campaign started for {campaign_id}")
 
