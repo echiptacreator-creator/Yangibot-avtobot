@@ -699,7 +699,8 @@ async def run_campaign(campaign_id: int):
 
     while True:
         campaign = get_campaign(campaign_id)
-
+        if campaign["status"] != "active":
+            return
         # ⛔ STOP / FINISHED
         if campaign["status"] != "active":
             await asyncio.sleep(2)
@@ -976,17 +977,12 @@ async def handle_edit_input(message: Message):
 async def restart_campaign(cb: CallbackQuery):
     campaign_id = int(cb.data.split(":")[1])
 
-    # 🔄 DB reset
-    reset_campaign_stats(campaign_id)   # sent_count = 0, error_count = 0
-    update_campaign_status(campaign_id, "active")
+    reset_campaign_stats(campaign_id)
+    update_campaign_status(campaign_id, "paused")
 
-    # 🔄 UI
     await render_campaign(campaign_id)
+    await cb.answer("🔁 Kampaniya qayta tayyorlandi. Davom ettirishni bosing.")
 
-    # 🚀 QAYTA ISHGA TUSHIRAMIZ
-    asyncio.create_task(run_campaign(campaign_id))
-
-    await cb.answer("🔁 Kampaniya qayta ishga tushdi")
 
 
 
