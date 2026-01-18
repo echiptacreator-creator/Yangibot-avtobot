@@ -26,6 +26,8 @@ from telethon.sessions import StringSession
 from database import get_session
 from database import get_user_limits, get_today_usage, increment_daily_usage
 from database import increment_campaign_error, reset_campaign_error
+from database import get_user_flow, save_user_flow
+
 
 
 # =====================
@@ -272,21 +274,28 @@ async def cancel_send(message: Message):
 @dp.message(F.text.in_(["📍 Bitta guruhga", "📍 Ko‘p guruhlarga"]))
 async def choose_send_mode(message: Message):
     user_id = message.from_user.id
-    state = user_state.get(user_id)
 
-    if not state or state.get("step") != "choose_mode":
+    flow = get_user_flow(user_id)
+    if not flow or flow["step"] != "choose_mode":
         return
 
-    state["mode"] = "single" if "Bitta" in message.text else "multi"
-    state["step"] = "choose_group"
+    mode = "single" if "Bitta" in message.text else "multi"
 
-    # ❗ ReplyKeyboardRemove faqat bu yerda
+    # DB da yangilaymiz
+    save_user_flow(
+        user_id=user_id,
+        step="choose_group",
+        data={
+            "mode": mode
+        }
+    )
+
     await message.answer(
         "📂 Guruhlar yuklanmoqda...",
         reply_markup=ReplyKeyboardRemove()
     )
 
-    # 🔥 GURUH YUKLASHNI BEVOSITA CHAQIRAMIZ
+    # keyingi bosqichni chaqiramiz
     await start_group_selection(message)
 
 async def get_client(user_id: int):
