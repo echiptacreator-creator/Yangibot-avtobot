@@ -587,6 +587,29 @@ async def cancel_campaign(cb):
 # =====================
 
 async def send_to_group(client, campaign, group_id):
+    user_id = campaign["user_id"]
+    limits = get_user_limits(user_id)
+
+    # 🔴 BLOKLANGAN
+    if limits.get("blocked"):
+        update_campaign_status(campaign["id"], "paused")
+        return False
+
+    # 🔒 DAILY LIMIT
+    today_used = get_today_usage(user_id)
+    daily_limit = limits.get("daily_limit")
+
+    if daily_limit and today_used >= daily_limit:
+        update_campaign_status(campaign["id"], "paused")
+
+        await notify_user(
+            campaign["chat_id"],
+            "⛔ Kunlik yuborish limiti tugadi.\n"
+            "📌 Kampaniya pauzaga qo‘yildi.\n"
+            "⏳ Ertaga avtomatik davom etadi."
+        )
+        return False
+
     try:
         if campaign["media_type"] in ("photo", "video"):
             await client.send_file(
@@ -595,33 +618,22 @@ async def send_to_group(client, campaign, group_id):
                 caption=campaign["text"]
             )
         else:
-            await client.send_message(
-                group_id,
-                campaign["text"]
-            )
+            await client.send_message(group_id, campaign["text"])
 
         increment_sent_count(campaign["id"])
+        increment_daily_usage(user_id, 1)
         return True
 
     except FloodWaitError as e:
-        await notify_user(
-            campaign["chat_id"],
-            f"⏳ FloodWait\n"
-            f"Guruh: {group_id}\n"
-            f"{e.seconds} soniya kutilmoqda"
-        )
         await asyncio.sleep(e.seconds)
         return False
 
     except Exception as e:
         await notify_user(
             campaign["chat_id"],
-            f"❌ Xabar yuborilmadi\n"
-            f"Guruh: {group_id}\n"
-            f"Sabab: {str(e)}"
+            f"❌ Xabar yuborilmadi\nGuruh: {group_id}\n{str(e)}"
         )
         return False
-
 
 # =====================
 # KOMPANIYANI BOSHLASH
