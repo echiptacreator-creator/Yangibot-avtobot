@@ -126,6 +126,14 @@ def init_db():
         ADD COLUMN IF NOT EXISTS receipt_file_id TEXT,
         ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP;
     """)
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS daily_usage (
+        user_id BIGINT NOT NULL,
+        usage_date DATE NOT NULL,
+        sent_count INTEGER DEFAULT 0,
+        PRIMARY KEY (user_id, usage_date)
+    );
+    """)
 
     
     conn.commit()
