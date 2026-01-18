@@ -31,7 +31,6 @@ from database import increment_campaign_error, reset_campaign_error
 # =====================
 # STATE (XABAR YUBORISH)
 # =====================
-user_state = {}
 
 # =====================
 # CONFIG
@@ -223,29 +222,24 @@ async def logout(message: Message):
 
 @dp.message(F.text == "➕ Xabar yuborish")
 async def send_message_start(message: Message):
-    user_id = message.from_user.id
-
-    # 1️⃣ Avval login + obuna tekshirilgan (start’da)
-    # shu yerda yana tekshirish shart emas
-
-    # 2️⃣ State ochamiz
-    user_state[user_id] = {
-        "step": "choose_mode"
-    }
-
-    keyboard = ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="📍 Bitta guruhga")],
-            [KeyboardButton(text="📍 Ko‘p guruhlarga")],
-            [KeyboardButton(text="⬅️ Bekor qilish")]
-        ],
-        resize_keyboard=True
+    save_user_flow(
+        user_id=message.from_user.id,
+        step="choose_mode",
+        data={}
     )
 
     await message.answer(
         "Xabar yuborish rejimini tanlang:",
-        reply_markup=keyboard
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[
+                [KeyboardButton(text="📍 Bitta guruhga")],
+                [KeyboardButton(text="📍 Ko‘p guruhlarga")],
+                [KeyboardButton(text="⬅️ Bekor qilish")]
+            ],
+            resize_keyboard=True
+        )
     )
+
 
 # =====================
 # BEKOR QILISH
