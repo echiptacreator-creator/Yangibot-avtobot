@@ -959,7 +959,7 @@ async def edit_text(cb):
         editing_campaign[cb.from_user.id] = {
             "campaign_id": campaign_id,
             "field": "text",
-            "resume_after": False
+            "resume_after": True
         }
 
     await render_campaign(campaign_id)
@@ -983,7 +983,8 @@ async def edit_interval(cb):
 
     editing_campaign[cb.from_user.id] = {
         "campaign_id": campaign_id,
-        "field": "interval"
+        "field": "interval",
+        "resume_after": True
     }
 
     await cb.message.edit_text(
@@ -1002,10 +1003,10 @@ async def edit_interval(cb):
 @dp.callback_query(F.data.startswith("edit_duration:"))
 async def edit_duration(cb):
     campaign_id = int(cb.data.split(":")[1])
-
-    editing_campaign[cb.from_user.id] = {
+        editing_campaign[cb.from_user.id] = {
         "campaign_id": campaign_id,
-        "field": "duration"
+        "field": "duration",
+        "resume_after": True
     }
 
     await cb.message.edit_text(
