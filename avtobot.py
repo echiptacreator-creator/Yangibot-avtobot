@@ -28,6 +28,8 @@ from database import get_session
 from database import get_user_limits, get_today_usage, increment_daily_usage
 from database import increment_campaign_error, reset_campaign_error
 from database import get_user_flow, save_user_flow
+from database import reset_campaign_stats
+
 
 # =====================
 # STATE (XABAR YUBORISH)
@@ -609,18 +611,6 @@ async def handle_numbers(message: Message):
         # 4️⃣ ISHGA TUSHIRAMIZ
         asyncio.create_task(run_campaign(campaign_id))
 
-def build_campaign_status_text(campaign_id: int) -> str:
-    c = get_campaign(campaign_id)
-
-    return (
-        "🚀 *Kampaniya holati*\n\n"
-        f"📌 Status: {'🟢 Faol' if c['status']=='active' else c['status']}\n"
-        f"📍 Guruhlar: {len(c['groups'])}\n"
-        f"📊 Yuborildi: {c['sent_count']}\n\n"
-        f"⏱ Interval: {c['interval']} daqiqa\n"
-        f"⏳ Davomiylik: {c['duration']} daqiqa"
-    )
-
     # =====================
 # YUBORISHGA TAYYOR
 # =====================
@@ -720,9 +710,24 @@ async def run_campaign(campaign_id: int):
     while time.time() - start_time < duration_sec:
         campaign = get_campaign(campaign_id)
 
-        interval_sec = campaign["interval"] * 60  # 🔥 YANGILANDI
+        start_time = time.time()
 
+        while True:
+            campaign = get_campaign(campaign_id)
+        
+            if campaign["status"] != "active":
+                await asyncio.sleep(5)
+                continue
+        
+            elapsed = time.time() - start_time
+            duration_sec = campaign["duration"] * 60  # 🔥 HAR DOIM YANGI
+        
+            if elapsed >= duration_sec:
+                break
+        
+            interval_sec = campaign["interval"] * 60  # 🔥 allaqachon to‘g‘ri
 
+        
         if campaign["status"] != "active":
             print("⏸ campaign paused")
             await asyncio.sleep(5)
@@ -741,6 +746,7 @@ async def run_campaign(campaign_id: int):
         await asyncio.sleep(interval_sec)
 
     update_campaign_status(campaign_id, "finished")
+    await render_campaign(campaign_id)
     print("✅ campaign finished")
 
 
