@@ -834,10 +834,15 @@ def campaign_control_keyboard(campaign_id: int, status: str):
 async def camp_back(cb):
     campaign_id = int(cb.data.split(":")[1])
 
-    editing_campaign.pop(cb.from_user.id, None)
+    edit = editing_campaign.pop(cb.from_user.id, None)
+
+    if edit and edit.get("resume_after"):
+        update_campaign_status(campaign_id, "active")
+        asyncio.create_task(run_campaign(campaign_id))
 
     await render_campaign(campaign_id)
     await cb.answer()
+
 
 
 
@@ -893,11 +898,25 @@ editing_campaign = {}
 @dp.callback_query(F.data.startswith("edit_text:"))
 async def edit_text(cb):
     campaign_id = int(cb.data.split(":")[1])
+    c = get_campaign(campaign_id)
 
-    editing_campaign[cb.from_user.id] = {
-        "campaign_id": campaign_id,
-        "field": "text"
-    }
+    # 🟡 Agar active bo‘lsa — pauza qilamiz
+    if c["status"] == "active":
+        update_campaign_status(campaign_id, "paused")
+
+        editing_campaign[cb.from_user.id] = {
+            "campaign_id": campaign_id,
+            "field": "text",
+            "resume_after": True   # 🔥 MUHIM
+        }
+    else:
+        editing_campaign[cb.from_user.id] = {
+            "campaign_id": campaign_id,
+            "field": "text",
+            "resume_after": False
+        }
+
+    await render_campaign(campaign_id)
 
     await cb.message.edit_text(
         "✏️ Yangi xabar matnini yuboring:",
@@ -909,21 +928,7 @@ async def edit_text(cb):
             ]
         )
     )
-    await cb.answer()
-
-
-    await cb.message.edit_text(
-        "✍️ Yangi xabar matnini kiriting:",
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=[
-                [InlineKeyboardButton(
-                    text="⬅️ Orqaga",
-                    callback_data=f"camp_back:{campaign_id}"
-                )]
-            ]
-        )
-    )
-    await cb.answer()
+    await cb.answer("⏸ Kampaniya pauzaga qo‘yildi")
 
 
 @dp.callback_query(F.data.startswith("edit_interval:"))
@@ -980,6 +985,7 @@ async def handle_edit_input(message):
     edit = editing_campaign[user_id]
     campaign_id = edit["campaign_id"]
     field = edit["field"]
+    resume_after = edit.get("resume_after", False)
 
     value = message.text.strip()
 
@@ -989,18 +995,24 @@ async def handle_edit_input(message):
             return
         value = int(value)
 
+    # 💾 DB update
     if field == "text":
         update_campaign_text(campaign_id, value)
     else:
         update_campaign_field(campaign_id, field, value)
 
-    # 🧹 state tozalaymiz
+    # 🧹 state tozalash
     editing_campaign.pop(user_id, None)
 
-    # ✅ TASDIQ XABARI (YANGI)
+    # ▶ AUTO RESUME
+    if resume_after:
+        update_campaign_status(campaign_id, "active")
+        asyncio.create_task(run_campaign(campaign_id))
+
+    # ✅ feedback
     await message.answer("✅ Yangilandi")
 
-    # 🔄 panelni qayta chizamiz
+    # 🔄 panelni yangilaymiz
     await render_campaign(campaign_id)
 
 
