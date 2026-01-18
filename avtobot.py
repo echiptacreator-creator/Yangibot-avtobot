@@ -24,7 +24,7 @@ from database import get_user_limits, get_user_usage
 from aiogram.types import ReplyKeyboardRemove
 from telethon.sessions import StringSession
 from database import get_session
-
+from database import get_user_limits, get_today_usage, increment_daily_usage
 
 # =====================
 # STATE (XABAR YUBORISH)
