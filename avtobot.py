@@ -431,7 +431,7 @@ async def show_group_page(message: Message, user_id: int):
             text="➡️ Keyingi",
             callback_data="grp_next"
         )
-    )
+    ])
 
     if nav:
         keyboard.inline_keyboard.append(nav)
