@@ -744,7 +744,7 @@ async def update_status_message(campaign: dict):
             chat_id=campaign["chat_id"],
             message_id=campaign["status_message_id"],
             text=text,
-            reply_markup=campaign_controls_keyboard(campaign["id"], campaign["status"])
+            reply_markup=campaign_control_keyboard(campaign["id"], campaign["status"])
         )
     except Exception:
         pass
@@ -783,38 +783,43 @@ async def stop_campaign(cb: CallbackQuery):
     await cb.message.edit_text("⛔ Kampaniya yakunlandi")
     await cb.answer()
 
-def campaign_edit_keyboard(campaign_id: int):
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="✍️ Matnni o‘zgartirish",
-                    callback_data=f"edit_text:{campaign_id}"
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    text="⏱ Intervalni o‘zgartirish",
-                    callback_data=f"edit_interval:{campaign_id}"
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    text="⏳ Davomiylikni o‘zgartirish",
-                    callback_data=f"edit_duration:{campaign_id}"
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    text="⬅️ Orqaga",
-                    callback_data=f"edit_back:{campaign_id}"
-                )
-            ]
-        ]
-    )
+def campaign_control_keyboard(campaign_id: int, status: str):
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[])
 
+    if status == "active":
+        keyboard.inline_keyboard.append([
+            InlineKeyboardButton(
+                text="⏸ Pauza",
+                callback_data=f"camp_pause:{campaign_id}"
+            )
+        ])
+    elif status == "paused":
+        keyboard.inline_keyboard.append([
+            InlineKeyboardButton(
+                text="▶ Davom ettirish",
+                callback_data=f"camp_resume:{campaign_id}"
+            )
+        ])
 
-editing_campaign = {}  # user_id -> {"campaign_id": int, "field": None}
+    keyboard.inline_keyboard.append([
+        InlineKeyboardButton(
+            text="✏️ Tahrirlash",
+            callback_data=f"camp_edit:{campaign_id}"
+        ),
+        InlineKeyboardButton(
+            text="📊 Statistika",
+            callback_data=f"camp_stats:{campaign_id}"
+        )
+    ])
+
+    keyboard.inline_keyboard.append([
+        InlineKeyboardButton(
+            text="⛔ Yakunlash",
+            callback_data=f"camp_stop:{campaign_id}"
+        )
+    ])
+
+    return keyboard
 
 @dp.callback_query(F.data.startswith("camp_edit:"))
 async def edit_campaign_menu(cb: CallbackQuery):
@@ -960,7 +965,7 @@ async def my_campaigns(message: Message):
             f"📌 Status: {c['status']}"
         )
 
-        kb = campaign_controls_keyboard(c["id"], c["status"])
+        kb = campaign_control_keyboard(c["id"], c["status"])
 
         await message.answer(
             text,
