@@ -763,15 +763,6 @@ def build_campaign_status_text(campaign_id: int) -> str:
         f"⏳ Davomiylik: {c['duration']} daqiqa"
     )
 
-    try:
-        await bot.edit_message_text(
-            chat_id=campaign["chat_id"],
-            message_id=campaign["status_message_id"],
-            text=text,
-            reply_markup=campaign_control_keyboard(campaign["id"], campaign["status"])
-        )
-    except Exception:
-        pass
 
 # =====================
 # BOSHQARISH
