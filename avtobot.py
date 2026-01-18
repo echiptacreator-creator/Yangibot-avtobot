@@ -1423,7 +1423,7 @@ async def main():
 
     asyncio.create_task(subscription_watcher())
     asyncio.create_task(admin_notification_worker())
-    asyncio.create_task(daily_resume_worker())
+    #asyncio.create_task(daily_resume_worker())
 
     await restore_campaigns()
     await dp.start_polling(bot)
