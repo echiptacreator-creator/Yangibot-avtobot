@@ -616,8 +616,8 @@ async def start_campaign(cb: CallbackQuery):
 
     print("🔥 camp_start pressed", flow)
 
-    if not flow:
-        await cb.answer("Flow topilmadi", show_alert=True)
+    if not flow or flow["step"] != "confirm_campaign":
+        await cb.answer("❌ Kampaniya holati noto‘g‘ri", show_alert=True)
         return
 
     data = flow["data"]
@@ -639,8 +639,12 @@ async def start_campaign(cb: CallbackQuery):
 
     asyncio.create_task(run_campaign(campaign_id))
 
-    await cb.message.edit_text("🚀 Kampaniya boshlandi")
+    await cb.message.edit_text(
+        "🚀 Kampaniya boshlandi",
+        reply_markup=campaign_control_keyboard(campaign_id, "active")
+    )
     await cb.answer("Boshlandi")
+
 
 
 def campaign_control_keyboard(campaign_id: int, status: str):
@@ -868,17 +872,6 @@ async def stop_campaign(cb: CallbackQuery):
     await cb.message.edit_text("⛔ Kampaniya yakunlandi")
     await cb.answer()
 
-@dp.callback_query(F.data.startswith("camp_stats:"))
-async def campaign_stats(cb: CallbackQuery):
-    campaign_id = int(cb.data.split(":")[1])
-    stats = get_campaign_stats(campaign_id)
-
-    await cb.answer()
-    await cb.message.answer(
-        f"📊 Kampaniya statistikasi\n\n"
-        f"📤 Yuborildi: {stats['sent']}\n"
-        f"❌ Xatolar: {stats['errors']}"
-    )
 def campaign_edit_keyboard(campaign_id: int):
     return InlineKeyboardMarkup(
         inline_keyboard=[
