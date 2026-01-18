@@ -517,38 +517,6 @@ async def handle_enter_text(message: Message):
         parse_mode="Markdown"
     )
 
-
-@dp.message(F.photo | F.video)
-async def handle_media(message: Message):
-    user_id = message.from_user.id
-    flow = get_user_flow(user_id)
-
-    if not flow or flow["step"] != "enter_text":
-        return
-
-    data = flow["data"]
-
-    if message.photo:
-        data["media_type"] = "photo"
-        data["media_file_id"] = message.photo[-1].file_id
-    else:
-        data["media_type"] = "video"
-        data["media_file_id"] = message.video.file_id
-
-    data["text"] = message.caption or ""
-
-    save_user_flow(
-        user_id,
-        step="enter_interval",
-        data=data
-    )
-
-    await message.answer(
-        "⏱ Xabar yuborish oralig‘ini kiriting (daqiqada).\n"
-        "Masalan: `15`",
-        parse_mode="Markdown"
-    )
-
 @dp.message(F.photo | F.video)
 async def handle_media(message: Message):
     user_id = message.from_user.id
@@ -807,8 +775,8 @@ async def run_campaign(campaign_id: int):
 
     # 🔴 MAJBURIY: status active bo‘lsin
     if campaign["status"] != "active":
-        update_campaign_status(campaign_id, "active")
-        campaign["status"] = "active"
+        print("⏸ campaign not active, skip")
+        return
 
     client = await get_client(campaign["user_id"])
 
