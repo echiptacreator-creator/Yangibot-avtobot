@@ -274,9 +274,10 @@ def create_campaign(
     interval: int,
     duration: int,
     chat_id: int,
-    status_message_id: int,
-    media_type: str = None,
-    media_file_id: str = None
+    status_message_id: int | None,
+    media_type: str | None = None,
+    media_file_id: str | None = None,
+    status: str = "active"   # ✅ QO‘SHILDI
 ):
     """
     Avtobotdan kelgan kampaniyani DB ga yozadi
