@@ -389,8 +389,6 @@ async def start_group_selection(message: Message):
 # GURUH YUKLASH
 # =====================
 
-PAGE_SIZE = 20
-
 
 PAGE_SIZE = 20
 
@@ -404,51 +402,52 @@ async def show_group_page(message: Message, user_id: int):
     offset = data.get("offset", 0)
     mode = data.get("mode")
 
-    page = groups[offset:offset + PAGE_SIZE]
+    page = groups[offset: offset + PAGE_SIZE]
 
-    keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text=g["name"],
-                    callback_data=f"pick_{g['id']}"
-                )
-            ]
-            for g in page
-        ]
-    )
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[])
 
+    # 1️⃣ Guruhlar
+    for g in page:
+        keyboard.inline_keyboard.append([
+            InlineKeyboardButton(
+                text=g["name"],
+                callback_data=f"pick_{g['id']}"
+            )
+        ])
+
+    # 2️⃣ Navigatsiya
     nav = []
 
-if offset > 0:
-    nav.append(
-        InlineKeyboardButton(
-            text="⬅️ Oldingi",
-            callback_data="grp_prev"
+    if offset > 0:
+        nav.append(
+            InlineKeyboardButton(
+                text="⬅️ Oldingi",
+                callback_data="grp_prev"
+            )
         )
-    )
 
-if offset + PAGE_SIZE < len(groups):
-    nav.append(
-        InlineKeyboardButton(
-            text="➡️ Keyingi",
-            callback_data="grp_next"
+    if offset + PAGE_SIZE < len(groups):
+        nav.append(
+            InlineKeyboardButton(
+                text="➡️ Keyingi",
+                callback_data="grp_next"
+            )
         )
-    )
 
-if nav:
-    keyboard.inline_keyboard.append(nav)
+    if nav:
+        keyboard.inline_keyboard.append(nav)
 
+    # 3️⃣ Tayyor (faqat multi)
     if mode == "multi":
         keyboard.inline_keyboard.append([
             InlineKeyboardButton(
                 text="✅ Tayyor",
                 callback_data="grp_done"
             )
-        )
+        ])
 
     await message.answer(
-        "📂 Guruhni tanlang:",
+        "👉 Guruhni tanlang:",
         reply_markup=keyboard
     )
 
