@@ -1010,3 +1010,15 @@ def get_campaign_stats(campaign_id: int):
         "remaining": remaining,
         "interval": interval
     }
+
+def reset_campaign_stats(campaign_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE campaigns
+        SET sent_count = 0,
+            error_count = 0
+        WHERE id = %s
+    """, (campaign_id,))
+    conn.commit()
+    conn.close()
