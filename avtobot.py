@@ -1014,6 +1014,27 @@ async def handle_edit_input(message: Message):
         reply_markup=campaign_control_keyboard(campaign_id, campaign["status"])
     )
 
+@dp.callback_query(F.data.startswith("camp_stats:"))
+async def campaign_stats(cb: CallbackQuery):
+    campaign_id = int(cb.data.split(":")[1])
+    stats = get_campaign_stats(campaign_id)
+
+    if not stats:
+        await cb.answer("Statistika topilmadi", show_alert=True)
+        return
+
+    text = (
+        "📊 *Kampaniya statistikasi*\n\n"
+        f"📌 Status: *{stats['status']}*\n"
+        f"📤 Yuborildi: *{stats['sent']}*\n"
+        f"❌ Xatolar: *{stats['errors']}*\n"
+        f"⏱ Interval: *{stats['interval']} daqiqa*\n"
+        f"⏳ Qolgan vaqt: *{stats['remaining']} daqiqa*"
+    )
+
+    await cb.message.answer(text, parse_mode="Markdown")
+    await cb.answer()
+
 
 # =====================
 # KOMPANIYANI QAYTA OLSIH
