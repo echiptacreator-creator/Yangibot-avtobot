@@ -692,63 +692,40 @@ async def run_campaign(campaign_id: int):
     print(f"🚀 run_campaign started for {campaign_id}")
 
     campaign = get_campaign(campaign_id)
-    if not campaign:
-        print("❌ campaign not found")
-        return
-
-    # 🔴 MAJBURIY: status active bo‘lsin
-    if campaign["status"] != "active":
-        print("⏸ campaign not active, skip")
+    if not campaign or campaign["status"] != "active":
         return
 
     client = await get_client(campaign["user_id"])
 
     start_time = time.time()
-    duration_sec = campaign["duration"] * 60
-    interval_sec = campaign["interval"] * 60
 
-    while time.time() - start_time < duration_sec:
+    while True:
         campaign = get_campaign(campaign_id)
 
-        start_time = time.time()
-
-        while True:
-            campaign = get_campaign(campaign_id)
-        
-            if campaign["status"] != "active":
-                await asyncio.sleep(5)
-                continue
-        
-            elapsed = time.time() - start_time
-            duration_sec = campaign["duration"] * 60  # 🔥 HAR DOIM YANGI
-        
-            if elapsed >= duration_sec:
-                break
-        
-            interval_sec = campaign["interval"] * 60  # 🔥 allaqachon to‘g‘ri
-
-        
+        # ⛔ STOP / FINISHED
         if campaign["status"] != "active":
-            print("⏸ campaign paused")
-            await asyncio.sleep(5)
+            await asyncio.sleep(2)
             continue
 
-        tasks = []
+        elapsed = time.time() - start_time
+        duration_sec = campaign["duration"] * 60
 
+        if elapsed >= duration_sec:
+            break
+
+        # 📤 YUBORISH
         for group_id in campaign["groups"]:
-            tasks.append(
-                send_to_group(client, campaign, group_id)
-            )
+            await send_to_group(client, campaign, group_id)
 
-        print(f"📤 Sending to {len(tasks)} groups")
-        await asyncio.gather(*tasks)
+        # 🔄 STATUSNI YANGILAYMIZ
+        await render_campaign(campaign_id)
 
+        interval_sec = campaign["interval"] * 60
         await asyncio.sleep(interval_sec)
 
     update_campaign_status(campaign_id, "finished")
     await render_campaign(campaign_id)
     print("✅ campaign finished")
-
 
 # =====================
 # STATUSNI YANGILASH
