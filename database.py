@@ -134,6 +134,10 @@ def init_db():
         PRIMARY KEY (user_id, usage_date)
     );
     """)
+    cur.execute("""
+    ALTER TABLE campaigns
+    ADD COLUMN IF NOT EXISTS error_count INTEGER DEFAULT 0;
+    """)
 
     
     conn.commit()
