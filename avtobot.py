@@ -490,34 +490,44 @@ async def pick_group(cb: CallbackQuery):
 
 
 @dp.message(F.text)
-async def handle_edit_input(message: Message):
+async def handle_edit_input(message):
     user_id = message.from_user.id
 
-    # 🔥 EDIT MODE BO‘LMASA — UMUMAN CHIQIB KETAMIZ
-    if user_id not in editing_campaign:
+    edit = editing_campaign.get(user_id)
+    if not edit or "field" not in edit or "campaign_id" not in edit:
+        editing_campaign.pop(user_id, None)
         return
 
-    edit = editing_campaign[user_id]
     campaign_id = edit["campaign_id"]
     field = edit["field"]
     resume_after = edit.get("resume_after", False)
 
     value = message.text.strip()
 
-    if field in ("interval", "duration"):
-        if not value.isdigit() or int(value) <= 0:
-            await message.answer("❌ Iltimos, musbat raqam kiriting")
-            return
-        value = int(value)
-
     if field == "text":
         update_campaign_text(campaign_id, value)
-    else:
-        update_campaign_field(campaign_id, field, value)
 
+    elif field == "interval":
+        if not value.isdigit() or int(value) <= 0:
+            await message.answer("❌ Interval musbat raqam bo‘lishi kerak")
+            return
+        update_campaign_field(campaign_id, "interval", int(value))
+
+    elif field == "duration":
+        if not value.isdigit() or int(value) <= 0:
+            await message.answer("❌ Davomiylik musbat raqam bo‘lishi kerak")
+            return
+        update_campaign_field(campaign_id, "duration", int(value))
+
+    else:
+        editing_campaign.pop(user_id, None)
+        return
+
+    # 🔥 MUHIM: STATE TOZALANADI
     editing_campaign.pop(user_id, None)
 
-    if resume_after:
+    # ▶ AUTO RESUME FAQAT AGAR PAUSED BO‘LSA
+    if resume_after and get_campaign(campaign_id)["status"] == "paused":
         update_campaign_status(campaign_id, "active")
         asyncio.create_task(run_campaign(campaign_id))
 
