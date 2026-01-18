@@ -312,8 +312,50 @@ async def get_client(user_id: int):
     return client
 
 # 🔥 GURUH YUKLAYMIZ
+from database import get_user_flow, save_user_flow
+
 async def start_group_selection(message: Message):
     user_id = message.from_user.id
+
+    flow = get_user_flow(user_id)
+    if not flow or flow["step"] != "choose_group":
+        return
+
+    data = flow["data"]
+
+    try:
+        client = await get_client(user_id)
+    except Exception:
+        await message.answer("❌ Telegram login topilmadi")
+        return
+
+    groups = {}
+
+    async for d in client.iter_dialogs(limit=500):
+        if d.is_group or (d.is_channel and getattr(d.entity, "megagroup", False)):
+            groups[str(d.id)] = {
+                "id": d.id,
+                "name": d.name
+            }
+
+    if not groups:
+        await message.answer("❌ Sizda guruhlar yo‘q")
+        return
+
+    data.update({
+        "groups": groups,
+        "selected_ids": [],
+        "offset": 0
+    })
+
+    save_user_flow(
+        user_id=user_id,
+        step="choose_group",
+        data=data
+    )
+
+    await show_group_page(message, user_id)
+
     state = user_state.get(user_id)
 
     if not state or state.get("step") != "choose_group":
@@ -349,253 +391,330 @@ async def start_group_selection(message: Message):
 PAGE_SIZE = 20
 
 
-async def show_group_page(message, user_id):
-    state = user_state.get(user_id)
-    if not state:
+PAGE_SIZE = 20
+
+async def show_group_page(message: Message, user_id: int):
+    flow = get_user_flow(user_id)
+    if not flow:
         return
 
-    offset = state.get("offset", 0)
-    dialogs = list(state["groups"].values())
+    data = flow["data"]
+    groups = list(data["groups"].values())
+    offset = data.get("offset", 0)
+    mode = data.get("mode")
 
-    page = dialogs[offset:offset + PAGE_SIZE]
+    page = groups[offset:offset + PAGE_SIZE]
 
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text=d.name,
-                    callback_data=f"pick_{d.id}"
+                    text=g["name"],
+                    callback_data=f"pick_{g['id']}"
                 )
             ]
-            for d in page
+            for g in page
         ]
     )
 
-    # pagination
     nav = []
     if offset > 0:
-        nav.append(
-            InlineKeyboardButton("⬅️ Oldingi", callback_data="grp_prev")
-        )
-    if offset + PAGE_SIZE < len(dialogs):
-        nav.append(
-            InlineKeyboardButton("➡️ Keyingi", callback_data="grp_next")
-        )
+        nav.append(InlineKeyboardButton("⬅️ Oldingi", callback_data="grp_prev"))
+    if offset + PAGE_SIZE < len(groups):
+        nav.append(InlineKeyboardButton("➡️ Keyingi", callback_data="grp_next"))
 
     if nav:
         keyboard.inline_keyboard.append(nav)
 
-    # ko‘p tanlashda “tayyor”
-    if state["mode"] == "multi":
+    if mode == "multi":
         keyboard.inline_keyboard.append([
             InlineKeyboardButton("✅ Tayyor", callback_data="grp_done")
         ])
 
     await message.answer(
-        "📂 Guruhni tanlang (inline tugmalar orqali):",
+        "📂 Guruhni tanlang:",
         reply_markup=keyboard
     )
-
-# =====================
-# GURUH TANLASHNI BOSHLASH
-# =====================
 
 # =====================
 # PAFINATION CALLBACK
 # =====================
 
 @dp.callback_query(F.data.in_(["grp_prev", "grp_next"]))
-async def paginate_groups(cb):
+async def paginate_groups(cb: CallbackQuery):
     user_id = cb.from_user.id
-    state = user_state.get(user_id)
-
-    if not state:
+    flow = get_user_flow(user_id)
+    if not flow:
         await cb.answer()
         return
 
-    if cb.data == "grp_next":
-        state["offset"] += PAGE_SIZE
-    else:
-        state["offset"] -= PAGE_SIZE
+    data = flow["data"]
+    offset = data.get("offset", 0)
 
-    if state["offset"] < 0:
-        state["offset"] = 0
+    if cb.data == "grp_next":
+        offset += PAGE_SIZE
+    else:
+        offset = max(0, offset - PAGE_SIZE)
+
+    data["offset"] = offset
+
+    save_user_flow(user_id, "choose_group", data)
 
     await cb.message.edit_reply_markup(reply_markup=None)
     await show_group_page(cb.message, user_id)
     await cb.answer()
-
 
 # =====================
 # GURUH TANLASH
 # =====================
 
 @dp.callback_query(F.data.startswith("pick_"))
-async def pick_group(cb):
+async def pick_group(cb: CallbackQuery):
     user_id = cb.from_user.id
-    group_id = cb.data.replace("pick_", "")
+    group_id = int(cb.data.replace("pick_", ""))
 
-    state = user_state.get(user_id)
-    if not state:
+    flow = get_user_flow(user_id)
+    if not flow:
         await cb.answer()
         return
 
-    dialog = state["groups"].get(group_id)
-    if not dialog:
+    data = flow["data"]
+    groups = data["groups"]
+    mode = data["mode"]
+    selected = data.get("selected_ids", [])
+
+    if str(group_id) not in groups:
         await cb.answer("❌ Guruh topilmadi", show_alert=True)
         return
 
-    # bitta guruh
-    if state["mode"] == "single":
-        state["selected_ids"] = [dialog.id]
-        state["step"] = "enter_text"
+    if mode == "single":
+        save_user_flow(
+            user_id,
+            "enter_text",
+            {
+                "mode": mode,
+                "selected_ids": [group_id]
+            }
+        )
 
         await cb.message.edit_text(
-            f"✅ Tanlandi: {dialog.name}\n\n"
+            f"✅ Tanlandi: {groups[str(group_id)]['name']}\n\n"
             "✍️ Endi xabar matnini kiriting:"
         )
         await cb.answer()
         return
 
-    # ko‘p guruh
-    if dialog.id not in state["selected_ids"]:
-        state["selected_ids"].append(dialog.id)
+    # multi
+    if group_id not in selected:
+        selected.append(group_id)
 
-    await cb.answer(f"➕ {dialog.name} qo‘shildi")
+    data["selected_ids"] = selected
+    save_user_flow(user_id, "choose_group", data)
+
+    await cb.answer(f"➕ {groups[str(group_id)]['name']} qo‘shildi")
 
 # =====================
 # MATN KIRITISH
 # =====================
-#@dp.message()
-async def handle_text_steps(message: Message):
+
+from database import get_user_flow, save_user_flow
+
+@dp.message(F.text)
+async def handle_enter_text(message: Message):
     user_id = message.from_user.id
-    state = user_state.get(user_id)
+    flow = get_user_flow(user_id)
 
-    if not state:
+    if not flow or flow["step"] != "enter_text":
         return
 
-    step = state.get("step")
+    data = flow["data"]
+    data["text"] = message.text
 
-    # =========================
-    # ✍️ XABAR KIRITISH
-    # =========================
-    if step == "enter_text":
+    save_user_flow(
+        user_id,
+        step="enter_interval",
+        data=data
+    )
 
-        # 📸 FOTO
-        if message.photo:
-            state["media_type"] = "photo"
-            state["media_file_id"] = message.photo[-1].file_id
-            state["text"] = message.caption or ""
-            state["step"] = "enter_interval"
-            await message.answer("⏱ Intervalni kiriting (daqiqada):")
-            return
+    await message.answer(
+        "⏱ Xabar yuborish oralig‘ini kiriting (daqiqada).\n"
+        "Masalan: `10`",
+        parse_mode="Markdown"
+    )
 
-        # 🎥 VIDEO
-        if message.video:
-            state["media_type"] = "video"
-            state["media_file_id"] = message.video.file_id
-            state["text"] = message.caption or ""
-            state["step"] = "enter_interval"
-            await message.answer("⏱ Intervalni kiriting (daqiqada):")
-            return
+@dp.message(F.photo | F.video)
+async def handle_media(message: Message):
+    user_id = message.from_user.id
+    flow = get_user_flow(user_id)
 
-        # 📝 MATN
-        if message.text:
-            text = message.text.strip()
-            if len(text) < 3:
-                await message.answer("❌ Xabar juda qisqa. Qayta kiriting:")
-                return
-
-            state["text"] = text
-            state["media_type"] = None
-            state["media_file_id"] = None
-            state["step"] = "enter_interval"
-            await message.answer("⏱ Intervalni kiriting (daqiqada):")
-            return
-
-        # ❌ BOSHQA NARSA
-        await message.answer("❌ Iltimos, matn yoki foto/video yuboring")
+    if not flow or flow["step"] != "enter_text":
         return
 
-    # =========================
-    # ⏱ INTERVAL
-    # =========================
-    if step == "enter_interval":
-        if not message.text or not message.text.isdigit():
-            await message.answer("❌ Faqat raqam kiriting (daqiqada):")
-            return
+    data = flow["data"]
 
-        interval = int(message.text)
-        if interval < 1 or interval > 1440:
-            await message.answer("❌ Interval 1–1440 daqiqa oralig‘ida bo‘lishi kerak:")
-            return
+    if message.photo:
+        data["media_type"] = "photo"
+        data["media_file_id"] = message.photo[-1].file_id
+    else:
+        data["media_type"] = "video"
+        data["media_file_id"] = message.video.file_id
 
-        state["interval"] = interval
-        state["step"] = "enter_duration"
-        await message.answer("⏳ Kampaniya qancha vaqt davom etsin? (daqiqada)")
+    data["text"] = message.caption or ""
+
+    save_user_flow(
+        user_id,
+        step="enter_interval",
+        data=data
+    )
+
+    await message.answer(
+        "⏱ Xabar yuborish oralig‘ini kiriting (daqiqada).\n"
+        "Masalan: `15`",
+        parse_mode="Markdown"
+    )
+
+@dp.message(F.photo | F.video)
+async def handle_media(message: Message):
+    user_id = message.from_user.id
+    flow = get_user_flow(user_id)
+
+    if not flow or flow["step"] != "enter_text":
         return
 
-    # =========================
-    # ⏳ DAVOMIYLIK
-    # =========================
-    if step == "enter_duration":
-        if not message.text or not message.text.isdigit():
-            await message.answer("❌ Faqat raqam kiriting:")
-            return
+    data = flow["data"]
 
-        duration = int(message.text)
-        if duration < 1 or duration > 10080:
-            await message.answer("❌ Davomiylik noto‘g‘ri:")
-            return
+    if message.photo:
+        data["media_type"] = "photo"
+        data["media_file_id"] = message.photo[-1].file_id
+    else:
+        data["media_type"] = "video"
+        data["media_file_id"] = message.video.file_id
 
-        state["duration"] = duration
-        state["step"] = "ready"
-        await show_campaign_summary(message)
+    data["text"] = message.caption or ""
+
+    save_user_flow(
+        user_id,
+        step="enter_interval",
+        data=data
+    )
+
+    await message.answer(
+        "⏱ Xabar yuborish oralig‘ini kiriting (daqiqada).\n"
+        "Masalan: `15`",
+        parse_mode="Markdown"
+    )
+@dp.message(F.text.regexp(r"^\d+$"))
+async def handle_interval(message: Message):
+    user_id = message.from_user.id
+    flow = get_user_flow(user_id)
+
+    if not flow or flow["step"] != "enter_interval":
         return
+
+    interval = int(message.text)
+    if interval < 1:
+        await message.answer("❌ Interval kamida 1 daqiqa bo‘lishi kerak")
+        return
+
+    data = flow["data"]
+    data["interval"] = interval
+
+    save_user_flow(
+        user_id,
+        step="enter_duration",
+        data=data
+    )
+
+    await message.answer(
+        "⏳ Kampaniya davomiyligini kiriting (daqiqada).\n"
+        "Masalan: `120`",
+        parse_mode="Markdown"
+    )
+@dp.message(F.text.regexp(r"^\d+$"))
+async def handle_duration(message: Message):
+    user_id = message.from_user.id
+    flow = get_user_flow(user_id)
+
+    if not flow or flow["step"] != "enter_duration":
+        return
+
+    duration = int(message.text)
+    if duration < 1:
+        await message.answer("❌ Davomiylik noto‘g‘ri")
+        return
+
+    data = flow["data"]
+    data["duration"] = duration
+
+    save_user_flow(
+        user_id,
+        step="confirm_campaign",
+        data=data
+    )
+
+    await message.answer(
+        "🚀 Kampaniyani boshlashga tayyormisiz?",
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="▶ Boshlash",
+                        callback_data="camp_start"
+                    ),
+                    InlineKeyboardButton(
+                        text="❌ Bekor qilish",
+                        callback_data="camp_cancel"
+                    )
+                ]
+            ]
+        )
+    )
+
+
 
 # =====================
 # KOMPANIYA HOLATI
 # =====================
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-async def show_campaign_summary(message: Message):
-    user_id = message.from_user.id
-    state = user_state[user_id]
+@dp.callback_query(F.data == "camp_start")
+async def start_campaign(cb: CallbackQuery):
+    user_id = cb.from_user.id
+    flow = get_user_flow(user_id)
 
-    groups_count = len(state["selected_ids"])
+    if not flow or flow["step"] != "confirm_campaign":
+        await cb.answer()
+        return
 
-    text = (
-        "📋 *Kampaniya tayyor!*\n\n"
-        f"📍 Guruhlar soni: {groups_count}\n"
-        f"💬 Xabar:\n{state['text']}\n\n"
-        f"⏱ Interval: {state['interval']} daqiqa\n"
-        f"⏳ Davomiylik: {state['duration']} daqiqa\n\n"
-        "Boshlaymizmi?"
+    data = flow["data"]
+
+    campaign_id = create_campaign(
+        user_id=user_id,
+        text=data.get("text", ""),
+        groups=data["selected_ids"],
+        interval=data["interval"],
+        duration=data["duration"],
+        chat_id=cb.message.chat.id,
+        status_message_id=cb.message.message_id,
+        media_type=data.get("media_type"),
+        media_file_id=data.get("media_file_id")
     )
 
-    kb = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton("🚀 Boshlash", callback_data="camp_start"),
-                InlineKeyboardButton("❌ Bekor qilish", callback_data="camp_cancel")
-            ]
-        ]
-    )
+    clear_user_flow(user_id)
 
-    await message.answer(text, reply_markup=kb, parse_mode="Markdown")
+    asyncio.create_task(run_campaign(campaign_id))
+
+    await cb.message.edit_text("✅ Kampaniya boshlandi!")
+    await cb.answer()
+
 
 # =====================
 # KOMPANIYA BEKOR QILISH
 # =====================
 @dp.callback_query(F.data == "camp_cancel")
-async def cancel_campaign(cb):
-    user_state.pop(cb.from_user.id, None)
-
-    await cb.message.edit_text("❌ Kampaniya bekor qilindi.")
-    await cb.message.answer(
-        "📋 Asosiy menyu:",
-        reply_markup=main_menu()
-    )
+async def cancel_campaign(cb: CallbackQuery):
+    clear_user_flow(cb.from_user.id)
+    await cb.message.edit_text("❌ Kampaniya bekor qilindi")
     await cb.answer()
 
 # =====================
