@@ -579,72 +579,60 @@ async def handle_media(message: Message):
         parse_mode="Markdown"
     )
 @dp.message(F.text.regexp(r"^\d+$"))
-async def handle_interval(message: Message):
+async def handle_numbers(message: Message):
     user_id = message.from_user.id
     flow = get_user_flow(user_id)
 
-    if not flow or flow["step"] != "enter_interval":
+    if not flow:
         return
 
-    interval = int(message.text)
-    if interval < 1:
-        await message.answer("❌ Interval kamida 1 daqiqa bo‘lishi kerak")
-        return
-
+    step = flow["step"]
     data = flow["data"]
-    data["interval"] = interval
+    value = int(message.text)
 
-    save_user_flow(
-        user_id,
-        step="enter_duration",
-        data=data
-    )
+    # ⏱ INTERVAL
+    if step == "enter_interval":
+        if value < 1:
+            await message.answer("❌ Interval kamida 1 daqiqa bo‘lishi kerak")
+            return
 
-    await message.answer(
-        "⏳ Kampaniya davomiyligini kiriting (daqiqada).\n"
-        "Masalan: `120`",
-        parse_mode="Markdown"
-    )
-@dp.message(F.text.regexp(r"^\d+$"))
-async def handle_duration(message: Message):
-    user_id = message.from_user.id
-    flow = get_user_flow(user_id)
+        data["interval"] = value
+        save_user_flow(user_id, "enter_duration", data)
 
-    if not flow or flow["step"] != "enter_duration":
-        return
-
-    duration = int(message.text)
-    if duration < 1:
-        await message.answer("❌ Davomiylik noto‘g‘ri")
-        return
-
-    data = flow["data"]
-    data["duration"] = duration
-
-    save_user_flow(
-        user_id,
-        step="confirm_campaign",
-        data=data
-    )
-
-    await message.answer(
-        "🚀 Kampaniyani boshlashga tayyormisiz?",
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(
-                        text="▶ Boshlash",
-                        callback_data="camp_start"
-                    ),
-                    InlineKeyboardButton(
-                        text="❌ Bekor qilish",
-                        callback_data="camp_cancel"
-                    )
-                ]
-            ]
+        await message.answer(
+            "⏳ Kampaniya davomiyligini kiriting (daqiqada).\n"
+            "Masalan: `120`",
+            parse_mode="Markdown"
         )
-    )
+        return
 
+    # ⏳ DURATION
+    if step == "enter_duration":
+        if value < 1:
+            await message.answer("❌ Davomiylik noto‘g‘ri")
+            return
+
+        data["duration"] = value
+        save_user_flow(user_id, "confirm_campaign", data)
+
+        await message.answer(
+            "🚀 Kampaniyani boshlashga tayyormisiz?",
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [
+                        InlineKeyboardButton(
+                            text="▶ Boshlash",
+                            callback_data="camp_start"
+                        ),
+                        InlineKeyboardButton(
+                            text="❌ Bekor qilish",
+                            callback_data="camp_cancel"
+                        )
+                    ]
+                ]
+            )
+        )
+        return
 
 
 # =====================
