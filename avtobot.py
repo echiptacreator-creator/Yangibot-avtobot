@@ -839,6 +839,19 @@ def campaign_control_keyboard(campaign_id: int, status: str):
 
     return keyboard
 
+@dp.callback_query(F.data.startswith("camp_back:"))
+async def camp_back(cb: CallbackQuery):
+    campaign_id = int(cb.data.split(":")[1])
+
+    # editing state ni tozalaymiz
+    editing_campaign.pop(cb.from_user.id, None)
+
+    # status xabarni qayta chizamiz
+    await render_campaign(campaign_id)
+
+    await cb.answer()
+
+
 def campaign_edit_keyboard(campaign_id: int):
     return InlineKeyboardMarkup(
         inline_keyboard=[
@@ -897,8 +910,19 @@ async def edit_text(cb: CallbackQuery):
         "field": "text"
     }
 
-    await cb.message.answer("✍️ Yangi xabar matnini kiriting:")
+    await cb.message.edit_text(
+        "✍️ Yangi xabar matnini kiriting:",
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(
+                    text="⬅️ Orqaga",
+                    callback_data=f"camp_back:{campaign_id}"
+                )]
+            ]
+        )
+    )
     await cb.answer()
+
 
 @dp.callback_query(F.data.startswith("edit_interval:"))
 async def edit_interval(cb: CallbackQuery):
@@ -967,6 +991,28 @@ async def camp_stats(cb: CallbackQuery):
         parse_mode="Markdown"
     )
     await cb.answer()
+
+@dp.message()
+async def handle_edit_text(message: Message):
+    user_id = message.from_user.id
+
+    if user_id not in editing_campaign:
+        return
+
+    edit = editing_campaign[user_id]
+    if edit["field"] != "text":
+        return
+
+    campaign_id = edit["campaign_id"]
+
+    # 1️⃣ DB ni yangilaymiz
+    update_campaign_text(campaign_id, message.text)
+
+    # 2️⃣ state ni tozalaymiz
+    del editing_campaign[user_id]
+
+    # 3️⃣ status xabarni qayta chizamiz
+    await render_campaign(campaign_id)
 
 
 # =====================
