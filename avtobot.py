@@ -831,16 +831,14 @@ def campaign_control_keyboard(campaign_id: int, status: str):
     return keyboard
 
 @dp.callback_query(F.data.startswith("camp_back:"))
-async def camp_back(cb: CallbackQuery):
+async def camp_back(cb):
     campaign_id = int(cb.data.split(":")[1])
 
-    # editing state ni tozalaymiz
     editing_campaign.pop(cb.from_user.id, None)
 
-    # status xabarni qayta chizamiz
     await render_campaign(campaign_id)
-
     await cb.answer()
+
 
 
 def campaign_edit_keyboard(campaign_id: int):
@@ -893,13 +891,26 @@ editing_campaign = {}
 
 
 @dp.callback_query(F.data.startswith("edit_text:"))
-async def edit_text(cb: CallbackQuery):
+async def edit_text(cb):
     campaign_id = int(cb.data.split(":")[1])
 
     editing_campaign[cb.from_user.id] = {
         "campaign_id": campaign_id,
         "field": "text"
     }
+
+    await cb.message.edit_text(
+        "✏️ Yangi xabar matnini yuboring:",
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(
+                    "⬅️ Orqaga", callback_data=f"camp_back:{campaign_id}"
+                )]
+            ]
+        )
+    )
+    await cb.answer()
+
 
     await cb.message.edit_text(
         "✍️ Yangi xabar matnini kiriting:",
@@ -916,7 +927,7 @@ async def edit_text(cb: CallbackQuery):
 
 
 @dp.callback_query(F.data.startswith("edit_interval:"))
-async def edit_interval(cb: CallbackQuery):
+async def edit_interval(cb):
     campaign_id = int(cb.data.split(":")[1])
 
     editing_campaign[cb.from_user.id] = {
@@ -924,11 +935,21 @@ async def edit_interval(cb: CallbackQuery):
         "field": "interval"
     }
 
-    await cb.message.answer("⏱ Yangi intervalni kiriting (daqiqada):")
+    await cb.message.edit_text(
+        "⏱ Yangi intervalni daqiqada kiriting:",
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(
+                    "⬅️ Orqaga", callback_data=f"camp_back:{campaign_id}"
+                )]
+            ]
+        )
+    )
     await cb.answer()
 
+
 @dp.callback_query(F.data.startswith("edit_duration:"))
-async def edit_duration(cb: CallbackQuery):
+async def edit_duration(cb):
     campaign_id = int(cb.data.split(":")[1])
 
     editing_campaign[cb.from_user.id] = {
@@ -936,11 +957,21 @@ async def edit_duration(cb: CallbackQuery):
         "field": "duration"
     }
 
-    await cb.message.answer("⏳ Yangi davomiylikni kiriting (daqiqada):")
+    await cb.message.edit_text(
+        "⏳ Yangi davomiylikni daqiqada kiriting:",
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(
+                    "⬅️ Orqaga", callback_data=f"camp_back:{campaign_id}"
+                )]
+            ]
+        )
+    )
     await cb.answer()
 
+
 @dp.message()
-async def handle_edit_input(message: Message):
+async def handle_edit_input(message):
     user_id = message.from_user.id
 
     if user_id not in editing_campaign:
@@ -950,14 +981,11 @@ async def handle_edit_input(message: Message):
     campaign_id = edit["campaign_id"]
     field = edit["field"]
 
-    if not field:
-        return
-
-    value = message.text
+    value = message.text.strip()
 
     if field in ("interval", "duration"):
-        if not value.isdigit() or int(value) < 1:
-            await message.answer("❌ Noto‘g‘ri qiymat")
+        if not value.isdigit() or int(value) <= 0:
+            await message.answer("❌ Iltimos, musbat raqam kiriting")
             return
         value = int(value)
 
@@ -967,9 +995,12 @@ async def handle_edit_input(message: Message):
         update_campaign_field(campaign_id, field, value)
 
     # 🧹 state tozalaymiz
-    del editing_campaign[user_id]
+    editing_campaign.pop(user_id, None)
 
-    # 🔄 statusni qayta chizamiz
+    # ✅ TASDIQ XABARI (YANGI)
+    await message.answer("✅ Yangilandi")
+
+    # 🔄 panelni qayta chizamiz
     await render_campaign(campaign_id)
 
 
