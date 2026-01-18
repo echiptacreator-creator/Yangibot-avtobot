@@ -744,18 +744,22 @@ async def run_campaign(campaign_id: int):
 # =====================
 # STATUSNI YANGILASH
 # =====================
-async def update_status_message(campaign: dict):
-    elapsed = int((time.time() - campaign["start_time"]) // 60)
+def build_campaign_status_text(campaign_id: int) -> str:
+    c = get_campaign(campaign_id)
 
-    text = (
-        "🚀 Kampaniya holati\n\n"
-        f"📌 Status: {campaign['status']}\n"
-        f"📍 Guruhlar: {len(campaign['groups'])}\n"
-        f"💬 Xabar:\n{campaign['text']}\n\n"
-        f"⏱ Interval: {campaign['interval']} daqiqa\n"
-        f"🕒 O‘tgan vaqt: {elapsed} daqiqa\n"
-        f"📊 Yuborildi: {campaign['sent_count']}"
+    preview = c["text"][:100] + ("..." if len(c["text"]) > 100 else "")
+
+    return (
+        "🚀 *Kampaniya holati*\n\n"
+        f"🆔 ID: `{c['id']}`\n"
+        f"💬 Xabar:\n_{preview}_\n\n"
+        f"📌 Status: {c['status']}\n"
+        f"📍 Guruhlar: {len(c['groups'])}\n"
+        f"📊 Yuborildi: {c['sent_count']}\n\n"
+        f"⏱ Interval: {c['interval']} daqiqa\n"
+        f"⏳ Davomiylik: {c['duration']} daqiqa"
     )
+
 
     try:
         await bot.edit_message_text(
@@ -825,8 +829,8 @@ def campaign_control_keyboard(campaign_id: int, status: str):
             callback_data=f"camp_edit:{campaign_id}"
         ),
         InlineKeyboardButton(
-            text="📊 Statistika",
-            callback_data=f"camp_stats:{campaign_id}"
+            text="🔁 Qayta ishga tushirish",
+            callback_data=f"camp_restart:{campaign_id}"
         )
     ])
 
@@ -982,17 +986,22 @@ async def handle_edit_input(message: Message):
     await render_campaign(campaign_id)
 
 
-@dp.callback_query(F.data.startswith("camp_stats:"))
-async def camp_stats(cb: CallbackQuery):
+@dp.callback_query(F.data.startswith("camp_restart:"))
+async def restart_campaign(cb: CallbackQuery):
     campaign_id = int(cb.data.split(":")[1])
-    c = get_campaign(campaign_id)
 
-    await cb.message.edit_text(
-        build_campaign_status_text(campaign_id),
-        reply_markup=campaign_control_keyboard(campaign_id, c["status"]),
-        parse_mode="Markdown"
-    )
-    await cb.answer()
+    # 🔄 DB reset
+    reset_campaign_stats(campaign_id)   # sent_count = 0, error_count = 0
+    update_campaign_status(campaign_id, "active")
+
+    # 🔄 UI
+    await render_campaign(campaign_id)
+
+    # 🚀 QAYTA ISHGA TUSHIRAMIZ
+    asyncio.create_task(run_campaign(campaign_id))
+
+    await cb.answer("🔁 Kampaniya qayta ishga tushdi")
+
 
 
 async def render_campaign(campaign_id: int):
