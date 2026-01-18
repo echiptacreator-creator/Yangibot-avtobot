@@ -720,6 +720,9 @@ async def run_campaign(campaign_id: int):
     while time.time() - start_time < duration_sec:
         campaign = get_campaign(campaign_id)
 
+        interval_sec = campaign["interval"] * 60  # 🔥 YANGILANDI
+
+
         if campaign["status"] != "active":
             print("⏸ campaign paused")
             await asyncio.sleep(5)
