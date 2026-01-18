@@ -934,23 +934,6 @@ async def campaign_stats(cb: CallbackQuery):
 # =====================
 # KOMPANIYANI QAYTA OLSIH
 # =====================
-def campaign_controls(campaign_id: int, status: str):
-    buttons = []
-
-    if status == "active":
-        buttons.append(
-            InlineKeyboardButton("⏸ Pause", callback_data=f"camp_pause:{campaign_id}")
-        )
-    if status == "paused":
-        buttons.append(
-            InlineKeyboardButton("▶ Resume", callback_data=f"camp_resume:{campaign_id}")
-        )
-
-    buttons.append(
-        InlineKeyboardButton("🛑 Stop", callback_data=f"camp_stop:{campaign_id}")
-    )
-
-    return InlineKeyboardMarkup(inline_keyboard=[buttons])
 # =====================
 # KOMPANIYALARIM
 # =====================
