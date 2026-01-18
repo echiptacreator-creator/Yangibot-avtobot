@@ -576,39 +576,39 @@ async def handle_numbers(message: Message):
         return
 
     # ⏳ DURATION — SHU JOYDA START QILAMIZ
-if step == "enter_duration":
-    if value < 1:
-        await message.answer("❌ Davomiylik noto‘g‘ri")
+    if step == "enter_duration":
+        if value < 1:
+            await message.answer("❌ Davomiylik noto‘g‘ri")
+            return
+
+        data["duration"] = value
+
+        # 🔥 KAMPANIYA YARATAMIZ
+        campaign_id = create_campaign(
+            user_id=user_id,
+            text=data.get("text", ""),
+            groups=data["selected_ids"],
+            interval=data["interval"],
+            duration=data["duration"],
+            chat_id=message.chat.id,
+            status_message_id=None,
+            media_type=data.get("media_type"),
+            media_file_id=data.get("media_file_id"),
+            status="active"
+        )
+
+        clear_user_flow(user_id)
+
+        # 🚀 ISHGA TUSHIRAMIZ
+        asyncio.create_task(run_campaign(campaign_id))
+
+        # 🎛 BOSHQARUV TUGMALARI BILAN XABAR
+        await message.answer(
+            "🚀 *Kampaniya boshlandi*",
+            reply_markup=campaign_control_keyboard(campaign_id, "active"),
+            parse_mode="Markdown"
+        )
         return
-
-    data["duration"] = value
-
-    # 🔥 KAMPANIYA YARATAMIZ
-    campaign_id = create_campaign(
-        user_id=user_id,
-        text=data.get("text", ""),
-        groups=data["selected_ids"],
-        interval=data["interval"],
-        duration=data["duration"],
-        chat_id=message.chat.id,
-        status_message_id=None,
-        media_type=data.get("media_type"),
-        media_file_id=data.get("media_file_id"),
-        status="active"
-    )
-
-    clear_user_flow(user_id)
-
-    # 🚀 ISHGA TUSHIRAMIZ
-    asyncio.create_task(run_campaign(campaign_id))
-
-    # 🎛 BOSHQARUV TUGMALARI BILAN XABAR
-    await message.answer(
-        "🚀 *Kampaniya boshlandi*",
-        reply_markup=campaign_control_keyboard(campaign_id, "active"),
-        parse_mode="Markdown"
-    )
-    return
 
 
 #===========================================
