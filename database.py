@@ -121,6 +121,13 @@ def init_db():
         );
     """)
     
+    cur.execute("""
+        ALTER TABLE payments
+        ADD COLUMN IF NOT EXISTS receipt_file_id TEXT,
+        ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP;
+    """)
+
+    
     conn.commit()
     cur.close()
     conn.close()
