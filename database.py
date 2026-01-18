@@ -152,6 +152,14 @@ def init_db():
         updated_at TIMESTAMP DEFAULT NOW()
     );
     """)
+    cur.execute("""
+    ALTER TABLE campaigns
+    ADD COLUMN IF NOT EXISTS sent_count INTEGER DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS error_count INTEGER DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS started_at TIMESTAMP,
+    ADD COLUMN IF NOT EXISTS finished_at TIMESTAMP;
+    """)
+
     
     conn.commit()
     cur.close()
@@ -921,3 +929,83 @@ def update_campaign_field(campaign_id: int, field: str, value):
     )
     conn.commit()
     conn.close()
+
+def increment_campaign_sent(campaign_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE campaigns SET sent_count = sent_count + 1 WHERE id = %s",
+        (campaign_id,)
+    )
+    conn.commit()
+    conn.close()
+
+
+def increment_campaign_error(campaign_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE campaigns SET error_count = error_count + 1 WHERE id = %s",
+        (campaign_id,)
+    )
+    conn.commit()
+    conn.close()
+
+def update_campaign_started(campaign_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE campaigns SET started_at = NOW() WHERE id = %s",
+        (campaign_id,)
+    )
+    conn.commit()
+    conn.close()
+
+
+def update_campaign_finished(campaign_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE campaigns SET finished_at = NOW(), status = 'finished' WHERE id = %s",
+        (campaign_id,)
+    )
+    conn.commit()
+    conn.close()
+
+def get_campaign_stats(campaign_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT
+            status,
+            sent_count,
+            error_count,
+            interval,
+            duration,
+            started_at
+        FROM campaigns
+        WHERE id = %s
+    """, (campaign_id,))
+    row = cur.fetchone()
+    conn.close()
+
+    if not row:
+        return None
+
+    status, sent, errors, interval, duration, started_at = row
+
+    elapsed = 0
+    remaining = 0
+
+    if started_at:
+        elapsed = int((datetime.now() - started_at).total_seconds() / 60)
+        remaining = max(duration - elapsed, 0)
+
+    return {
+        "status": status,
+        "sent": sent,
+        "errors": errors,
+        "elapsed": elapsed,
+        "remaining": remaining,
+        "interval": interval
+    }
