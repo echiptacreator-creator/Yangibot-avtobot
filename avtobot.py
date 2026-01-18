@@ -488,6 +488,42 @@ async def pick_group(cb: CallbackQuery):
 
     await cb.answer(f"➕ {groups[str(group_id)]['name']} qo‘shildi")
 
+
+@dp.message(F.text)
+async def handle_edit_input(message: Message):
+    user_id = message.from_user.id
+
+    # 🔥 EDIT MODE BO‘LMASA — UMUMAN CHIQIB KETAMIZ
+    if user_id not in editing_campaign:
+        return
+
+    edit = editing_campaign[user_id]
+    campaign_id = edit["campaign_id"]
+    field = edit["field"]
+    resume_after = edit.get("resume_after", False)
+
+    value = message.text.strip()
+
+    if field in ("interval", "duration"):
+        if not value.isdigit() or int(value) <= 0:
+            await message.answer("❌ Iltimos, musbat raqam kiriting")
+            return
+        value = int(value)
+
+    if field == "text":
+        update_campaign_text(campaign_id, value)
+    else:
+        update_campaign_field(campaign_id, field, value)
+
+    editing_campaign.pop(user_id, None)
+
+    if resume_after:
+        update_campaign_status(campaign_id, "active")
+        asyncio.create_task(run_campaign(campaign_id))
+
+    await message.answer("✅ Yangilandi")
+    await render_campaign(campaign_id)
+
 # =====================
 # MATN KIRITISH
 # =====================
@@ -975,45 +1011,6 @@ async def edit_duration(cb):
     await cb.answer()
 
 
-@dp.message()
-async def handle_edit_input(message):
-    user_id = message.from_user.id
-
-    if user_id not in editing_campaign:
-        return
-
-    edit = editing_campaign[user_id]
-    campaign_id = edit["campaign_id"]
-    field = edit["field"]
-    resume_after = edit.get("resume_after", False)
-
-    value = message.text.strip()
-
-    if field in ("interval", "duration"):
-        if not value.isdigit() or int(value) <= 0:
-            await message.answer("❌ Iltimos, musbat raqam kiriting")
-            return
-        value = int(value)
-
-    # 💾 DB update
-    if field == "text":
-        update_campaign_text(campaign_id, value)
-    else:
-        update_campaign_field(campaign_id, field, value)
-
-    # 🧹 state tozalash
-    editing_campaign.pop(user_id, None)
-
-    # ▶ AUTO RESUME
-    if resume_after:
-        update_campaign_status(campaign_id, "active")
-        asyncio.create_task(run_campaign(campaign_id))
-
-    # ✅ feedback
-    await message.answer("✅ Yangilandi")
-
-    # 🔄 panelni yangilaymiz
-    await render_campaign(campaign_id)
 
 
 @dp.callback_query(F.data.startswith("camp_restart:"))
