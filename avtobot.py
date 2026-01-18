@@ -25,6 +25,8 @@ from aiogram.types import ReplyKeyboardRemove
 from telethon.sessions import StringSession
 from database import get_session
 from database import get_user_limits, get_today_usage, increment_daily_usage
+from database import increment_campaign_error, reset_campaign_error
+
 
 # =====================
 # STATE (XABAR YUBORISH)
@@ -586,29 +588,10 @@ async def cancel_campaign(cb):
 # YUBORISHGA TAYYOR
 # =====================
 
+FLOODWAIT_PAUSE_THRESHOLD = 600  # 10 daqiqa
+
 async def send_to_group(client, campaign, group_id):
     user_id = campaign["user_id"]
-    limits = get_user_limits(user_id)
-
-    # 🔴 BLOKLANGAN
-    if limits.get("blocked"):
-        update_campaign_status(campaign["id"], "paused")
-        return False
-
-    # 🔒 DAILY LIMIT
-    today_used = get_today_usage(user_id)
-    daily_limit = limits.get("daily_limit")
-
-    if daily_limit and today_used >= daily_limit:
-        update_campaign_status(campaign["id"], "paused")
-
-        await notify_user(
-            campaign["chat_id"],
-            "⛔ Kunlik yuborish limiti tugadi.\n"
-            "📌 Kampaniya pauzaga qo‘yildi.\n"
-            "⏳ Ertaga avtomatik davom etadi."
-        )
-        return False
 
     try:
         if campaign["media_type"] in ("photo", "video"):
@@ -622,19 +605,40 @@ async def send_to_group(client, campaign, group_id):
 
         increment_sent_count(campaign["id"])
         increment_daily_usage(user_id, 1)
+        reset_campaign_error(campaign["id"])
         return True
 
     except FloodWaitError as e:
+        if e.seconds >= FLOODWAIT_PAUSE_THRESHOLD:
+            update_campaign_status(campaign["id"], "paused")
+
+            await notify_user(
+                campaign["chat_id"],
+                "⏸ Kampaniya avtomatik pauzaga qo‘yildi\n\n"
+                f"Sabab: Telegram FloodWait ({e.seconds} soniya)\n"
+                "⏳ Birozdan so‘ng Resume qilishingiz mumkin."
+            )
+            return False
+
+        # kichik floodwait — faqat shu guruh
         await asyncio.sleep(e.seconds)
         return False
 
     except Exception as e:
-        await notify_user(
-            campaign["chat_id"],
-            f"❌ Xabar yuborilmadi\nGuruh: {group_id}\n{str(e)}"
-        )
-        return False
+        increment_campaign_error(campaign["id"])
 
+        # 3 marta ketma-ket xato bo‘lsa — pause
+        if campaign.get("error_count", 0) + 1 >= 3:
+            update_campaign_status(campaign["id"], "paused")
+
+            await notify_user(
+                campaign["chat_id"],
+                "⏸ Kampaniya pauzaga qo‘yildi\n\n"
+                "Sabab: ketma-ket xatolar.\n"
+                "🔧 Telegram akkaunt yoki guruhlarni tekshiring."
+            )
+
+        return False
 # =====================
 # KOMPANIYANI BOSHLASH
 # =====================
