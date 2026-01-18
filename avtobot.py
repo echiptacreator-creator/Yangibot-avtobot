@@ -29,8 +29,6 @@ from database import get_user_limits, get_today_usage, increment_daily_usage
 from database import increment_campaign_error, reset_campaign_error
 from database import get_user_flow, save_user_flow
 
-
-
 # =====================
 # STATE (XABAR YUBORISH)
 # =====================
@@ -581,9 +579,13 @@ async def handle_numbers(message: Message):
             await message.answer("❌ Davomiylik noto‘g‘ri")
             return
 
-        data["duration"] = value
-
-        # 🔥 KAMPANIYA YARATAMIZ
+        # 🎛 AVVAL XABAR YUBORAMIZ
+        msg = await message.answer(
+            "🚀 *Kampaniya boshlandi*",
+            parse_mode="Markdown"
+        )
+        
+        # 🔥 KEYIN KAMPANIYA YARATAMIZ
         campaign_id = create_campaign(
             user_id=user_id,
             text=data.get("text", ""),
@@ -591,24 +593,21 @@ async def handle_numbers(message: Message):
             interval=data["interval"],
             duration=data["duration"],
             chat_id=message.chat.id,
-            status_message_id=None,
+            status_message_id=msg.message_id,  # ✅ MUHIM
             media_type=data.get("media_type"),
             media_file_id=data.get("media_file_id")
         )
-
-
+        
         clear_user_flow(user_id)
-
+        
         # 🚀 ISHGA TUSHIRAMIZ
         asyncio.create_task(run_campaign(campaign_id))
-
-        # 🎛 BOSHQARUV TUGMALARI BILAN XABAR
-        await message.answer(
-            "🚀 *Kampaniya boshlandi*",
-            reply_markup=campaign_control_keyboard(campaign_id, "active"),
-            parse_mode="Markdown"
+        
+        # 🎛 TUGMALARNI QO‘SHAMIZ
+        await msg.edit_reply_markup(
+            reply_markup=campaign_control_keyboard(campaign_id, "active")
         )
-        return
+
 
 
 #===========================================
