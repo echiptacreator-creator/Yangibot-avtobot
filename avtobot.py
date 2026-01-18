@@ -29,7 +29,7 @@ from database import get_user_limits, get_today_usage, increment_daily_usage
 from database import increment_campaign_error, reset_campaign_error
 from database import get_user_flow, save_user_flow
 from database import reset_campaign_stats
-
+from database import get_all_campaigns
 
 # =====================
 # STATE (XABAR YUBORISH)
@@ -679,10 +679,10 @@ async def restore_campaigns():
 
     for c in campaigns:
         if c["status"] == "active":
-            # 🔒 restartdan keyin avtomatik yurmasin
             update_campaign_status(c["id"], "paused")
 
     print("🔒 All active campaigns set to paused after restart")
+
 
 
 
