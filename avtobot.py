@@ -970,49 +970,41 @@ async def handle_edit_input(message: Message):
             return
         value = int(value)
 
-    update_campaign_field(campaign_id, field, value)
+    if field == "text":
+        update_campaign_text(campaign_id, value)
+    else:
+        update_campaign_field(campaign_id, field, value)
 
+    # 🧹 state tozalaymiz
     del editing_campaign[user_id]
 
-    campaign = get_campaign(campaign_id)
+    # 🔄 statusni qayta chizamiz
+    await render_campaign(campaign_id)
 
-    await message.answer(
-        "✅ O‘zgarish saqlandi",
-        reply_markup=campaign_control_keyboard(campaign_id, campaign["status"])
-    )
 
 @dp.callback_query(F.data.startswith("camp_stats:"))
 async def camp_stats(cb: CallbackQuery):
     campaign_id = int(cb.data.split(":")[1])
+    c = get_campaign(campaign_id)
 
     await cb.message.edit_text(
         build_campaign_status_text(campaign_id),
-        reply_markup=campaign_control_keyboard(campaign_id, "active"),
+        reply_markup=campaign_control_keyboard(campaign_id, c["status"]),
         parse_mode="Markdown"
     )
     await cb.answer()
 
-@dp.message()
-async def handle_edit_text(message: Message):
-    user_id = message.from_user.id
 
-    if user_id not in editing_campaign:
-        return
+async def render_campaign(campaign_id: int):
+    c = get_campaign(campaign_id)
 
-    edit = editing_campaign[user_id]
-    if edit["field"] != "text":
-        return
-
-    campaign_id = edit["campaign_id"]
-
-    # 1️⃣ DB ni yangilaymiz
-    update_campaign_text(campaign_id, message.text)
-
-    # 2️⃣ state ni tozalaymiz
-    del editing_campaign[user_id]
-
-    # 3️⃣ status xabarni qayta chizamiz
-    await render_campaign(campaign_id)
+    await bot.edit_message_text(
+        chat_id=c["chat_id"],
+        message_id=c["status_message_id"],
+        text=build_campaign_status_text(campaign_id),
+        reply_markup=campaign_control_keyboard(campaign_id, c["status"]),
+        parse_mode="Markdown"
+    )
 
 
 # =====================
