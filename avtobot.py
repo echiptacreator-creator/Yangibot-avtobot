@@ -614,8 +614,10 @@ async def start_campaign(cb: CallbackQuery):
     user_id = cb.from_user.id
     flow = get_user_flow(user_id)
 
-    if not flow or flow["step"] != "confirm_campaign":
-        await cb.answer("Bu kampaniya allaqachon boshlangan", show_alert=True)
+    print("🔥 camp_start pressed", flow)
+
+    if not flow:
+        await cb.answer("Flow topilmadi", show_alert=True)
         return
 
     data = flow["data"]
@@ -627,7 +629,7 @@ async def start_campaign(cb: CallbackQuery):
         interval=data["interval"],
         duration=data["duration"],
         chat_id=cb.message.chat.id,
-        status_message_id=None,
+        status_message_id=cb.message.message_id,
         media_type=data.get("media_type"),
         media_file_id=data.get("media_file_id"),
         status="active"
@@ -637,11 +639,9 @@ async def start_campaign(cb: CallbackQuery):
 
     asyncio.create_task(run_campaign(campaign_id))
 
-    await cb.message.edit_text(
-        "🚀 Kampaniya boshlandi",
-        reply_markup=campaign_control_keyboard(campaign_id, status="active")
-    )
-    await cb.answer()
+    await cb.message.edit_text("🚀 Kampaniya boshlandi")
+    await cb.answer("Boshlandi")
+
 
 def campaign_control_keyboard(campaign_id: int, status: str):
     buttons = []
