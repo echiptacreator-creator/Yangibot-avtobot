@@ -11,7 +11,6 @@ from telethon.errors import (
     PasswordHashInvalidError,
     FloodWaitError
 )
-
 from database import (
     save_login_attempt,
     get_login_attempt,
@@ -39,6 +38,8 @@ def run(coro):
 # FLASK APP — SHART!
 # =====================
 app = Flask(__name__, template_folder="templates")
+app = Flask(__name__, static_folder="static")
+
 
 # =====================
 # INIT DB (FAQAT AGAR KERAK BO‘LSA)
