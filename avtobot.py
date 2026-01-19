@@ -406,15 +406,15 @@ async def show_group_page(message: Message, user_id: int, edit: bool = False):
 
     nav = []
     if offset > 0:
-        nav.append(InlineKeyboardButton("⬅️ Oldingi", callback_data="grp_prev"))
+        nav.append(InlineKeyboardButton(text="⬅️ Oldingi", callback_data="grp_prev"))
     if offset + PAGE_SIZE < len(groups):
-        nav.append(InlineKeyboardButton("➡️ Keyingi", callback_data="grp_next"))
+        nav.append(InlineKeyboardButton(text="➡️ Keyingi", callback_data="grp_next"))
     if nav:
         keyboard.inline_keyboard.append(nav)
 
     if mode == "multi":
         keyboard.inline_keyboard.append([
-            InlineKeyboardButton("✅ Tayyor", callback_data="grp_done")
+            InlineKeyboardButton(text="✅ Tayyor", callback_data="grp_done")
         ])
 
     if edit:
