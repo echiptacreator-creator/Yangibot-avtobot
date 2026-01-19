@@ -160,6 +160,13 @@ def init_db():
     ADD COLUMN IF NOT EXISTS finished_at TIMESTAMP;
     """)
 
+    cur.execute("""
+    CREATE TABLE account_risk (
+    user_id BIGINT PRIMARY KEY,
+    risk_score INTEGER NOT NULL DEFAULT 0,
+    last_updated TIMESTAMP NOT NULL DEFAULT NOW()
+);
+""")
     
     conn.commit()
     cur.close()
@@ -1091,3 +1098,50 @@ def get_last_pending_payment(user_id: int):
     conn.close()
     return row
 
+def get_account_risk(user_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT risk_score, last_updated
+        FROM account_risk
+        WHERE user_id = %s
+    """, (user_id,))
+
+    row = cur.fetchone()
+    conn.close()
+
+    if row:
+        return {"score": row[0], "last_updated": row[1]}
+    else:
+        return {"score": 0, "last_updated": None}
+
+def save_account_risk(user_id: int, score: int):
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        INSERT INTO account_risk (user_id, risk_score, last_updated)
+        VALUES (%s, %s, NOW())
+        ON CONFLICT (user_id)
+        DO UPDATE SET
+            risk_score = EXCLUDED.risk_score,
+            last_updated = NOW()
+    """, (user_id, score))
+
+    conn.commit()
+    conn.close()
+
+def decay_account_risk(user_id: int):
+    score, last = get_account_risk(user_id)
+
+    if not last:
+        return score
+
+    minutes = (datetime.utcnow() - last).total_seconds() / 60
+
+    if minutes >= 10 and score > 0:
+        score = max(0, score - 10)
+        save_account_risk(user_id, score)
+
+    return score
