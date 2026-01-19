@@ -964,8 +964,8 @@ FLOODWAIT_PAUSE_THRESHOLD = 600  # 10 daqiqa
 
 async def send_to_group(client, campaign, group_id):
     # 🔄 YUBORISHDAN OLDIN RISKNI YUMSHATISH
-    decay_account_risk(user_id)
     user_id = campaign["user_id"]
+    decay_account_risk(user_id)
 
     # 🔒 0️⃣ YUBORISHDAN OLDIN QAT’IY TEKSHIRUV
     ok, reason = can_user_run_campaign(user_id)
@@ -1771,6 +1771,15 @@ def get_next_group(campaign):
         raise Exception("Guruhlar yo‘q")
 
     return random.choice(groups)
+
+except Exception as e:
+    print("SEND ERROR:", repr(e))
+
+    await notify_user(
+        campaign["chat_id"],
+        "⚠️ Guruhga yuborishda xatolik bo‘ldi.\n"
+        "Bot avtomatik davom etyapti."
+    )
 
 @dp.message()
 async def catch_all(message: Message):
