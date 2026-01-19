@@ -317,13 +317,26 @@ function goBackToTariffs() {
 }
 
 function copyCard() {
-  navigator.clipboard.writeText("8600XXXXXXXXXXXX");
+  navigator.clipboard.writeText("9860260107680035");
   tg.showPopup({ message: "Karta raqami nusxalandi" });
 }
 
-function sendReceipt() {
+async function sendReceipt() {
+  const user = tg.initDataUnsafe.user;
+
+  await fetch("/api/payment/init", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      user_id: user.id,
+      months: selected.months,
+      amount: selected.price
+    })
+  });
+
   tg.openTelegramLink("https://t.me/Haydovchiadminbot");
 }
+
   
 /* 🔥 Telegram theme o‘zgarsa — avtomatik moslash */
 tg.onEvent("themeChanged", () => {
