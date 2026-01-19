@@ -45,7 +45,18 @@ def increase_risk(user_id: int, value: int):
 
 
 def decay_account_risk(user_id: int):
-    risk = get_account_risk(user_id)
-    risk = max(0, risk - 1)
-    save_account_risk(user_id, risk)
-    return risk
+    data = get_account_risk(user_id)
+
+    score = data["score"]
+    last = data["last_updated"]
+
+    if not last:
+        return score
+
+    minutes = (datetime.utcnow() - last).total_seconds() / 60
+
+    if minutes >= 10 and score > 0:
+        score = max(0, score - 10)
+        save_account_risk(user_id, score)
+
+    return score
