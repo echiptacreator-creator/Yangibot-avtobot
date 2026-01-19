@@ -80,20 +80,33 @@ from database import get_login_session
 def is_logged_in(user_id):
     return get_login_session(user_id) is not None
 
-def calculate_duration_limits(interval: int) -> dict:
+def calculate_duration_limits(interval: int):
     """
-    Intervalga qarab davomiylik limitlarini hisoblaydi
+    Intervalga qarab xavfsiz davomiyliklarni qaytaradi
     """
-    min_duration = interval * 10
-    safe_max = interval * 15
-    absolute_max = interval * 30
+    if interval <= 3:
+        return 30, 45, 60
+    elif interval <= 5:
+        return 50, 75, 120
+    elif interval <= 10:
+        return 100, 150, 300
+    elif interval <= 20:
+        return 200, 300, 600
+    else:
+        return 300, 450, 900
 
-    return {
-        "min": min_duration,
-        "safe": safe_max,
-        "max": absolute_max
-    }
-
+def get_interval_options_by_risk(risk: int):
+    """
+    Riskga qarab ruxsat etilgan intervallar
+    """
+    if risk < 15:
+        return [3, 5, 10, 20, 30], "🟢 Juda xavfsiz"
+    elif risk < 30:
+        return [5, 10, 20, 30], "🟡 Xavfsiz"
+    elif risk < 50:
+        return [10, 15, 20], "🟠 Ehtiyotkor"
+    else:
+        return [20, 30], "🔴 Yuqori xavf"
 
 # =====================
 # NOTIFICATION XATO
@@ -184,27 +197,26 @@ def duration_keyboard(min_d: int, safe_d: int, max_d: int):
         ]
     )
 
-def interval_keyboard(min_i: int, max_i: int):
-    mid = (min_i + max_i) // 2
+def interval_keyboard(intervals: list[int]):
+    keyboard = []
 
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text=f"{min_i} daq (🟢)",
-                    callback_data=f"pick_interval:{min_i}"
-                ),
-                InlineKeyboardButton(
-                    text=f"{mid} daq (🟡)",
-                    callback_data=f"pick_interval:{mid}"
-                ),
-                InlineKeyboardButton(
-                    text=f"{max_i} daq (🔴)",
-                    callback_data=f"pick_interval:{max_i}"
-                ),
-            ]
-        ]
-    )
+    row = []
+    for i in intervals:
+        emoji = "🔥" if i <= 5 else "🟢" if i <= 10 else "🟡" if i <= 20 else "🔴"
+        row.append(
+            InlineKeyboardButton(
+                text=f"{i} daq {emoji}",
+                callback_data=f"pick_interval:{i}"
+            )
+        )
+        if len(row) == 3:
+            keyboard.append(row)
+            row = []
+
+    if row:
+        keyboard.append(row)
+
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 def login_menu():
     return ReplyKeyboardMarkup(
@@ -735,14 +747,15 @@ async def handle_enter_text_onl(message: Message):
         min_i, max_i = 20, 30
         level = "🔴 Yuqori xavf"
 
+    risk = get_account_risk(user_id)
+    intervals, level = get_interval_options_by_risk(risk)
+    
     await message.answer(
         "⏱ *Xabar yuborish intervalini tanlang*\n\n"
         f"🔐 Akkaunt holati: *{level}*\n\n"
-        f"👉 Tavsiya etilgan oraliq:\n"
-        f"*{min_i} – {max_i} daqiqa*\n\n"
-        "👇 Tugmalardan birini tanlang yoki raqam yozing:",
+        "👇 Tavsiya etilgan variantlar:",
         parse_mode="Markdown",
-        reply_markup=interval_keyboard(min_i, max_i)
+        reply_markup=interval_keyboard(intervals)
     )
 
 @dp.callback_query(F.data.startswith("pick_interval:"))
@@ -760,16 +773,16 @@ async def pick_interval(cb: CallbackQuery):
 
     save_user_flow(user_id, "enter_duration", data)
 
-    min_d = interval * 10
-    safe_d = interval * 15
-    max_d = interval * 30
-
+    min_d, safe_d, max_d = calculate_duration_limits(interval)0
+    
     await cb.message.edit_text(
         "⏳ *Kampaniya davomiyligini tanlang (daqiqada)*\n\n"
         f"🟢 Xavfsiz: {min_d} – {safe_d}\n"
-        f"🟡 O‘rtacha: {safe_d} – {max_d}\n\n"
-        "✍️ Raqam kiriting:",
-        parse_mode="Markdown"
+        f"🟡 O‘rtacha: {safe_d} – {max_d}\n"
+        f"🔴 Xavfli: {max_d}+\n\n"
+        "👇 Tugmalardan birini tanlang yoki raqam yozing:",
+        parse_mode="Markdown",
+        reply_markup=duration_keyboard(min_d, safe_d, max_d)
     )
 
     await cb.answer("⏱ Interval tanlandi")
@@ -847,24 +860,15 @@ async def handle_numbers(message: Message):
         risk = get_account_risk(user_id)
 
         # 🔐 RISKGA MOS INTERVAL CHEGARASI
-        if risk < 20:
-            min_i, max_i = 10, 30
-        elif risk < 40:
-            min_i, max_i = 12, 25
-        elif risk < 60:
-            min_i, max_i = 15, 20
-        else:
-            min_i, max_i = 20, 30
+        intervals, _ = get_interval_options_by_risk(risk)
 
-        if interval < min_i or interval > max_i:
+        if interval not in intervals:
             await message.answer(
-                "❌ *Interval akkaunt xavfiga mos emas*\n\n"
-                f"🔐 Siz uchun ruxsat etilgan:\n"
-                f"➡️ *{min_i} – {max_i} daqiqa*",
-                parse_mode="Markdown"
+                "❌ Bu interval akkaunt xavfiga mos emas.\n"
+                "Iltimos, tavsiya etilgan variantlardan birini tanlang."
             )
             return
-
+            
         # ✅ INTERVAL SAQLANADI
         data["interval"] = interval
         save_user_flow(user_id, "enter_duration", data)
