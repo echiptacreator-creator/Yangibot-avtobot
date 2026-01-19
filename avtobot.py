@@ -36,6 +36,8 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from database import update_campaign_field
 from database import update_campaign_text
 from database import get_user_campaigns
+from access_control import can_user_run_campaign
+
 
 
 # =====================
@@ -661,7 +663,14 @@ async def handle_numbers(message: Message):
 
     if step == "enter_duration":
         data["duration"] = value
-    
+
+            # 🔒 AVVAL TEKSHIRAMIZ
+        ok, reason = can_user_run_campaign(user_id)
+        if not ok:
+            await message.answer(reason)
+            clear_user_flow(user_id)
+            return
+            
         # 1️⃣ STATUS XABARI (OLDINDAN)
         status_msg = await bot.send_message(
             chat_id=message.chat.id,
@@ -703,7 +712,20 @@ FLOODWAIT_PAUSE_THRESHOLD = 600  # 10 daqiqa
 async def send_to_group(client, campaign, group_id):
     user_id = campaign["user_id"]
 
+    # 🔒 0️⃣ YUBORISHDAN OLDIN QAT’IY TEKSHIRUV
+    ok, reason = can_user_run_campaign(user_id)
+    if not ok:
+        update_campaign_status(campaign["id"], "paused")
+
+        await notify_user(
+            campaign["chat_id"],
+            "⏸ Kampaniya avtomatik pauzaga qo‘yildi\n\n"
+            f"Sabab: {reason}"
+        )
+        return False
+
     try:
+        # 📤 XABAR YUBORISH
         if campaign["media_type"] in ("photo", "video"):
             await client.send_file(
                 group_id,
@@ -713,6 +735,7 @@ async def send_to_group(client, campaign, group_id):
         else:
             await client.send_message(group_id, campaign["text"])
 
+        # ✅ MUVAFFAQIYAT
         increment_sent_count(campaign["id"])
         increment_daily_usage(user_id, 1)
         reset_campaign_error(campaign["id"])
@@ -730,14 +753,14 @@ async def send_to_group(client, campaign, group_id):
             )
             return False
 
-        # kichik floodwait — faqat shu guruh
+        # 🟡 kichik floodwait — faqat shu guruh
         await asyncio.sleep(e.seconds)
         return False
 
-    except Exception as e:
+    except Exception:
         increment_campaign_error(campaign["id"])
 
-        # 3 marta ketma-ket xato bo‘lsa — pause
+        # ❌ 3 marta ketma-ket xato → pause
         if campaign.get("error_count", 0) + 1 >= 3:
             update_campaign_status(campaign["id"], "paused")
 
@@ -749,6 +772,7 @@ async def send_to_group(client, campaign, group_id):
             )
 
         return False
+
 # =====================
 # KOMPANIYANI BOSHLASH
 # =====================
@@ -844,26 +868,35 @@ async def pause_campaign(cb: CallbackQuery):
     await cb.answer("⏸ Pauzaga qo‘yildi")
 
 
+from access_control import can_user_run_campaign
+
 @dp.callback_query(F.data.startswith("camp_resume:"))
 async def resume_campaign(cb: CallbackQuery):
     campaign_id = int(cb.data.split(":")[1])
 
     c = get_campaign(campaign_id)
     if not c:
-        await cb.answer("Kampaniya topilmadi", show_alert=True)
+        await cb.answer("❌ Kampaniya topilmadi", show_alert=True)
+        return
+
+    # 🔒 RESUME OLDIDAN TEKSHIRUV
+    ok, reason = can_user_run_campaign(c["user_id"])
+    if not ok:
+        await cb.answer(reason, show_alert=True)
         return
 
     if c["status"] != "paused":
-        await cb.answer("Kampaniya pauzada emas", show_alert=True)
+        await cb.answer("❗ Kampaniya pauzada emas", show_alert=True)
         return
 
+    # ✅ ENDI DAVOM ETTIRISH MUMKIN
     update_campaign_status(campaign_id, "active")
     await render_campaign(campaign_id)
 
-    # 🔥 FAQAT SHU JOYDA TASK YARATILADI
     asyncio.create_task(run_campaign(campaign_id))
 
     await cb.answer("▶ Kampaniya davom ettirildi")
+
 
 
 
