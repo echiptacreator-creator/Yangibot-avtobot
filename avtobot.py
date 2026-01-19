@@ -169,11 +169,27 @@ async def admin_notification_worker():
 @dp.message(EditCampaign.waiting_value)
 async def edit_value_handler(message: Message, state: FSMContext):
     data = await state.get_data()
+
     campaign_id = data["campaign_id"]
     field = data["field"]
+    resume_after = data.get("resume_after", False)
+
     value = message.text.strip()
 
-    update_campaign_field(campaign_id, field, value)
+    if field == "text":
+        update_campaign_text(campaign_id, value)
+
+    elif field == "interval":
+        if not value.isdigit() or int(value) <= 0:
+            await message.answer("❌ Interval musbat raqam bo‘lishi kerak")
+            return
+        update_campaign_field(campaign_id, "interval_minutes", int(value))
+
+    elif field == "duration":
+        if not value.isdigit() or int(value) <= 0:
+            await message.answer("❌ Davomiylik musbat raqam bo‘lishi kerak")
+            return
+        update_campaign_field(campaign_id, "duration_minutes", int(value))
 
     await state.clear()
 
@@ -183,6 +199,7 @@ async def edit_value_handler(message: Message, state: FSMContext):
 
     await message.answer("✅ Yangilandi")
     await render_campaign(campaign_id)
+
 
 @dp.message(CommandStart())
 async def start(message: Message):
