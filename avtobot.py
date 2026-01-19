@@ -910,6 +910,7 @@ async def edit_value_handler(message: Message, state: FSMContext):
     data = await state.get_data()
     campaign_id = data["campaign_id"]
     field = data["field"]
+    resume_after = data.get("resume_after", False)
 
     value = message.text.strip()
 
@@ -928,11 +929,16 @@ async def edit_value_handler(message: Message, state: FSMContext):
             return
         update_campaign_field(campaign_id, "duration", int(value))
 
-    # 🔥 FSM NI TOZALAYMIZ
     await state.clear()
 
-    await message.answer("✅ Yangilandi")
+    # 🔥 MANA ASOSIY JOY
+    if resume_after:
+        update_campaign_status(campaign_id, "active")
+        asyncio.create_task(run_campaign(campaign_id))
+
+    await message.answer("✅ Yangilandi va qo‘llanildi")
     await render_campaign(campaign_id)
+
 
 
 @dp.callback_query(F.data.startswith("edit_text:"))
@@ -956,17 +962,22 @@ async def edit_text(cb: CallbackQuery, state: FSMContext):
 async def edit_interval(cb: CallbackQuery, state: FSMContext):
     campaign_id = int(cb.data.split(":")[1])
 
-    update_campaign_status(campaign_id, "paused")
+    c = get_campaign(campaign_id)
+    was_active = c["status"] == "active"
 
+    if was_active:
+        update_campaign_status(campaign_id, "paused")
 
     await state.set_state(EditCampaign.waiting_value)
     await state.update_data(
         campaign_id=campaign_id,
-        field="interval"
+        field="interval",
+        resume_after=was_active   # 🔥 MUHIM
     )
 
     await cb.message.edit_text("⏱ Yangi intervalni daqiqada kiriting:")
     await cb.answer()
+
 
 
 @dp.callback_query(F.data.startswith("edit_duration:"))
