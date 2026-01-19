@@ -216,9 +216,10 @@ def init_db():
     """)
 
     cur.execute("""
-        ALTER TABLE user_groups
-        ADD COLUMN IF NOT EXISTS peer_id BIGINT;
-    """)
+        INSERT INTO user_groups (user_id, peer_id, title, username)
+        VALUES (%s, %s, %s, %s)
+        ON CONFLICT (user_id, peer_id) DO NOTHING
+    """, (...))
     
     conn.commit()
     cur.close()
