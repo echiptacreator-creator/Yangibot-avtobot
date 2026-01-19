@@ -507,12 +507,11 @@ class EditCampaign(StatesGroup):
 # MATN KIRITISH
 # =====================
 
-@dp.message(
-    F.text 
-    & ~F.text.regexp(r"^\d+$") 
-    & ~F.text.startswith("/")
-)
-async def handle_enter_text(message: Message):
+@dp.message(F.text)
+async def handle_enter_text(message: Message, state: FSMContext):
+    current_state = await state.get_state()
+    if current_state is not None:
+        return  # FSM ishlayapti — bu handler ARALASHMAYDI
 
     user_id = message.from_user.id
     flow = get_user_flow(user_id)
@@ -523,17 +522,12 @@ async def handle_enter_text(message: Message):
     data = flow["data"]
     data["text"] = message.text
 
-    save_user_flow(
-        user_id,
-        step="enter_interval",
-        data=data
-    )
+    save_user_flow(user_id, "enter_interval", data)
 
     await message.answer(
-        "⏱ Xabar yuborish oralig‘ini kiriting (daqiqada).\n"
-        "Masalan: `10`",
-        parse_mode="Markdown"
+        "⏱ Xabar yuborish oralig‘ini kiriting (daqiqada):"
     )
+
 
 @dp.message(F.photo | F.video)
 async def handle_media(message: Message):
@@ -871,20 +865,7 @@ async def edit_value_handler(message: Message, state: FSMContext):
 
     value = message.text.strip()
 
-    if field == "text":
-        update_campaign_field(campaign_id, "text", value)
-
-    elif field == "interval":
-        if not value.isdigit() or int(value) <= 0:
-            await message.answer("❌ Interval musbat raqam bo‘lishi kerak")
-            return
-        update_campaign_field(campaign_id, "interval", int(value))
-
-    elif field == "duration":
-        if not value.isdigit() or int(value) <= 0:
-            await message.answer("❌ Davomiylik musbat raqam bo‘lishi kerak")
-            return
-        update_campaign_field(campaign_id, "duration", int(value))
+    update_campaign_field(campaign_id, field, value)
 
     await state.clear()
 
@@ -894,6 +875,7 @@ async def edit_value_handler(message: Message, state: FSMContext):
 
     await message.answer("✅ Yangilandi")
     await render_campaign(campaign_id)
+
 
 
 def campaign_edit_keyboard(campaign_id: int):
