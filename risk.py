@@ -2,16 +2,28 @@
 from database import get_db
 import time
 
-def get_account_risk(user_id: int) -> int:
+def get_account_risk(user_id):
     conn = get_db()
     cur = conn.cursor()
+
     cur.execute(
         "SELECT risk_score FROM user_accounts WHERE user_id=%s",
         (user_id,)
     )
     row = cur.fetchone()
+
+    if not row:
+        # 🔥 AGAR YO‘Q BO‘LSA — YARATAMIZ
+        cur.execute(
+            "INSERT INTO user_accounts (user_id, risk_score) VALUES (%s, 0)",
+            (user_id,)
+        )
+        conn.commit()
+        conn.close()
+        return 0
+
     conn.close()
-    return row[0] if row else 0
+    return row[0]
 
 
 def save_account_risk(user_id: int, risk: int):
