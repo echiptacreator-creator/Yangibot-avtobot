@@ -1171,26 +1171,24 @@ def get_premium_status(user_id: int):
     """
     return False, 0, False
 
-def get_user_groups(user_id: int):
+def get_user_groups(user_id):
     conn = get_db()
     cur = conn.cursor()
-
     cur.execute("""
         SELECT group_id, title, username
         FROM user_groups
         WHERE user_id = %s
+        ORDER BY id DESC
     """, (user_id,))
-
     rows = cur.fetchall()
-    conn.close()
+    cur.close()
 
     return [
         {
             "group_id": r[0],
             "title": r[1],
             "username": r[2]
-        }
-        for r in rows
+        } for r in rows
     ]
 
 def save_user_groups(user_id, groups):
@@ -1209,5 +1207,26 @@ def save_user_groups(user_id, groups):
             g["username"]
         ))
 
+    conn.commit()
+    cur.close()
+
+def add_user_group(user_id, group_id, title, username):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO user_groups (user_id, group_id, title, username)
+        VALUES (%s, %s, %s, %s)
+        ON CONFLICT (user_id, group_id) DO NOTHING
+    """, (user_id, group_id, title, username))
+    conn.commit()
+    cur.close()
+
+def remove_user_group(user_id, group_id):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        DELETE FROM user_groups
+        WHERE user_id = %s AND group_id = %s
+    """, (user_id, group_id))
     conn.commit()
     cur.close()
