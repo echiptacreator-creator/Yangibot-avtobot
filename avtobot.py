@@ -481,11 +481,18 @@ async def load_groups_handler(message: Message):
 
         # ✅ faqat guruhlar (private + supergroup)
         if dialog.is_group:
-            groups.append({
-                "group_id": dialog.entity.id,
-                "title": dialog.entity.title,
-                "username": getattr(dialog.entity, "username", None)
-            })
+            raw_id = dialog.entity.id
+
+        if raw_id > 0:
+            group_id = -1000000000000 + raw_id
+        else:
+            group_id = raw_id
+        
+        groups.append({
+            "group_id": group_id,
+            "title": dialog.entity.title,
+            "username": getattr(dialog.entity, "username", None)
+        })
 
     if not groups:
         await message.answer("❌ Hech qanday guruh topilmadi")
