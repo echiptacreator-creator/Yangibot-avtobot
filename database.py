@@ -1215,20 +1215,21 @@ def save_user_groups(user_id, groups):
     conn = get_db()
     cur = conn.cursor()
 
+    cur.execute("DELETE FROM user_groups WHERE user_id = %s", (user_id,))
+
     for g in groups:
         cur.execute("""
             INSERT INTO user_groups (user_id, group_id, title, username)
             VALUES (%s, %s, %s, %s)
-            ON CONFLICT (user_id, group_id) DO NOTHING
         """, (
             user_id,
-            g["id"],
+            g["group_id"],
             g["title"],
-            g["username"]
+            g.get("username")
         ))
 
     conn.commit()
-    cur.close()
+    conn.close()
 
 def add_user_group(user_id, group_id, title, username):
     conn = get_db()
