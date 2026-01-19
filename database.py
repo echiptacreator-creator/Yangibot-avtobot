@@ -921,15 +921,26 @@ def clear_user_flow(user_id: int):
     conn.commit()
     conn.close()
 
-def update_campaign_field(campaign_id: int, field: str, value):
+def update_campaign_field(campaign_id, field, value):
+    FIELD_MAP = {
+        "text": "text",
+        "interval": "send_interval",
+        "duration": "send_duration",
+    }
+
+    column = FIELD_MAP.get(field)
+    if not column:
+        raise ValueError(f"Unknown campaign field: {field}")
+
     conn = get_db()
     cur = conn.cursor()
     cur.execute(
-        f"UPDATE campaigns SET {field} = %s WHERE id = %s",
+        f"UPDATE campaigns SET {column} = %s WHERE id = %s",
         (value, campaign_id)
     )
     conn.commit()
     conn.close()
+
 
 def increment_campaign_sent(campaign_id: int):
     conn = get_db()
