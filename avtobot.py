@@ -878,13 +878,14 @@ async def restore_campaigns():
 
 
 async def run_campaign_safe(client, campaign, account_risk):
+    
     start_time = time.time()
     end_time = start_time + campaign["duration"] * 60
     sent_count = 0
 
     while time.time() < end_time and campaign["status"] == "active":
 
-        decay_risk(account_risk)
+        risk = decay_account_risk(user_id)
 
         # ❌ Juda xavfli → to‘liq blok
         if account_risk["score"] >= 80:
