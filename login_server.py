@@ -225,6 +225,7 @@ def verify_password():
 
 
 from flask import request, jsonify
+from database import get_db
 
 @app.route("/api/payment/init", methods=["POST"])
 def init_payment():
