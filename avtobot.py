@@ -12,6 +12,7 @@ from aiogram.types import (
 )
 from telethon import TelegramClient
 import os
+import random
 from database import init_db, get_db
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from telethon.errors import FloodWaitError
@@ -453,7 +454,13 @@ async def load_groups_handler(message: Message):
 # PAFINATION CALLBACK
 # =====================
 
-@dp.message(F.text.in_(["📍 Bitta guruhga", "📍 Ko‘p guruhlarga"]))
+@dp.message(
+    F.text.in_(["📍 Bitta guruhga", "📍 Ko‘p guruhlarga"]) &
+    F.from_user.func(lambda u: (
+        (flow := get_user_flow(u.id)) is not None
+        and flow["step"] == "choose_mode"
+    ))
+)
 async def choose_send_mode(message: Message):
     user_id = message.from_user.id
     mode = "single" if "Bitta" in message.text else "multi"
@@ -486,50 +493,42 @@ async def choose_send_mode(message: Message):
 # GURUH TANLASH
 # =====================
 
+def get_next_group(campaign):
+    groups = campaign["groups"]
+    if not groups:
+        raise Exception("Guruhlar yo‘q")
+
+    index = campaign.get("last_group_index", 0)
+    group_id = groups[index % len(groups)]
+
+    update_campaign_field(
+        campaign["id"],
+        "last_group_index",
+        index + 1
+    )
+
+    return group_id
 
 # =====================
 # MATN KIRITISH
 # =====================
 
 @dp.message(
-    (F.text & ~F.text.regexp(r"^\d+$")) &
     F.from_user.func(lambda u: (
         (flow := get_user_flow(u.id)) is not None
         and flow["step"] == "enter_text"
     ))
 )
-async def handle_enter_text_onl(message: Message, state: FSMContext):
-    # 🔒 AGAR FLOW YO‘Q BO‘LSA — CHIQIB KETAMIZ
-    flow = get_user_flow(message.from_user.id)
-    if not flow or flow["step"] != "enter_text":
-        return
-    # 🔒 Agar edit FSM ishlayotgan bo‘lsa — tegmaymiz
-    if await state.get_state():
-        return
-
-    flow = get_user_flow(message.from_user.id)
-    if not flow or flow["step"] != "enter_text":
-        return
-    current_state = await state.get_state()
-    if current_state is not None:
-        return  # ✋ agar FSM ishlayapti bo‘lsa — bu handler chiqib ketsin
-
-    # pastdagi kod faqat FSM YO‘Q paytda ishlaydi
+async def handle_enter_text_onl(message: Message):
     user_id = message.from_user.id
     flow = get_user_flow(user_id)
-
-    if not flow or flow["step"] != "enter_text":
-        return
 
     data = flow["data"]
     data["text"] = message.text
 
     save_user_flow(user_id, "enter_interval", data)
 
-    await message.answer(
-        "⏱ Xabar yuborish oralig‘ini kiriting (daqiqada):"
-    )
-
+    await message.answer("⏱ Intervalni kiriting (daqiqada):")
 
 @dp.message(
     (F.photo | F.video | (F.text & ~F.text.regexp(r"^\d+$"))) &
@@ -792,12 +791,14 @@ async def restore_campaigns():
 
     print(f"🔒 {paused} ta kampaniya restart sababli pauzaga qo‘yildi")
 
+async def run_campaign(campaign_id: int):
+    campaign = get_campaign(campaign_id)
+    if not campaign:
+        return
 
-async def run_campaign_safe(client, campaign):
-    user_id = campaign["user_id"]
-    start_time = time.time()
-    end_time = start_time + campaign["duration"] * 60
-    sent_count = 0
+    client = await get_client(campaign["user_id"])
+    await run_campaign_safe(client, campaign)
+
 
     while time.time() < end_time and campaign["status"] == "active":
 
