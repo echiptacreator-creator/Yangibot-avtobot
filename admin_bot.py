@@ -113,6 +113,24 @@ async def approve_payment(callback):
     )
 
     await callback.answer("Tasdiqlandi")
+    
+    # payment haqida ma’lumotni olish
+    payment = get_payment_by_id(payment_id)
+    
+    user_id = payment["user_id"]
+    months = payment["months"]
+    
+    await bot.send_message(
+        user_id,
+        (
+            "🎉 *To‘lovingiz muvaffaqiyatli tasdiqlandi!*\n\n"
+            f"📦 Tarif: *{months} oy*\n"
+            "🚀 Endi siz Premium foydalanuvchisiz.\n\n"
+            "Rahmat! Botdan unumli foydalaning 💙"
+        ),
+        parse_mode="Markdown"
+    )
+
 
 
 @dp.callback_query(F.data.startswith("pay_no:"))
