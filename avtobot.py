@@ -1282,33 +1282,25 @@ async def show_profile(message: Message):
 # =====================
 # TOLOV
 # =====================
-@dp.message(F.text == "💳 Tariflar")
-async def show_tariffs(message: Message):
-    text = (
-        "💳 *Tariflar:*\n\n"
-        "1️⃣ 1 oy — 35 000 so‘m\n"
-        "3️⃣ 3 oy — 90 000 so‘m\n"
-        "6️⃣ 6 oy — 170 000 so‘m\n"
-        "9️⃣ 9 oy — 250 000 so‘m\n"
-        "🔟 12 oy — 360 000 so‘m\n\n"
-        "⬇️ Tarifni tanlang:"
-    )
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 
+@dp.message(F.text == "💳 Tariflar")
+async def open_miniapp(message: Message):
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="1 oy", callback_data="tariff:1"),
-            InlineKeyboardButton(text="3 oy", callback_data="tariff:3"),
-        ],
-        [
-            InlineKeyboardButton(text="6 oy", callback_data="tariff:6"),
-            InlineKeyboardButton(text="9 oy", callback_data="tariff:9"),
-        ],
-        [
-            InlineKeyboardButton(text="12 oy", callback_data="tariff:12"),
+            InlineKeyboardButton(
+                text="💳 Premium tariflarni ko‘rish",
+                web_app=WebAppInfo(
+                    url="https://yangibot-avtobot-production.up.railway.app/miniapp.html"
+                )
+            )
         ]
     ])
 
-    await message.answer(text, reply_markup=kb, parse_mode="Markdown")
+    await message.answer(
+        "💳 Premium tariflar bilan tanishing va qulay to‘lov qiling 👇",
+        reply_markup=kb
+    )
 
 
 @dp.callback_query(F.data.startswith("tariff:"))
