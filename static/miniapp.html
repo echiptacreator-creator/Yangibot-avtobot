@@ -1,413 +1,285 @@
 <!DOCTYPE html>
 <html lang="uz">
 <head>
-<meta name="color-scheme" content="light dark">
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Premium tariflar</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Premium obuna</title>
 
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-<style>
-:root {
-  --bg: var(--tg-theme-bg-color, #f5f7fb);
-  --card: var(--tg-theme-secondary-bg-color, #ffffff);
-  --text: var(--tg-theme-text-color, #0f172a);
-  --muted: var(--tg-theme-hint-color, #6b7280);
-  --primary: var(--tg-theme-button-color, #4f46e5);
-  --primary-text: var(--tg-theme-button-text-color, #ffffff);
-  --radius: 18px;
-}
+  <style>
+    :root {
+      --bg: var(--tg-theme-bg-color, #ffffff);
+      --text: var(--tg-theme-text-color, #111111);
+      --secondary: var(--tg-theme-secondary-bg-color, #f3f4f6);
+      --accent: #2f80ff;
+    }
 
-* { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
 
-body {
-  margin: 0;
-  background: var(--bg);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, Helvetica, Arial, sans-serif;
-  color: var(--text);
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+    }
 
-  transition: background-color 0.25s ease, color 0.25s ease;
-}
+    .container {
+      padding: 20px;
+    }
 
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
 
-.container {
-  max-width: 420px;
-  margin: auto;
-  padding: 18px;
-}
+    .subtitle {
+      font-size: 14px;
+      opacity: 0.7;
+      margin-bottom: 20px;
+    }
 
-.hidden { display: none; }
+    /* ===== PRICING ===== */
 
-/* ---------- COMMON ---------- */
-.card {
-  background: var(--card);
-  border-radius: var(--radius);
-  padding: 20px;
-  box-shadow: 0 14px 40px rgba(0,0,0,0.08);
-  margin-top: 16px;
-}
+    .pricing-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
 
-h1 {
-  font-size: 24px;
-  margin: 12px 0 6px;
-}
+    .plan {
+      position: relative;
+      background: var(--secondary);
+      border-radius: 16px;
+      padding: 16px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
 
-p {
-  font-size: 14px;
-  color: var(--muted);
-  line-height: 1.5;
-  margin: 0;
-}
+    .plan.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(47, 128, 255, 0.15);
+    }
 
-button {
-  font-family: inherit;
-}
+    .plan-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-/* ---------- ICON ---------- */
-.icon-circle {
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
-  background: rgba(79,70,229,0.12);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 12px;
-  color: var(--primary);
-}
+    .plan-header h2 {
+      margin: 0;
+      font-size: 18px;
+    }
 
-/* ---------- BADGE ---------- */
-.badge {
-  display: inline-block;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 999px;
-  margin-bottom: 6px;
-}
+    .plan-tag {
+      font-size: 12px;
+      opacity: 0.6;
+    }
 
-.badge-primary {
-  background: rgba(79,70,229,0.12);
-  color: var(--primary);
-}
+    .price {
+      font-size: 20px;
+      font-weight: 700;
+      margin-top: 8px;
+    }
 
-/* ---------- TARIFF ---------- */
-.tariff {
-  border: 2px solid transparent;
-  border-radius: 16px;
-  padding: 16px;
-  margin-bottom: 14px;
-  cursor: pointer;
-  transition: 0.15s ease;
-}
+    .per {
+      font-size: 13px;
+      opacity: 0.7;
+    }
 
-.tariff.active {
-  border-color: var(--primary);
-  box-shadow: 0 10px 28px rgba(79,70,229,0.25);
-}
+    .save {
+      font-size: 13px;
+      margin-top: 6px;
+      color: var(--accent);
+    }
 
-.tariff h3 {
-  font-size: 17px;
-  margin: 4px 0;
-}
+    .badge {
+      position: absolute;
+      top: -10px;
+      right: 12px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 10px;
+    }
 
-.price {
-  font-size: 18px;
-  font-weight: 700;
-  margin-bottom: 4px;
-}
+    .cta {
+      margin-top: 22px;
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 14px;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+    }
 
-.tariff p {
-  font-size: 13px;
-}
+    .note {
+      margin-top: 12px;
+      font-size: 12px;
+      opacity: 0.6;
+      text-align: center;
+    }
 
-/* ---------- CTA ---------- */
-.cta button {
-  width: 100%;
-  height: 52px;
-  border-radius: 16px;
-  border: none;
-  background: var(--primary);
-  color: var(--primary-text);
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-}
+    /* ===== PAYMENT PAGE ===== */
 
-/* ---------- PAYMENT ---------- */
-.back-btn {
-  background: none;
-  border: none;
-  color: var(--primary);
-  font-weight: 600;
-  margin-bottom: 12px;
-  cursor: pointer;
-}
+    #payment-page {
+      display: none;
+    }
 
-.pay-info {
-  font-size: 14px;
-  margin-bottom: 14px;
-}
+    .card-box {
+      background: var(--secondary);
+      border-radius: 14px;
+      padding: 14px;
+      margin: 16px 0;
+      font-size: 16px;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-.card-number {
-  font-size: 18px;
-  font-weight: 600;
-  letter-spacing: 1px;
-  padding: 14px;
-  border-radius: 14px;
-  background: rgba(79,70,229,0.08);
-  text-align: center;
-  margin-bottom: 12px;
-}
+    .copy-btn {
+      font-size: 13px;
+      color: var(--accent);
+      cursor: pointer;
+    }
 
-.copy-btn {
-  width: 100%;
-  height: 46px;
-  border-radius: 14px;
-  border: 1.5px solid var(--primary);
-  background: transparent;
-  color: var(--primary);
-  font-weight: 600;
-  cursor: pointer;
-  margin-bottom: 14px;
-}
-
-.hint {
-  font-size: 13px;
-  color: var(--muted);
-  text-align: center;
-  margin-top: 10px;
-}
-</style>
+    .back {
+      margin-top: 16px;
+      font-size: 14px;
+      color: var(--accent);
+      text-align: center;
+      cursor: pointer;
+    }
+  </style>
 </head>
 
 <body>
-
 <div class="container">
 
-<!-- ================= PAGE 1: TARIFFS ================= -->
-<div id="page-tariffs">
+  <!-- ===== PRICING PAGE ===== -->
+  <div id="pricing-page">
+    <h1>Premium obuna</h1>
+    <div class="subtitle">
+      Avtomatik e’lon joylash orqali ko‘proq buyurtma va kamroq vaqt
+    </div>
 
-  <div class="icon-circle">
-    <!-- CREDIT CARD SVG -->
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" stroke-width="1.8"
-      stroke-linecap="round" stroke-linejoin="round">
-      <rect x="2" y="4" width="20" height="16" rx="3"/>
-      <line x1="2" y1="10" x2="22" y2="10"/>
-    </svg>
+    <div class="pricing-grid">
+      <div class="plan" onclick="selectTariff(this, 1, 35000)">
+        <div class="plan-header">
+          <h2>1 oy</h2>
+          <span class="plan-tag">Sinab ko‘rish</span>
+        </div>
+        <div class="price">35 000 so‘m</div>
+        <div class="per">1 oy = 35 000 so‘m</div>
+      </div>
+
+      <div class="plan active" onclick="selectTariff(this, 6, 170000)">
+        <div class="badge">Eng mashhur</div>
+        <div class="plan-header">
+          <h2>6 oy</h2>
+          <span class="plan-tag">Tavsiya qilinadi</span>
+        </div>
+        <div class="price">170 000 so‘m</div>
+        <div class="per">1 oy ≈ 28 300 so‘m</div>
+        <div class="save">≈ 40 000 so‘m tejaysiz</div>
+      </div>
+
+      <div class="plan" onclick="selectTariff(this, 12, 360000)">
+        <div class="plan-header">
+          <h2>12 oy</h2>
+          <span class="plan-tag">Eng tejamkor</span>
+        </div>
+        <div class="price">360 000 so‘m</div>
+        <div class="per">1 oy = 30 000 so‘m</div>
+        <div class="save">Maksimal foyda</div>
+      </div>
+    </div>
+
+    <button class="cta" onclick="goToPayment()">To‘lovga o‘tish</button>
+    <div class="note">Xavfsiz • Qo‘lda tekshiriladi • Telegram qoidalariga mos</div>
   </div>
 
-  <h1 align="center">Premium tariflar</h1>
-  <p align="center">
-    Avtomatik e’lon joylash xizmati orqali<br>
-    ko‘proq buyurtma va kamroq vaqt sarfi
-  </p>
-
-  <div class="card">
-
-    <div class="tariff" onclick="selectTariff(1, 35000)">
-      <h3>1 oy</h3>
-      <div class="price">35 000 so‘m</div>
-      <p>Sinab ko‘rish uchun</p>
+  <!-- ===== PAYMENT PAGE ===== -->
+  <div id="payment-page">
+    <h1>To‘lov qilish</h1>
+    <div class="subtitle">
+      Quyidagi karta raqamiga to‘lov qiling va chekni adminga yuboring
     </div>
 
-    <div class="tariff" onclick="selectTariff(3, 90000)">
-      <h3>3 oy</h3>
-      <div class="price">90 000 so‘m</div>
-      <p>1 oy = 30 000 so‘m</p>
+    <div class="card-box">
+      <span id="card-number">8600 12XX XXXX XXXX</span>
+      <span class="copy-btn" onclick="copyCard()">Nusxalash</span>
     </div>
 
-    <div class="tariff active" onclick="selectTariff(6, 170000)">
-      <span class="badge badge-primary">Eng mashhur</span>
-      <h3>6 oy</h3>
-      <div class="price">170 000 so‘m</div>
-      <p>1 oy ≈ 28 300 so‘m</p>
-    </div>
+    <button class="cta" onclick="sendReceipt()">Chekni yuborish</button>
 
-    <div class="tariff" onclick="selectTariff(12, 360000)">
-      <h3>12 oy</h3>
-      <div class="price">360 000 so‘m</div>
-      <p>Eng tejamkor variant</p>
-    </div>
-
-    <div class="cta">
-      <button onclick="goToPayment()">To‘lovga o‘tish</button>
-    </div>
-
+    <div class="back" onclick="goBack()">← Tariflarga qaytish</div>
   </div>
-
-  <div class="hint">
-    Xavfsiz • Qo‘lda tekshiriladi • Telegram qoidalariga mos
-  </div>
-
-</div>
-
-<!-- ================= PAGE 2: PAYMENT ================= -->
-<div id="page-payment" class="hidden">
-
-  <button class="back-btn" onclick="goBackToTariffs()">
-    ← Tariflarni o‘zgartirish
-  </button>
-
-  <div class="icon-circle">
-    <!-- WALLET SVG -->
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" stroke-width="1.8"
-      stroke-linecap="round" stroke-linejoin="round">
-      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-      <path d="M16 3h5v5"/>
-      <path d="M16 8l5-5"/>
-    </svg>
-  </div>
-
-  <h1 align="center">To‘lovni yakunlash</h1>
-  <p align="center" id="payText"></p>
-
-  <div class="card">
-
-    <div class="card-number">
-      9860 2601 0768 0035
-    </div>
-
-    <button class="copy-btn" onclick="copyCard()">
-      Karta raqamini nusxalash
-    </button>
-
-    <div class="cta">
-      <button onclick="sendReceipt()">Chekni yuborish</button>
-    </div>
-
-    <div class="hint">
-      Chekni <b>@Haydovchiadminbot</b> botiga yuboring.<br>
-      Admin tasdiqlagach Premium faollashadi.
-    </div>
-
-  </div>
-
-</div>
 
 </div>
 
 <script>
-const tg = window.Telegram.WebApp;
-tg.ready();
+  const tg = Telegram.WebApp;
+  tg.ready();
 
-let selected = { months: 6, price: 170000 };
+  let selected = {
+    months: 6,
+    price: 170000,
+    tariff: "6 oy"
+  };
 
-function selectTariff(months, price) {
-  selected = { months, price };
-  document.querySelectorAll(".tariff").forEach(t => t.classList.remove("active"));
-  event.currentTarget.classList.add("active");
-}
+  function selectTariff(el, months, price) {
+    document.querySelectorAll(".plan").forEach(p => p.classList.remove("active"));
+    el.classList.add("active");
 
-function goToPayment() {
-  document.getElementById("page-tariffs").classList.add("hidden");
-  document.getElementById("page-payment").classList.remove("hidden");
+    selected = {
+      months,
+      price,
+      tariff: months + " oy"
+    };
+  }
 
-  document.getElementById("payText").innerText =
-    `Tarif: ${selected.months} oy • ${selected.price.toLocaleString()} so‘m`;
-}
+  function goToPayment() {
+    document.getElementById("pricing-page").style.display = "none";
+    document.getElementById("payment-page").style.display = "block";
+  }
 
-function goBackToTariffs() {
-  document.getElementById("page-payment").classList.add("hidden");
-  document.getElementById("page-tariffs").classList.remove("hidden");
-}
+  function goBack() {
+    document.getElementById("payment-page").style.display = "none";
+    document.getElementById("pricing-page").style.display = "block";
+  }
 
-function copyCard() {
-  navigator.clipboard.writeText("9860260107680035");
-  tg.showPopup({ message: "Karta raqami nusxalandi" });
-}
+  function copyCard() {
+    navigator.clipboard.writeText("8600123412341234");
+    tg.showPopup({ message: "Karta raqami nusxalandi" });
+  }
 
-async function sendReceipt() {
-  const user = tg.initDataUnsafe.user;
+  async function sendReceipt() {
+    const user = tg.initDataUnsafe.user;
 
-  await fetch("/api/payment/init", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      user_id: user.id,
-      months: selected.months,
-      amount: selected.price
-    })
-  });
+    await fetch("/api/payment/init", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: user.id,
+        months: selected.months,
+        amount: selected.price,
+        tariff: selected.tariff
+      })
+    });
 
-  tg.openTelegramLink("https://t.me/taxiadminrobot");
-}
-
-  
-/* 🔥 Telegram theme o‘zgarsa — avtomatik moslash */
-tg.onEvent("themeChanged", () => {
-  // Telegram theme ranglarini qayta o‘qiymiz
-  document.documentElement.style.setProperty(
-    "--bg",
-    "var(--tg-theme-bg-color)"
-  );
-  document.documentElement.style.setProperty(
-    "--card",
-    "var(--tg-theme-secondary-bg-color)"
-  );
-  document.documentElement.style.setProperty(
-    "--text",
-    "var(--tg-theme-text-color)"
-  );
-  document.documentElement.style.setProperty(
-    "--muted",
-    "var(--tg-theme-hint-color)"
-  );
-});
-
-<script>
-Telegram.WebApp.ready();
-
-function openGroupsPage() {
-  document.getElementById("groups-page").style.display = "block";
-  loadGroups();
-}
-
-async function loadGroups() {
-  const res = await fetch("/api/get-user-dialogs");
-  const groups = await res.json();
-
-  const list = document.getElementById("groups-list");
-  list.innerHTML = "";
-
-  groups.forEach(g => {
-    const div = document.createElement("div");
-    div.innerHTML = `
-      <label>
-        <input type="checkbox" value="${g.id}">
-        ${g.title}
-      </label>
-    `;
-    list.appendChild(div);
-  });
-}
-
-function saveSelectedGroups() {
-  const checked = [...document.querySelectorAll("#groups-list input:checked")]
-    .map(i => ({
-      id: Number(i.value),
-      title: i.parentElement.textContent.trim()
-    }));
-
-  fetch("/api/save-groups", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      user_id: Telegram.WebApp.initDataUnsafe.user.id,
-      groups: checked
-    })
-  }).then(() => {
-    Telegram.WebApp.showPopup({ message: "✅ Guruhlar saqlandi" });
-    Telegram.WebApp.close();
-  });
-}
-</script>
-
-  
+    tg.openTelegramLink("https://t.me/Haydovchiadminbot");
+  }
 </script>
 
 </body>
