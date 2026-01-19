@@ -52,7 +52,7 @@ from risk import (
 # =====================
 # STATE (XABAR YUBORISH)
 # =====================
-
+PAGE_SIZE = 20  # bir sahifada nechta guruh chiqadi
 # =====================
 # CONFIG
 # =====================
@@ -487,20 +487,49 @@ async def choose_send_mode(message: Message):
 
 
 
-async def show_group_picker(message, user_id):
+async def show_group_picker(message, user_id, edit=False):
     flow = get_user_flow(user_id)
     data = flow["data"]
 
+    groups = data["groups"]
+    selected_ids = data.get("selected_ids", [])
+    offset = data.get("offset", 0)
+
+    page_groups = groups[offset: offset + PAGE_SIZE]
+
     kb = InlineKeyboardMarkup(inline_keyboard=[])
 
-    for g in data["groups"]:
+    # 🔹 GURUHLAR
+    for g in page_groups:
+        gid = g["group_id"]
+        is_selected = gid in selected_ids
+
+        text = f"✅ {g['title']}" if is_selected else f"👥 {g['title']}"
+
         kb.inline_keyboard.append([
             InlineKeyboardButton(
-                text=f"👥 {g['title']}",
-                callback_data=f"pick_group:{g['group_id']}"
+                text=text,
+                callback_data=f"pick_group:{gid}"
             )
         ])
 
+    # 🔹 PAGINATION
+    nav = []
+
+    if offset > 0:
+        nav.append(
+            InlineKeyboardButton("⬅️ Oldingi", callback_data="grp_prev")
+        )
+
+    if offset + PAGE_SIZE < len(groups):
+        nav.append(
+            InlineKeyboardButton("➡️ Keyingi", callback_data="grp_next")
+        )
+
+    if nav:
+        kb.inline_keyboard.append(nav)
+
+    # 🔹 MULTI MODE → DAVOM ETISH
     if data["mode"] == "multi":
         kb.inline_keyboard.append([
             InlineKeyboardButton(
@@ -509,13 +538,37 @@ async def show_group_picker(message, user_id):
             )
         ])
 
-    await message.answer(
-        "📋 Guruhlarni tanlang:",
-        reply_markup=kb
+    text = (
+        "📋 *Guruhlarni tanlang*\n\n"
+        f"Tanlangan: *{len(selected_ids)}* ta"
     )
+
+    if edit:
+        await message.edit_text(text, reply_markup=kb, parse_mode="Markdown")
+    else:
+        await message.answer(text, reply_markup=kb, parse_mode="Markdown")
 # =====================
 # GURUH TANLASH
 # =====================
+
+@dp.callback_query(F.data.in_(["grp_prev", "grp_next"]))
+async def paginate_groups(cb: CallbackQuery):
+    user_id = cb.from_user.id
+    flow = get_user_flow(user_id)
+    data = flow["data"]
+
+    offset = data.get("offset", 0)
+
+    if cb.data == "grp_next":
+        offset += PAGE_SIZE
+    else:
+        offset = max(0, offset - PAGE_SIZE)
+
+    data["offset"] = offset
+    save_user_flow(user_id, "choose_group", data)
+
+    await show_group_picker(cb.message, user_id, edit=True)
+    await cb.answer()
 
 @dp.callback_query(F.data.startswith("pick_group:"))
 async def pick_group(cb: CallbackQuery):
@@ -549,16 +602,45 @@ async def groups_done(cb: CallbackQuery):
     user_id = cb.from_user.id
     flow = get_user_flow(user_id)
 
-    if not flow["data"]["selected_ids"]:
-        await cb.answer("❌ Kamida bitta guruh tanlang", show_alert=True)
+    if not flow:
+        await cb.answer()
         return
 
-    save_user_flow(user_id, "enter_text", flow["data"])
-    await cb.message.answer("✍️ Endi xabar matnini kiriting:")
+    data = flow["data"]
+    selected_ids = data.get("selected_ids", [])
+    groups = data.get("groups", [])
+
+    if not selected_ids:
+        await cb.answer("Hech qanday guruh tanlanmadi", show_alert=True)
+        return
+
+    # 🔹 TANLANGAN GURUHLARNI TOPAMIZ
+    selected_groups = [
+        g["title"] for g in groups if g["group_id"] in selected_ids
+    ]
+
+    # 🔹 FLOW → KEYINGI QADAM
+    save_user_flow(
+        user_id=user_id,
+        step="enter_text",
+        data={
+            "selected_ids": selected_ids,
+            "groups": groups,
+            "mode": data["mode"]
+        }
+    )
+
+    # 🔹 CHIROYLI XABAR
+    group_list = "\n".join(f"• {name}" for name in selected_groups)
+
+    text = (
+        "✅ *Guruhlar tanlandi!*\n\n"
+        f"{group_list}\n\n"
+        "✍️ *Endi yuboriladigan xabar matnini kiriting:*"
+    )
+
+    await cb.message.edit_text(text, parse_mode="Markdown")
     await cb.answer()
-
-
-
 
 
 
@@ -632,124 +714,103 @@ async def handle_enter_text_media(message: Message, state: FSMContext):
     
 @dp.message(F.text.regexp(r"^\d+$"))
 async def handle_numbers(message: Message):
-    flow = get_user_flow(message.from_user.id)
-    if not flow or flow["step"] not in ("enter_interval", "enter_duration"):
-        return
     user_id = message.from_user.id
     flow = get_user_flow(user_id)
+
+    if not flow:
+        return
 
     step = flow["step"]
     data = flow["data"]
     value = int(message.text)
 
-    # 🔒 FAQAT CREATE FLOW
+    # ======================
+    # 1️⃣ INTERVAL BOSQICHI
+    # ======================
     if step == "enter_interval":
         interval = value
 
-    risk = get_account_risk(user_id)
-
-    # RISKGA QARAB INTERVAL
-    if risk < 20:
-        min_i, max_i = 5, 10
-    elif risk < 40:
-        min_i, max_i = 8, 15
-    elif risk < 60:
-        min_i, max_i = 12, 20
-    else:
-        min_i, max_i = 20, 30
-
-    if interval < min_i or interval > max_i:
-        await message.answer(
-            f"❌ Sizning akkaunt xavfiga mos interval:\n"
-            f"{min_i} – {max_i} daqiqa"
-        )
-        return
-
-        data["interval"] = interval
-    
-        save_user_flow(user_id, "enter_duration", data)
-    
-        await message.answer(
-            f"⏳ Endi davomiylikni kiriting.\n"
-            f"Tavsiya: {interval * 10} – {interval * 15} daqiqa"
-        )
-    
-        data["interval"] = interval
-    
-        save_user_flow(user_id, "enter_duration", data)
-    
-        await message.answer(
-            f"⏳ Endi davomiylikni kiriting.\n"
-            f"Tavsiya: {interval * 10} – {interval * 15} daqiqa"
-        )
-    
-        await message.answer(
-            "⏳ Kampaniya davomiyligini kiriting (daqiqada):\n\n"
-            f"🟢 Tavsiya etiladi: {limits['min']} – {limits['safe']}\n"
-            f"🟡 Maksimal ruxsat: {limits['max']}\n\n"
-            "⚠️ Tavsiyadan yuqori qiymat akkaunt xavfini oshiradi."
-        )
-        return
-
-
-    if step == "enter_duration":
-        duration = value
-    
-        interval = data["interval"]
         risk = get_account_risk(user_id)
-    
-        base = interval * 10
-    
-        if risk < 30:
-            min_d, safe_d, max_d = base, int(base * 1.5), base * 3
+
+        # 🔐 RISKGA MOS INTERVAL CHEGARASI
+        if risk < 20:
+            min_i, max_i = 10, 30
+        elif risk < 40:
+            min_i, max_i = 12, 25
         elif risk < 60:
-            min_d, safe_d, max_d = base, int(base * 1.2), base * 2
+            min_i, max_i = 15, 20
         else:
-            min_d, safe_d, max_d = base, base, int(base * 1.3)
-    
-        if duration < min_d or duration > max_d:
+            min_i, max_i = 20, 30
+
+        if interval < min_i or interval > max_i:
             await message.answer(
-                f"❌ Ruxsat etilgan davomiylik:\n"
-                f"{min_d} – {max_d} daqiqa"
+                "❌ *Interval akkaunt xavfiga mos emas*\n\n"
+                f"🔐 Siz uchun ruxsat etilgan:\n"
+                f"➡️ *{min_i} – {max_i} daqiqa*",
+                parse_mode="Markdown"
             )
             return
-    
-        if duration > safe_d:
-            increase_risk(user_id, 10)
-    
+
+        # ✅ INTERVAL SAQLANADI
+        data["interval"] = interval
+        save_user_flow(user_id, "enter_duration", data)
+
+        min_d = interval * 10
+        safe_d = interval * 15
+        max_d = interval * 30
+
+        await message.answer(
+            "⏳ *Kampaniya davomiyligini tanlang (daqiqada)*\n\n"
+            f"🟢 Xavfsiz: {min_d} – {safe_d}\n"
+            f"🟡 O‘rtacha: {safe_d} – {max_d}\n"
+            f"🔴 Xavfli: {max_d}+ \n\n"
+            "⚠️ Tavsiyadan oshmang",
+            parse_mode="Markdown"
+        )
+        return
+
+    # ======================
+    # 2️⃣ DURATION BOSQICHI
+    # ======================
+    if step == "enter_duration":
+        duration = value
+        interval = data["interval"]
+
+        min_d = interval * 10
+        safe_d = interval * 15
+        max_d = interval * 30
+
+        if duration < min_d or duration > max_d:
+            await message.answer(
+                "❌ *Davomiylik ruxsat etilmagan*\n\n"
+                f"➡️ {min_d} – {max_d} daqiqa oralig‘ida bo‘lishi kerak",
+                parse_mode="Markdown"
+            )
+            return
+
         data["duration"] = duration
 
-    # pastdagi koding (kampaniya yaratish) SHU YERDAN davom etadi
-
-
-            # 🔒 AVVAL TEKSHIRAMIZ
+        # 🔒 LIMIT TEKSHIRUV
         ok, reason = can_user_run_campaign(user_id)
         if not ok:
             usage = get_today_usage(user_id)
             limits = get_user_limits(user_id)
-        
+
             await send_limit_message(
                 chat_id=message.chat.id,
                 used=usage,
                 limit=limits["daily_limit"]
             )
-        
             clear_user_flow(user_id)
             return
-            
-        # 1️⃣ STATUS XABARI (OLDINDAN)
+
+        # 🚀 STATUS
         status_msg = await bot.send_message(
             chat_id=message.chat.id,
             text="🚀 Kampaniya boshlanmoqda..."
         )
 
-        if duration > limits["safe"]:
-            risk = decay_account_risk(user_id)
-            risk += 20
-            save_account_risk(user_id, risk)
-
-    
-        # 2️⃣ KAMPANIYA YARATAMIZ
+        # 🧠 KAMPANIYA YARATISH
         campaign_id = create_campaign(
             user_id=user_id,
             text=data.get("text", ""),
@@ -761,27 +822,22 @@ async def handle_numbers(message: Message):
             media_type=data.get("media_type"),
             media_file_id=data.get("media_file_id")
         )
-    
+
         clear_user_flow(user_id)
-    
-        # 3️⃣ STATUS XABARINI TO‘LDIRAMIZ
+
         await bot.edit_message_text(
             chat_id=message.chat.id,
             message_id=status_msg.message_id,
             text=build_campaign_status_text(campaign_id),
             reply_markup=campaign_control_keyboard(campaign_id, "active")
         )
-        
+
         await message.answer(
-            "✅ Kampaniya ishga tushdi.\n"
-            "Quyidagi menyu orqali boshqa amallarni bajarishingiz mumkin 👇",
+            "✅ Kampaniya ishga tushdi",
             reply_markup=main_menu()
         )
 
-    
-        # 4️⃣ ISHGA TUSHIRAMIZ
         asyncio.create_task(run_campaign(campaign_id))
-
     # =====================
 # YUBORISHGA TAYYOR
 # =====================
