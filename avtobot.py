@@ -52,7 +52,7 @@ LOGIN_WEBAPP_URL = "https://yangibot-avtobot-production.up.railway.app/miniapp"
 bot = Bot(BOT_TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
 init_db()
-editing_campaign = {}
+#editing_campaign = {}
 class EditCampaign(StatesGroup):
     waiting_value = State()
 
@@ -951,17 +951,21 @@ async def edit_campaign_menu(cb: CallbackQuery):
 async def edit_text(cb: CallbackQuery, state: FSMContext):
     campaign_id = int(cb.data.split(":")[1])
 
-    update_campaign_status(campaign_id, "paused")
+    c = get_campaign(campaign_id)
+    resume_after = c["status"] == "active"
+
+    if resume_after:
+        update_campaign_status(campaign_id, "paused")
 
     await state.set_state(EditCampaign.waiting_value)
     await state.update_data(
         campaign_id=campaign_id,
         field="text",
-        resume_after=True
+        resume_after=resume_after
     )
+
     await cb.message.edit_text("✏️ Yangi xabar matnini yuboring:")
     await cb.answer()
-
 
 
 @dp.callback_query(F.data.startswith("edit_interval:"))
@@ -969,36 +973,57 @@ async def edit_interval(cb: CallbackQuery, state: FSMContext):
     campaign_id = int(cb.data.split(":")[1])
 
     c = get_campaign(campaign_id)
-    was_active = c["status"] == "active"
+    resume_after = c["status"] == "active"
 
-    if was_active:
+    if resume_after:
         update_campaign_status(campaign_id, "paused")
 
     await state.set_state(EditCampaign.waiting_value)
     await state.update_data(
         campaign_id=campaign_id,
         field="interval",
-        resume_after=True
+        resume_after=resume_after
     )
+
     await cb.message.edit_text("⏱ Yangi intervalni daqiqada kiriting:")
     await cb.answer()
 
 
+@dp.message(EditCampaign.waiting_value)
+async def edit_value_handler(message: Message, state: FSMContext):
+    data = await state.get_data()
 
-@dp.callback_query(F.data.startswith("edit_duration:"))
-async def edit_duration(cb: CallbackQuery, state: FSMContext):
-    campaign_id = int(cb.data.split(":")[1])
+    campaign_id = data["campaign_id"]
+    field = data["field"]
+    resume_after = data.get("resume_after", False)
 
-    update_campaign_status(campaign_id, "paused")
+    value = message.text.strip()
 
-    await state.set_state(EditCampaign.waiting_value)
-    await state.update_data(
-        campaign_id=campaign_id,
-        field="duration",
-        resume_after=True
-    )
-    await cb.message.edit_text("⏳ Yangi davomiylikni daqiqada kiriting:")
-    await cb.answer()
+    if field == "text":
+        update_campaign_text(campaign_id, value)
+
+    elif field == "interval":
+        if not value.isdigit() or int(value) <= 0:
+            await message.answer("❌ Interval musbat raqam bo‘lishi kerak")
+            return
+        update_campaign_field(campaign_id, "interval_minutes", int(value))
+
+    elif field == "duration":
+        if not value.isdigit() or int(value) <= 0:
+            await message.answer("❌ Davomiylik musbat raqam bo‘lishi kerak")
+            return
+        update_campaign_field(campaign_id, "duration_minutes", int(value))
+
+    # 🔄 STATUSNI YANGILAYMIZ
+    await state.clear()
+
+    if resume_after:
+        update_campaign_status(campaign_id, "active")
+        asyncio.create_task(run_campaign(campaign_id))
+
+    await message.answer("✅ Yangilandi")
+    await render_campaign(campaign_id)
+
 
 
 
