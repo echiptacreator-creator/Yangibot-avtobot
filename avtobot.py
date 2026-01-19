@@ -1772,15 +1772,6 @@ def get_next_group(campaign):
 
     return random.choice(groups)
 
-except Exception as e:
-    print("SEND ERROR:", repr(e))
-
-    await notify_user(
-        campaign["chat_id"],
-        "⚠️ Guruhga yuborishda xatolik bo‘ldi.\n"
-        "Bot avtomatik davom etyapti."
-    )
-
 @dp.message()
 async def catch_all(message: Message):
     print("CATCH:", message.text)
