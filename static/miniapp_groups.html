@@ -52,25 +52,36 @@
   <h1>Guruhlar</h1>
   <div class="sub">Faqat tanlangan guruhlar saqlanadi</div>
 
-  <div id="groups">Yuklanmoqda...</div>
+  <div id="groups">⏳ Yuklanmoqda...</div>
 
-  <button onclick="save()">Tanlanganlarni saqlash</button>
+  <button onclick="saveGroups()">Tanlanganlarni saqlash</button>
   <div class="back" onclick="Telegram.WebApp.close()">Yopish</div>
 </div>
 
 <script>
 const tg = Telegram.WebApp;
 tg.ready();
-const userId = tg.initDataUnsafe.user.id;
-let data=[];
+
+// 🔐 user_id ni URL'dan olamiz
+const params = new URLSearchParams(window.location.search);
+const userId = params.get("user_id");
+
+if (!userId) {
+  document.getElementById("groups").innerText =
+    "❌ MiniApp bot orqali ochilishi kerak";
+  throw new Error("No user_id");
+}
+
+let groupsData = [];
 
 async function loadGroups() {
-  const box = document.getElementById("groups-list");
+  const box = document.getElementById("groups");
   box.innerHTML = "⏳ Yuklanmoqda...";
 
   try {
     const res = await fetch(`/api/temp-groups?user_id=${userId}`);
     const data = await res.json();
+    groupsData = data;
 
     if (!data.length) {
       box.innerHTML = "❌ Guruhlar topilmadi. Avval bot orqali yuklang.";
@@ -79,14 +90,12 @@ async function loadGroups() {
 
     box.innerHTML = "";
 
-    data.forEach(g => {
+    data.forEach((g, i) => {
       const div = document.createElement("div");
-      div.className = "group-item";
+      div.className = "group";
       div.innerHTML = `
-        <label>
-          <input type="checkbox" value="${g.group_id}">
-          ${g.title}
-        </label>
+        <input type="checkbox" data-i="${i}">
+        <div>${g.title}</div>
       `;
       box.appendChild(div);
     });
@@ -97,25 +106,28 @@ async function loadGroups() {
   }
 }
 
-async function save(){
-  const sel=[...document.querySelectorAll("input:checked")]
-    .map(x=>data[x.dataset.i]);
+async function saveGroups() {
+  const selected = [...document.querySelectorAll("input[type=checkbox]:checked")]
+    .map(x => groupsData[x.dataset.i]);
 
-  if(!sel.length){
-    tg.showPopup({message:"Hech narsa tanlanmadi"});
+  if (!selected.length) {
+    tg.showPopup({ message: "Hech narsa tanlanmadi" });
     return;
   }
 
-  await fetch("/api/user-groups/bulk-add",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({ user_id:userId, groups:sel })
+  await fetch("/api/user-groups/bulk-add", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      user_id: userId,
+      groups: selected
+    })
   });
 
-  tg.showPopup({message:"✅ Saqlandi"});
+  tg.showPopup({ message: "✅ Saqlandi" });
 }
 
-load();
+window.onload = loadGroups;
 </script>
 </body>
 </html>
