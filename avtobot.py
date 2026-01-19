@@ -1285,7 +1285,7 @@ async def show_profile(message: Message):
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 
 @dp.message(F.text == "💳 Tariflar")
-async def open_miniapp(message: Message):
+async def open_premium_miniapp(message):
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(
@@ -1301,74 +1301,6 @@ async def open_miniapp(message: Message):
         "💳 Premium tariflar bilan tanishing va qulay to‘lov qiling 👇",
         reply_markup=kb
     )
-
-
-@dp.callback_query(F.data.startswith("tariff:"))
-async def select_tariff(cb: CallbackQuery):
-    tariff_key = cb.data.split(":")[1]
-
-    if tariff_key not in TARIFFS:
-        await cb.answer("❌ Noto‘g‘ri tarif", show_alert=True)
-        return
-
-    tariff = TARIFFS[tariff_key]
-
-    # user flow ga yozamiz
-    save_user_flow(
-        user_id=cb.from_user.id,
-        step="waiting_receipt",
-        data={
-            "tariff": tariff_key,
-            "months": tariff["months"],
-            "price": tariff["price"]
-        }
-    )
-    
-    text = (
-        "💳 *To‘lov ma’lumotlari*\n\n"
-        f"📦 Tarif: {tariff['months']} oy\n"
-        f"💰 Narx: {tariff['price']:,} so‘m\n\n"
-        f"💳 Karta raqami:\n`{PAYMENT_CARD}`\n\n"
-        "📸 To‘lov qilgach, *chek rasmini* quyidagi botga yuboring:\n\n"
-        "👉 @Haydovchiadminbot\n\n"
-        "⏳ Admin tekshiradi va tasdiqlagach, obunangiz faollashadi."
-    )
-
-
-    await cb.message.answer(text, parse_mode="Markdown")
-    await cb.answer()
-
-
-
-    # ADMIN’GA YUBORAMIZ
-    kb = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="✅ Tasdiqlash",
-                    callback_data=f"pay_ok:{payment_id}"
-                ),
-                InlineKeyboardButton(
-                    text="❌ Rad etish",
-                    callback_data=f"pay_no:{payment_id}"
-                )
-            ]
-        ]
-    )
-
-    await bot.send_photo(
-        ADMIN_ID,
-        file_id,
-        caption=(
-            "🧾 *Yangi to‘lov*\n\n"
-            f"👤 User ID: `{user_id}`\n"
-            f"🆔 Payment ID: `{payment_id}`"
-        ),
-        reply_markup=kb,
-        parse_mode="Markdown"
-    )
-
-    await message.answer("✅ Chek qabul qilindi. Admin tekshiradi.")
 
 
 # =====================
