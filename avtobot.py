@@ -694,7 +694,15 @@ async def handle_numbers(message: Message):
             # 🔒 AVVAL TEKSHIRAMIZ
         ok, reason = can_user_run_campaign(user_id)
         if not ok:
-            await message.answer(reason)
+            usage = get_today_usage(user_id)
+            limits = get_user_limits(user_id)
+        
+            await send_limit_message(
+                chat_id=message.chat.id,
+                used=usage,
+                limit=limits["daily_limit"]
+            )
+        
             clear_user_flow(user_id)
             return
             
@@ -743,12 +751,16 @@ async def send_to_group(client, campaign, group_id):
     ok, reason = can_user_run_campaign(user_id)
     if not ok:
         update_campaign_status(campaign["id"], "paused")
-
-        await notify_user(
-            campaign["chat_id"],
-            "⏸ Kampaniya avtomatik pauzaga qo‘yildi\n\n"
-            f"Sabab: {reason}"
+    
+        usage = get_today_usage(user_id)
+        limits = get_user_limits(user_id)
+    
+        await send_limit_message(
+            chat_id=campaign["chat_id"],
+            used=usage,
+            limit=limits["daily_limit"]
         )
+    
         return False
 
     try:
@@ -1429,6 +1441,35 @@ async def daily_resume_worker():
         """)
         conn.commit()
         conn.close()
+
+
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+
+PREMIUM_MINIAPP_URL = "https://yangibot-avtobot-production.up.railway.app/static/miniapp.html"
+
+async def send_limit_message(chat_id: int, used: int, limit: int):
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="💳 Premium tariflarni ko‘rish",
+                web_app=WebAppInfo(url=PREMIUM_MINIAPP_URL)
+            )
+        ]
+    ])
+
+    text = (
+        "⛔ *Bepul limit tugadi*\n\n"
+        f"📨 Bugun yuborildi: *{used} ta*\n"
+        f"🎯 Bepul limit: *{limit} ta*\n\n"
+        "🚀 Cheklovsiz ishlash uchun oylik obuna sotib oling."
+    )
+
+    await bot.send_message(
+        chat_id,
+        text,
+        reply_markup=kb,
+        parse_mode="Markdown"
+    )
 
 
 # =====================
