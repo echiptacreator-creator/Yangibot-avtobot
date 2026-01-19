@@ -596,8 +596,7 @@ async def handle_numbers(message: Message):
 
     # 🔒 FAQAT CREATE FLOW
     if step == "enter_interval":
-        if step == "enter_interval":
-    interval = value
+        interval = value
 
     risk = get_account_risk(user_id)
 
