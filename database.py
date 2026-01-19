@@ -152,12 +152,14 @@ def init_db():
         updated_at TIMESTAMP DEFAULT NOW()
     );
     """)
+    
     cur.execute("""
     ALTER TABLE campaigns
     ADD COLUMN IF NOT EXISTS sent_count INTEGER DEFAULT 0,
     ADD COLUMN IF NOT EXISTS error_count INTEGER DEFAULT 0,
     ADD COLUMN IF NOT EXISTS started_at TIMESTAMP,
     ADD COLUMN IF NOT EXISTS finished_at TIMESTAMP;
+    
     """)
 
     cur.execute("""
@@ -165,8 +167,9 @@ def init_db():
     user_id BIGINT PRIMARY KEY,
     risk_score INTEGER NOT NULL DEFAULT 0,
     last_updated TIMESTAMP NOT NULL DEFAULT NOW()
-);
-""")
+    );
+    """)
+    
     cur.execute("""
     CREATE TABLE IF NOT EXISTS user_groups (
         id SERIAL PRIMARY KEY,
