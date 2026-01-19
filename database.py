@@ -1242,3 +1242,27 @@ def save_user_groups_bulk(user_id, groups):
         """, (user_id, g["group_id"], g["title"], g.get("username")))
     conn.commit()
     cur.close()
+
+
+def get_temp_groups_from_db(user_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT group_id, title, username
+        FROM telegram_groups_temp
+        WHERE user_id = %s
+        ORDER BY title
+    """, (user_id,))
+
+    rows = cur.fetchall()
+    cur.close()
+
+    return [
+        {
+            "group_id": r[0],
+            "title": r[1],
+            "username": r[2]
+        }
+        for r in rows
+    ]
