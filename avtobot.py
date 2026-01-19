@@ -413,80 +413,82 @@ async def fetch_only_groups(client):
 
     return groups
 
-@dp.message(F.text == "📥 Guruhlarni yuklash")
-async def load_groups_handler(message: Message):
-    user_id = message.from_user.id
-    await message.answer("⏳ Guruhlar yuklanmoqda...")
+@dp.callback_query(F.data == "load_groups_now")
+async def load_groups_from_flow(cb: CallbackQuery):
+    user_id = cb.from_user.id
+    await cb.message.answer("⏳ Guruhlar yuklanmoqda...")
 
-    client = get_telethon_client(user_id)
+    client = await get_client(user_id)
     groups = []
 
     async for dialog in client.iter_dialogs():
-        entity = dialog.entity
+        if dialog.is_user:
+            continue
+        if getattr(dialog.entity, "bot", False):
+            continue
+        if dialog.is_group:
+            groups.append({
+                "id": dialog.entity.id,
+                "title": dialog.entity.title,
+                "username": getattr(dialog.entity, "username", None)
+            })
 
-        if not isinstance(entity, (Chat, Channel)):
-            continue
-        if isinstance(entity, Channel) and entity.broadcast:
-            continue
-        if getattr(entity, "bot", False):
-            continue
-
-        groups.append({
-            "id": entity.id,
-            "title": entity.title,
-            "username": getattr(entity, "username", None)
-        })
-    print("TOPILGAN GURUHLAR SONI:", len(groups))
-    save_temp_groups(user_id, groups)
-    print("TEMP GROUPS DB GA SAQLANDI:", user_id)
-    
     if not groups:
-        await message.answer("❌ Hech qanday guruh topilmadi")
+        await cb.message.answer("❌ Hech qanday guruh topilmadi")
         return
 
-    # 🔥 MUHIM QATOR
     save_temp_groups(user_id, groups)
 
-    await message.answer(
+    await cb.message.answer(
         f"✅ {len(groups)} ta guruh yuklandi.\n\n"
         "Endi miniapp orqali tanlang 👇",
         reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=[[
-                InlineKeyboardButton(
-                    text="📋 Guruhlarni tanlash",
-                    web_app=WebAppInfo(
-                        url="https://yangibot-avtobot-production.up.railway.app/static/miniapp_groups.html"
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="📋 Guruhlarni tanlash (MiniApp)",
+                        web_app=WebAppInfo(
+                            url="https://yangibot-avtobot-production.up.railway.app/static/miniapp_groups.html"
+                        )
                     )
-                )
-            ]]
+                ]
+            ]
         )
     )
+    await cb.answer()
 
 @dp.message(F.text.in_(["📍 Bitta guruhga", "📍 Ko‘p guruhlarga"]))
 async def choose_send_mode(message: Message):
     user_id = message.from_user.id
     mode = "single" if "Bitta" in message.text else "multi"
 
-    # ✅ MANA SHU QATOR YETISHMAYAPTI
     groups = get_user_groups(user_id)
 
     if not groups:
         await message.answer(
-            "❌ Sizda hali doimiy guruh yo‘q.\n\n"
-            "Miniapp orqali guruh tanlang 👇",
+            "❌ Sizda hali doimiy guruhlar yo‘q.\n\n"
+            "Avval guruhlarni yuklang, so‘ng miniapp orqali tanlang 👇",
             reply_markup=InlineKeyboardMarkup(
-                inline_keyboard=[[
-                    InlineKeyboardButton(
-                        text="➕ Guruh qo‘shish",
-                        web_app=WebAppInfo(
-                            url="https://yangibot-avtobot-production.up.railway.app/static/miniapp_groups.html"
+                inline_keyboard=[
+                    [
+                        InlineKeyboardButton(
+                            text="📥 Guruhlarni yuklash",
+                            callback_data="load_groups_now"
                         )
-                    )
-                ]]
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            text="📋 Guruhlarni tanlash (MiniApp)",
+                            web_app=WebAppInfo(
+                                url="https://yangibot-avtobot-production.up.railway.app/static/miniapp_groups.html"
+                            )
+                        )
+                    ]
+                ]
             )
         )
         return
-
+        
     # qolgan kod shu yerdan davom etadi
 
     # shu joyda flow saqlaysan
