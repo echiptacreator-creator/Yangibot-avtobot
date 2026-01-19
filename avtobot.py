@@ -894,16 +894,12 @@ def campaign_edit_keyboard(campaign_id: int):
 async def edit_campaign_menu(cb: CallbackQuery):
     campaign_id = int(cb.data.split(":")[1])
 
-    editing_campaign[cb.from_user.id] = {
-        "campaign_id": campaign_id,
-        "field": None
-    }
-
-    await cb.message.edit_text(
+    await cb.message.answer(
         "✏️ Nimani tahrirlamoqchisiz?",
         reply_markup=campaign_edit_keyboard(campaign_id)
     )
     await cb.answer()
+
 
 
 @dp.callback_query(F.data.startswith("edit_text:"))
@@ -911,13 +907,11 @@ async def edit_text(cb: CallbackQuery, state: FSMContext):
     campaign_id = int(cb.data.split(":")[1])
 
     await state.set_state(EditCampaign.waiting_value)
-    await state.update_data(
-        campaign_id=campaign_id,
-        field="text"
-    )
+    await state.update_data(campaign_id=campaign_id, field="text")
 
-    await cb.message.edit_text("✏️ Yangi xabar matnini yuboring:")
+    await cb.message.answer("✏️ Yangi xabar matnini yuboring:")
     await cb.answer()
+
 
 
 @dp.message(EditCampaign.waiting_value)
@@ -932,14 +926,14 @@ async def edit_value_handler(message: Message, state: FSMContext):
         update_campaign_text(campaign_id, value)
 
     elif field == "interval":
-        if not value.isdigit():
-            await message.answer("❌ Raqam kiriting")
+        if not value.isdigit() or int(value) <= 0:
+            await message.answer("❌ Interval musbat raqam bo‘lishi kerak")
             return
         update_campaign_field(campaign_id, "interval", int(value))
 
     elif field == "duration":
-        if not value.isdigit():
-            await message.answer("❌ Raqam kiriting")
+        if not value.isdigit() or int(value) <= 0:
+            await message.answer("❌ Davomiylik musbat raqam bo‘lishi kerak")
             return
         update_campaign_field(campaign_id, "duration", int(value))
 
@@ -950,52 +944,27 @@ async def edit_value_handler(message: Message, state: FSMContext):
 
 
 
+
 @dp.callback_query(F.data.startswith("edit_interval:"))
-async def edit_interval(cb):
+async def edit_interval(cb: CallbackQuery, state: FSMContext):
     campaign_id = int(cb.data.split(":")[1])
 
-    editing_campaign[cb.from_user.id] = {
-        "campaign_id": campaign_id,
-        "field": "interval",
-        "resume_after": True
-    }
+    await state.set_state(EditCampaign.waiting_value)
+    await state.update_data(campaign_id=campaign_id, field="interval")
 
-    await cb.message.edit_text(
-        "⏱ Yangi intervalni daqiqada kiriting:",
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=[
-                [InlineKeyboardButton(
-                    "⬅️ Orqaga", callback_data=f"camp_back:{campaign_id}"
-                )]
-            ]
-        )
-    )
+    await cb.message.answer("⏱ Yangi intervalni daqiqada kiriting:")
     await cb.answer()
 
 
 @dp.callback_query(F.data.startswith("edit_duration:"))
-async def edit_duration(cb):
+async def edit_duration(cb: CallbackQuery, state: FSMContext):
     campaign_id = int(cb.data.split(":")[1])
-    
-    editing_campaign[cb.from_user.id] = {
-        "campaign_id": campaign_id,
-        "field": "duration",
-        "resume_after": True
-    }
 
-    await cb.message.edit_text(
-        "⏳ Yangi davomiylikni daqiqada kiriting:",
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=[
-                [InlineKeyboardButton(
-                    "⬅️ Orqaga", callback_data=f"camp_back:{campaign_id}"
-                )]
-            ]
-        )
-    )
+    await state.set_state(EditCampaign.waiting_value)
+    await state.update_data(campaign_id=campaign_id, field="duration")
+
+    await cb.message.answer("⏳ Yangi davomiylikni daqiqada kiriting:")
     await cb.answer()
-
-
 
 
 @dp.callback_query(F.data.startswith("camp_restart:"))
@@ -1007,8 +976,6 @@ async def restart_campaign(cb: CallbackQuery):
 
     await render_campaign(campaign_id)
     await cb.answer("🔁 Kampaniya qayta tayyorlandi. Davom ettirishni bosing.")
-
-
 
 
 async def render_campaign(campaign_id: int):
