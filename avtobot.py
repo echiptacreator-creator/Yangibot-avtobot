@@ -171,8 +171,6 @@ async def edit_value_handler(message: Message, state: FSMContext):
     data = await state.get_data()
     campaign_id = data["campaign_id"]
     field = data["field"]
-    resume_after = data.get("resume_after", False)
-
     value = message.text.strip()
 
     update_campaign_field(campaign_id, field, value)
@@ -547,8 +545,15 @@ async def pick_group(cb: CallbackQuery):
 # MATN KIRITISH
 # =====================
 
-@dp.message(F.text)
+@dp.message(F.text & ~F.text.regexp(r"^\d+$"))
 async def handle_enter_text(message: Message, state: FSMContext):
+    # 🔒 Agar edit FSM ishlayotgan bo‘lsa — tegmaymiz
+    if await state.get_state():
+        return
+
+    flow = get_user_flow(message.from_user.id)
+    if not flow or flow["step"] != "enter_text":
+        return
     current_state = await state.get_state()
     if current_state is not None:
         return  # ✋ agar FSM ishlayapti bo‘lsa — bu handler chiqib ketsin
@@ -571,7 +576,15 @@ async def handle_enter_text(message: Message, state: FSMContext):
 
 
 @dp.message(F.photo | F.video)
-async def handle_media(message: Message):
+@dp.message(F.text & ~F.text.regexp(r"^\d+$"))
+async def handle_enter_text(message: Message, state: FSMContext):
+    # 🔒 Agar edit FSM ishlayotgan bo‘lsa — tegmaymiz
+    if await state.get_state():
+        return
+
+    flow = get_user_flow(message.from_user.id)
+    if not flow or flow["step"] != "enter_text":
+        return_media(message: Message):
     user_id = message.from_user.id
     flow = get_user_flow(user_id)
 
@@ -613,23 +626,16 @@ async def handle_numbers(message: Message):
     data = flow["data"]
     value = int(message.text)
 
-    # ⏱ INTERVAL
+    # 🔒 FAQAT CREATE FLOW
     if step == "enter_interval":
-        if value < 1:
-            await message.answer("❌ Interval kamida 1 daqiqa bo‘lishi kerak")
-            return
-
         data["interval"] = value
         save_user_flow(user_id, "enter_duration", data)
 
         await message.answer(
-            "⏳ Kampaniya davomiyligini kiriting (daqiqada).\n"
-            "Masalan: `120`",
-            parse_mode="Markdown"
+            "⏳ Kampaniya davomiyligini kiriting (daqiqada):"
         )
         return
 
-    # ⏳ DURATION — SHU JOYDA START QILAMIZ
     if step == "enter_duration":
         data["duration"] = value
     
