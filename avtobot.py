@@ -47,12 +47,13 @@ from access_control import can_user_run_campaign
 # =====================
 # CONFIG
 # =====================
-BOT_TOKEN = "8152092396:AAG0lWstz3qmpLCNIXj1656Ea3e35bEwTuU"
 API_ID = 34188035
 API_HASH = "2f39ded3e260910e54b48b00a264f19c"
-ADMIN_ID = 515902673
-ADMIN_BOT_TOKEN = "8502710270:AAHgqYrfZQQtE9-aTQtHAz7w-ZkHpZfj-Kg"
-LOGIN_WEBAPP_URL = "https://yangibot-avtobot-production.up.railway.app/miniapp"
+ADMIN_BOT_TOKEN = os.getenv("ADMIN_BOT_TOKEN")
+ADMIN_ID = int(os.getenv("ADMIN_ID"))
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+DATABASE_URL = os.getenv("DATABASE_URL")
+LOGIN_WEBAPP_URL = os.getenv("LOGIN_WEBAPP_URL")
 
 bot = Bot(BOT_TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
