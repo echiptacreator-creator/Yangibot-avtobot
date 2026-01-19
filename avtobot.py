@@ -448,113 +448,68 @@ async def load_groups_handler(message: Message):
 @dp.message(F.text.in_(["📍 Bitta guruhga", "📍 Ko‘p guruhlarga"]))
 async def choose_send_mode(message: Message):
     user_id = message.from_user.id
-
     mode = "single" if "Bitta" in message.text else "multi"
 
-    # flow yangilaymiz
-    save_user_flow(
-        user_id=user_id,
-        step="load_groups",
-        data={
-            "mode": mode
-        }
-    )
+    groups = get_user_groups(user_id)
 
-    await message.answer(
-        "📥 Guruhlar olinmoqda...\n\n"
-        "Iltimos, Mini App orqali guruhlarni tanlang 👇",
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=[[
-                InlineKeyboardButton(
-                    text="📋 Guruhlarni tanlash",
-                    web_app=WebAppInfo(
-                        url="https://yangibot-avtobot-production.up.railway.app/static/miniapp.html?mode=groups"
+    if not groups:
+        await message.answer(
+            "❌ Sizda hali doimiy guruh yo‘q.\n\n"
+            "Avval miniapp orqali guruh qo‘shing 👇",
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=[[
+                    InlineKeyboardButton(
+                        text="➕ Guruh qo‘shish",
+                        web_app=WebAppInfo(
+                            url="https://yangibot-avtobot-production.up.railway.app/static/miniapp.html?mode=groups"
+                        )
                     )
-                )
-            ]]
+                ]]
+            )
         )
-    )
-
-
-PAGE_SIZE = 20
-
-async def show_group_page(message: Message, user_id: int, edit: bool = False):
-    flow = get_user_flow(user_id)
-    if not flow:
         return
 
-    data = flow["data"]
-    groups = list(data["groups"].values())
-    offset = data.get("offset", 0)
-    mode = data.get("mode")
+    # shu joyda flow saqlaysan
+    save_user_flow(
+        user_id=user_id,
+        step="choose_group",
+        data={"mode": mode}
+    )
 
-    page = groups[offset: offset + PAGE_SIZE]
-    selected = data.get("selected_ids", [])
+    text = "📍 Qaysi guruhga yuboramiz?\n\n" if mode == "single" else "📍 Qaysi guruhlarga yuboramiz?\n\n"
 
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[])
-
-    for g in page:
-        checked = "✅ " if g["id"] in selected else ""
-        keyboard.inline_keyboard.append([
+    kb = []
+    for g in groups:
+        kb.append([
             InlineKeyboardButton(
-                text=f"{checked}{g['name']}",
-                callback_data=f"pick_{g['id']}"
+                text=g["title"],
+                callback_data=f"group:{g['group_id']}"
             )
         ])
 
-    nav = []
-    if offset > 0:
-        nav.append(InlineKeyboardButton(text="⬅️ Oldingi", callback_data="grp_prev"))
-    if offset + PAGE_SIZE < len(groups):
-        nav.append(InlineKeyboardButton(text="➡️ Keyingi", callback_data="grp_next"))
-    if nav:
-        keyboard.inline_keyboard.append(nav)
+    await message.answer(text, reply_markup=InlineKeyboardMarkup(inline_keyboard=kb))
 
-    if mode == "multi":
-        keyboard.inline_keyboard.append([
-            InlineKeyboardButton(text="✅ Tayyor", callback_data="grp_done")
-        ])
+@dp.callback_query(F.data.startswith("group:"))
+async def on_group_selected(call: CallbackQuery):
+    user_id = call.from_user.id
+    group_id = int(call.data.split(":")[1])
 
-    if edit:
-        await message.edit_reply_markup(reply_markup=keyboard)
-    else:
-        await message.answer(
-            "👉 Guruhni tanlang:",
-            reply_markup=keyboard
-        )
-
-
-@dp.callback_query(F.data == "grp_done")
-async def finish_group_selection(cb: CallbackQuery):
-    user_id = cb.from_user.id
     flow = get_user_flow(user_id)
+    mode = flow["data"]["mode"]
 
-    if not flow or flow["step"] != "choose_group":
-        await cb.answer("❌ Holat topilmadi", show_alert=True)
-        return
-
-    data = flow["data"]
-    selected = data.get("selected_ids", [])
-
-    if not selected:
-        await cb.answer("❗ Kamida bitta guruh tanlang", show_alert=True)
-        return
-
-    # 👉 keyingi bosqich — matn kiritish
     save_user_flow(
         user_id=user_id,
         step="enter_text",
         data={
-            "mode": "multi",
-            "selected_ids": selected
+            "mode": mode,
+            "groups": [group_id]
         }
     )
 
-    await cb.message.edit_text(
-        f"✅ {len(selected)} ta guruh tanlandi.\n\n"
-        "✍️ Endi xabar matnini kiriting:"
+    await call.message.answer(
+        "✍️ Yuboriladigan xabar matnini kiriting:"
     )
-    await cb.answer()
+    await call.answer()
 
 
 # =====================
