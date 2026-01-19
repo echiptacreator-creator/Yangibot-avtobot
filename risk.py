@@ -1,62 +1,68 @@
-# risk.py
+from datetime import datetime
 from database import get_db
-import time
 
-def get_account_risk(user_id):
+def get_account_risk(user_id: int) -> int:
     conn = get_db()
     cur = conn.cursor()
 
-    cur.execute(
-        "SELECT risk_score FROM user_accounts WHERE user_id=%s",
-        (user_id,)
-    )
-    row = cur.fetchone()
-
-    if not row:
-        # 🔥 AGAR YO‘Q BO‘LSA — YARATAMIZ
-        cur.execute(
-            "INSERT INTO user_accounts (user_id, risk_score) VALUES (%s, 0)",
-            (user_id,)
-        )
-        conn.commit()
-        conn.close()
-        return 0
-
-    conn.close()
-    return row[0]
-
-
-def save_account_risk(user_id: int, risk: int):
-    conn = get_db()
-    cur = conn.cursor()
     cur.execute("""
-        UPDATE user_accounts
-        SET risk_score=%s
-        WHERE user_id=%s
-    """, (risk, user_id))
+        SELECT risk_score
+        FROM account_risk
+        WHERE user_id = %s
+    """, (user_id,))
+
+    row = cur.fetchone()
+    conn.close()
+
+    return row[0] if row else 0
+
+
+def save_account_risk(user_id: int, score: int):
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        INSERT INTO account_risk (user_id, risk_score, last_updated)
+        VALUES (%s, %s, NOW())
+        ON CONFLICT (user_id)
+        DO UPDATE SET
+            risk_score = EXCLUDED.risk_score,
+            last_updated = NOW()
+    """, (user_id, score))
+
     conn.commit()
     conn.close()
 
 
-def increase_risk(user_id: int, value: int):
-    risk = get_account_risk(user_id)
-    risk = min(100, risk + value)
-    save_account_risk(user_id, risk)
+def increase_risk(user_id: int, amount: int):
+    score = get_account_risk(user_id)
+    score = min(100, score + amount)
+    save_account_risk(user_id, score)
+    return score
 
 
-def decay_account_risk(user_id: int):
-    data = get_account_risk(user_id)
+def decay_account_risk(user_id: int) -> int:
+    conn = get_db()
+    cur = conn.cursor()
 
-    score = data["score"]
-    last = data["last_updated"]
+    cur.execute("""
+        SELECT risk_score, last_updated
+        FROM account_risk
+        WHERE user_id = %s
+    """, (user_id,))
 
-    if not last:
-        return score
+    row = cur.fetchone()
 
+    if not row:
+        conn.close()
+        return 0
+
+    score, last = row
     minutes = (datetime.utcnow() - last).total_seconds() / 60
 
     if minutes >= 10 and score > 0:
         score = max(0, score - 10)
         save_account_risk(user_id, score)
 
+    conn.close()
     return score
