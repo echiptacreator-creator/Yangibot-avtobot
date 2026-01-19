@@ -391,6 +391,28 @@ async def get_client(user_id: int):
 # GURUH YUKLASH
 # =====================
 
+async def fetch_only_groups(client):
+    groups = []
+
+    async for dialog in client.iter_dialogs():
+        # ❌ shaxsiy chatlar
+        if dialog.is_user:
+            continue
+
+        # ❌ botlar
+        if getattr(dialog.entity, "bot", False):
+            continue
+
+        # ✅ faqat guruhlar (private + supergroup)
+        if dialog.is_group:
+            groups.append({
+                "id": dialog.entity.id,
+                "title": dialog.entity.title,
+                "username": getattr(dialog.entity, "username", None)
+            })
+
+    return groups
+
 @dp.message(F.text == "📥 Guruhlarni yuklash")
 async def load_groups_handler(message: Message):
     user_id = message.from_user.id
