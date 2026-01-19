@@ -1193,4 +1193,21 @@ def get_user_groups(user_id: int):
         for r in rows
     ]
 
+def save_user_groups(user_id, groups):
+    conn = get_db()
+    cur = conn.cursor()
 
+    for g in groups:
+        cur.execute("""
+            INSERT INTO user_groups (user_id, group_id, title, username)
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT (user_id, group_id) DO NOTHING
+        """, (
+            user_id,
+            g["id"],
+            g["title"],
+            g["username"]
+        ))
+
+    conn.commit()
+    cur.close()
