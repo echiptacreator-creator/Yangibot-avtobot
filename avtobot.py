@@ -392,45 +392,6 @@ async def get_client(user_id: int):
 # GURUH YUKLASH
 # =====================
 
-async def fetch_only_groups(client):
-    groups = []
-
-    async for dialog in client.iter_dialogs():
-        # ❌ shaxsiy chatlar
-        if dialog.is_user:
-            continue
-
-        # ❌ botlar
-        if getattr(dialog.entity, "bot", False):
-            continue
-
-        # ✅ faqat guruhlar (private + supergroup)
-        if dialog.is_group:
-            groups.append({
-                "id": dialog.entity.id,
-                "title": dialog.entity.title,
-                "username": getattr(dialog.entity, "username", None)
-            })
-
-    return groups
-
-groups = get_user_groups(user_id)
-
-if not groups:
-    await message.answer(
-        "❌ Sizda hali guruh yo‘q.\n\n"
-        "Avval guruhlarni yuklang 👇",
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=[[
-                InlineKeyboardButton(
-                    text="📥 Guruhlarni yuklash",
-                    callback_data="noop"
-                )
-            ]]
-        )
-    )
-    return
-
 @dp.message(F.text == "📥 Guruhlarni yuklash")
 async def load_groups_handler(message: Message):
     user_id = message.from_user.id
