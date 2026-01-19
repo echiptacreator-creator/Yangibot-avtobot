@@ -14,7 +14,6 @@ from database import (
 )
 from database import approve_payment as approve_payment_db, reject_payment
 from aiogram import F
-from database import get_payment_by_id
 
 # =====================
 # CONFIG
@@ -73,11 +72,11 @@ async def receive_receipt(message: Message):
         [
             InlineKeyboardButton(
                 text="✅ Tasdiqlash",
-                callback_data=f"pay_ok:{payment_id}"
+                callback_data=f"pay_ok:{payment_id}:{user_id}:{months}"
             ),
             InlineKeyboardButton(
                 text="❌ Rad etish",
-                callback_data=f"pay_no:{payment_id}"
+                callback_data=f"pay_no:{payment_id}:{user_id}"
             )
         ]
     ])
@@ -105,7 +104,11 @@ async def approve_payment(callback):
         await callback.answer("Ruxsat yo‘q", show_alert=True)
         return
 
-    payment_id = int(callback.data.split(":")[1])
+    _, payment_id, user_id, months = callback.data.split(":")
+    payment_id = int(payment_id)
+    user_id = int(user_id)
+    months = int(months)
+
 
     await approve_payment_db(payment_id)  # database.py dagi funksiya
 
@@ -126,11 +129,12 @@ async def approve_payment(callback):
         (
             "🎉 *To‘lovingiz muvaffaqiyatli tasdiqlandi!*\n\n"
             f"📦 Tarif: *{months} oy*\n"
-            "🚀 Endi siz Premium foydalanuvchisiz.\n\n"
-            "Rahmat! Botdan unumli foydalaning 💙"
+            "👑 Siz Premium foydalanuvchiga aylandingiz.\n\n"
+            "Botdan cheklovsiz foydalanishingiz mumkin. Omad! 🚀"
         ),
         parse_mode="Markdown"
     )
+
 
 
 
@@ -140,13 +144,17 @@ async def reject_payment_cb(callback):
         await callback.answer("Ruxsat yo‘q", show_alert=True)
         return
 
-    payment_id = int(callback.data.split(":")[1])
-
-    reject_payment(payment_id)
-
-    await callback.message.edit_caption(
-        callback.message.caption + "\n\n❌ Rad etildi"
+    _, payment_id, user_id = callback.data.split(":")
+    payment_id = int(payment_id)
+    user_id = int(user_id)
+    
+    await reject_payment(payment_id)
+    
+    await bot.send_message(
+        user_id,
+        "❌ To‘lov rad etildi.\nIltimos, chekni tekshirib qayta yuboring."
     )
+
 
     await callback.answer("Rad etildi")
 
