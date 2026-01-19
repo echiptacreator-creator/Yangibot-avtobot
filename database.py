@@ -1151,3 +1151,20 @@ def get_premium_status(user_id: int):
     Vaqtincha default premium status.
     """
     return False, 0, False
+
+def get_user_groups(user_id: int):
+    """
+    Userga tegishli guruhlar ro‘yxati.
+    """
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT group_id FROM user_groups
+        WHERE user_id = %s
+    """, (user_id,))
+
+    rows = cur.fetchall()
+    conn.close()
+
+    return [r[0] for r in rows]
