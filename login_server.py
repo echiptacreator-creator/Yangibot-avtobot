@@ -286,37 +286,8 @@ def save_groups():
 
     return jsonify({"status": "ok"})
 
-@app.route("/api/user-groups", methods=["GET"])
-def api_user_groups():
-    user_id = request.args.get("user_id", type=int)
-    if not user_id:
-        return jsonify([])
-
-    groups = get_user_groups(user_id)
-    return jsonify(groups)
-
-@app.route("/api/user-groups/add", methods=["POST"])
-def api_add_user_group():
-    data = request.json
-    add_user_group(
-        user_id=data["user_id"],
-        group_id=data["group_id"],
-        title=data["title"],
-        username=data.get("username")
-    )
-    return jsonify({"status": "ok"})
-
-@app.route("/api/user-groups/remove", methods=["POST"])
-def api_remove_user_group():
-    data = request.json
-    remove_user_group(
-        user_id=data["user_id"],
-        group_id=data["group_id"]
-    )
-    return jsonify({"status": "ok"})
-
-@app.route("/api/telegram-groups", methods=["GET"])
-def api_telegram_groups():
+@app.route("/api/sync-groups", methods=["GET"])
+def sync_groups():
     user_id = request.args.get("user_id", type=int)
     if not user_id:
         return jsonify([])
@@ -331,31 +302,18 @@ def api_telegram_groups():
     try:
         with client:
             for dialog in client.iter_dialogs():
-                entity = dialog.entity
-
-                # ❌ shaxsiy chatlar
-                if not isinstance(entity, (Chat, Channel)):
+                if dialog.is_user:
                     continue
-
-                # ❌ kanallar
-                if isinstance(entity, Channel) and entity.broadcast:
+                if getattr(dialog.entity, "bot", False):
                     continue
-
-                # ❌ botlar
-                if getattr(entity, "bot", False):
-                    continue
-
-                groups.append({
-                    "group_id": entity.id,
-                    "title": entity.title,
-                    "username": getattr(entity, "username", None)
-                })
-
-    except SessionRevokedError:
-        return jsonify({
-            "error": "session_revoked",
-            "message": "Telegram sessiya yopilgan"
-        })
+                if dialog.is_group:
+                    groups.append({
+                        "group_id": dialog.entity.id,
+                        "title": dialog.entity.title,
+                        "username": getattr(dialog.entity, "username", None)
+                    })
+    except Exception:
+        return jsonify([])
 
     return jsonify(groups)
 
