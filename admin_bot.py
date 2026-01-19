@@ -14,6 +14,10 @@ from database import (
 )
 from database import approve_payment as approve_payment_db, reject_payment
 from aiogram import F
+from aiogram import Router
+
+router = Router()
+
 
 # =====================
 # CONFIG
@@ -98,8 +102,10 @@ async def receive_receipt(message: Message):
 
 from aiogram import F
 
-@dp.callback_query(F.data.startswith("pay_ok:"))
-async def approve_payment(callback):
+from database import approve_payment as approve_payment_db
+
+@router.callback_query(F.data.startswith("pay_ok:"))
+async def approve_payment_cb(callback):
     if callback.from_user.id != ADMIN_ID:
         await callback.answer("Ruxsat yo‘q", show_alert=True)
         return
@@ -109,36 +115,27 @@ async def approve_payment(callback):
     user_id = int(user_id)
     months = int(months)
 
-
-    await approve_payment_db(payment_id)  # database.py dagi funksiya
+    await approve_payment_db(payment_id)
 
     await callback.message.edit_caption(
         callback.message.caption + "\n\n✅ Tasdiqlandi"
     )
 
-    await callback.answer("Tasdiqlandi")
-    
-    # payment haqida ma’lumotni olish
-    payment = get_payment_by_id(payment_id)
-    
-    user_id = payment["user_id"]
-    months = payment["months"]
-    
     await bot.send_message(
         user_id,
         (
-            "🎉 *To‘lovingiz muvaffaqiyatli tasdiqlandi!*\n\n"
+            "🎉 *To‘lovingiz tasdiqlandi!*\n\n"
             f"📦 Tarif: *{months} oy*\n"
-            "👑 Siz Premium foydalanuvchiga aylandingiz.\n\n"
-            "Botdan cheklovsiz foydalanishingiz mumkin. Omad! 🚀"
+            "👑 Siz Premium foydalanuvchisiz.\n\n"
+            "Omad! 🚀"
         ),
         parse_mode="Markdown"
     )
 
+    await callback.answer("Tasdiqlandi")
 
 
-
-@dp.callback_query(F.data.startswith("pay_no:"))
+@router.callback_query(F.data.startswith("pay_no:"))
 async def reject_payment_cb(callback):
     if callback.from_user.id != ADMIN_ID:
         await callback.answer("Ruxsat yo‘q", show_alert=True)
