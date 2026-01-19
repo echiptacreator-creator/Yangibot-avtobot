@@ -164,6 +164,26 @@ def subscription_status(user_id: int):
 # KEYBOARDS
 # =====================
 
+def duration_keyboard(min_d: int, safe_d: int, max_d: int):
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=f"{min_d} daq (🟢)",
+                    callback_data=f"pick_duration:{min_d}"
+                ),
+                InlineKeyboardButton(
+                    text=f"{safe_d} daq (🟡)",
+                    callback_data=f"pick_duration:{safe_d}"
+                ),
+                InlineKeyboardButton(
+                    text=f"{max_d} daq (🔴)",
+                    callback_data=f"pick_duration:{max_d}"
+                ),
+            ]
+        ]
+    )
+
 def login_menu():
     return ReplyKeyboardMarkup(
         keyboard=[
@@ -215,25 +235,6 @@ async def admin_notification_worker():
 # /START
 # =====================
 
-def duration_keyboard(min_d: int, safe_d: int, max_d: int):
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text=f"{min_d} daq (🟢)",
-                    callback_data=f"pick_duration:{min_d}"
-                ),
-                InlineKeyboardButton(
-                    text=f"{safe_d} daq (🟡)",
-                    callback_data=f"pick_duration:{safe_d}"
-                ),
-                InlineKeyboardButton(
-                    text=f"{max_d} daq (🔴)",
-                    callback_data=f"pick_duration:{max_d}"
-                ),
-            ]
-        ]
-    )
 @dp.message(EditCampaign.waiting_value)
 async def edit_value_handler(message: Message, state: FSMContext):
     data = await state.get_data()
