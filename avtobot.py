@@ -246,19 +246,23 @@ async def start(message: Message):
         reply_markup=main_menu()
     )
    
-    status, left = subscription_status(user_id)
+    status, left_days, notified = get_premium_status(user_id)
     
-    if status == "active" and left > 0:
+    if status == "active" and not notified:
         await message.answer(
-            "👑 *Premium obuna faollashtirildi!*\n\n"
-            f"⏳ Muddati: *{left} kun*\n\n"
-            "✅ Endi siz:\n"
-            "• Cheklovsiz kampaniyalar ishga tushira olasiz\n"
-            "• Limitlarsiz foydalanasiz\n\n"
-            "⚠️ Iltimos, Telegram qoidalariga amal qiling.\n"
-            "Omad! 🚀",
+            "🎉 *Tabriklaymiz!*\n\n"
+            "👑 Siz *Premium* obunani faollashtirdingiz.\n\n"
+            f"⏳ Amal qilish muddati: *{left_days} kun*\n\n"
+            "⚠️ Iltimos, Telegram qoidalariga amal qiling:\n"
+            "• Spam qilmang\n"
+            "• Juda tez yubormang\n"
+            "• Guruh qoidalarini buzmang\n\n"
+            "🚀 Omad tilaymiz!",
             parse_mode="Markdown"
         )
+    
+        mark_premium_notified(user_id)
+    
 
 
 # =====================
