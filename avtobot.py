@@ -185,13 +185,13 @@ async def edit_value_handler(message: Message, state: FSMContext):
         if not value.isdigit() or int(value) <= 0:
             await message.answer("❌ Interval musbat raqam bo‘lishi kerak")
             return
-        update_campaign_field(campaign_id, "interval_minutes", int(value))
-
+        update_campaign_field(campaign_id, "interval", int(value))
+    
     elif field == "duration":
         if not value.isdigit() or int(value) <= 0:
             await message.answer("❌ Davomiylik musbat raqam bo‘lishi kerak")
             return
-        update_campaign_field(campaign_id, "duration_minutes", int(value))
+        update_campaign_field(campaign_id, "duration", int(value))
 
     await state.clear()
 
