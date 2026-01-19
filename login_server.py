@@ -261,6 +261,17 @@ def init_payment():
 
     return jsonify({"status": "ok"})
 
+from flask import request, jsonify
+from database import get_temp_groups_from_db
+
+@app.route("/api/temp-groups", methods=["GET"])
+def api_temp_groups():
+    user_id = request.args.get("user_id", type=int)
+    if not user_id:
+        return jsonify([])
+
+    groups = get_temp_groups_from_db(user_id)
+    return jsonify(groups)
 
 # =====================
 # RUN
