@@ -581,6 +581,10 @@ async def pick_group(cb: CallbackQuery):
 
 @dp.message(F.text & ~F.text.regexp(r"^\d+$"))
 async def handle_enter_text(message: Message, state: FSMContext):
+    # 🔒 AGAR FLOW YO‘Q BO‘LSA — CHIQIB KETAMIZ
+    flow = get_user_flow(message.from_user.id)
+    if not flow or flow["step"] != "enter_text":
+        return
     # 🔒 Agar edit FSM ishlayotgan bo‘lsa — tegmaymiz
     if await state.get_state():
         return
@@ -1330,6 +1334,10 @@ async def select_tariff(cb: CallbackQuery):
 
 @dp.message(F.photo)
 async def receive_receipt(message: Message):
+    # 🔒 AGAR FLOW YO‘Q BO‘LSA — CHIQIB KETAMIZ
+    flow = get_user_flow(message.from_user.id)
+    if not flow or flow["step"] != "waiting_receipt":
+        return  # oddiy rasm, e’tibor bermaymiz
     user_id = message.from_user.id
     flow = get_user_flow(user_id)
 
@@ -1562,6 +1570,10 @@ async def main():
 
     await restore_campaigns()
     await dp.start_polling(bot)
+
+@dp.message()
+async def debug_catch_all(message: Message):
+    print("⚠️ CATCH:", message.text)
 
 
 if __name__ == "__main__":
