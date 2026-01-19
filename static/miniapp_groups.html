@@ -139,89 +139,61 @@
 </div>
 
 <script>
-  const tg = Telegram.WebApp;
-  tg.ready();
+const tg = Telegram.WebApp;
+tg.ready();
 
-  const userId = tg.initDataUnsafe?.user?.id;
-  const groupsBox = document.getElementById("groups");
-  const saveBtn = document.getElementById("saveBtn");
+const userId = tg.initDataUnsafe.user.id;
+let groups = [];
 
-  let groups = [];
+async function load() {
+  const box = document.getElementById("groups");
+  box.innerHTML = "⏳ Yuklanmoqda...";
 
-  async function loadGroups() {
-    try {
-      const res = await fetch(`/api/temp-groups?user_id=${userId}`);
-      const data = await res.json();
+  const res = await fetch(`/api/temp-groups?user_id=${userId}`);
+  groups = await res.json();
 
-      if (!data.length) {
-        groupsBox.innerHTML = `
-          <div class="empty">
-            Guruhlar topilmadi.<br>
-            Botga qaytib guruhlarni yuklang.
-          </div>
-        `;
-        return;
-      }
+  box.innerHTML = "";
 
-      groups = data;
-      groupsBox.innerHTML = "";
-
-      data.forEach((g, i) => {
-        const div = document.createElement("label");
-        div.className = "group";
-        div.innerHTML = `
-          <input type="checkbox" data-index="${i}">
-          <div class="group-title">${g.title}</div>
-        `;
-        groupsBox.appendChild(div);
-      });
-
-      document
-        .querySelectorAll("input[type=checkbox]")
-        .forEach(cb => cb.addEventListener("change", updateButton));
-
-    } catch (e) {
-      groupsBox.innerHTML = `
-        <div class="empty">Xatolik yuz berdi</div>
-      `;
-      console.error(e);
-    }
+  if (!groups.length) {
+    box.innerHTML = "❌ Guruhlar topilmadi. Avval bot orqali yuklang.";
+    return;
   }
 
-  function updateButton() {
-    const checked = document.querySelectorAll("input:checked").length;
-    saveBtn.disabled = checked === 0;
-    saveBtn.textContent = checked
-      ? `Saqlash (${checked})`
-      : "Tanlanganlarni saqlash";
+  groups.forEach((g, i) => {
+    box.innerHTML += `
+      <div class="group">
+        <label>
+          <input type="checkbox" data-i="${i}">
+          ${g.title}
+        </label>
+      </div>
+    `;
+  });
+}
+
+async function save() {
+  const selected = [...document.querySelectorAll("input:checked")]
+    .map(i => groups[i.dataset.i]);
+
+  if (!selected.length) {
+    tg.showPopup({ message: "Hech narsa tanlanmadi" });
+    return;
   }
 
-  async function save() {
-    const selected = [...document.querySelectorAll("input:checked")]
-      .map(cb => groups[cb.dataset.index]);
+  await fetch("/api/user-groups/bulk-add", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      user_id: userId,
+      groups: selected
+    })
+  });
 
-    if (!selected.length) return;
+  tg.showPopup({ message: "✅ Guruhlar saqlandi" });
+  tg.close();
+}
 
-    saveBtn.disabled = true;
-    saveBtn.textContent = "Saqlanmoqda…";
-
-    await fetch("/api/user-groups/bulk-add", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user_id: userId,
-        groups: selected
-      })
-    });
-
-    tg.showPopup({
-      message: "✅ Guruhlar saqlandi"
-    });
-
-    setTimeout(() => tg.close(), 600);
-  }
-
-  loadGroups();
+load();
 </script>
 </body>
 </html>
