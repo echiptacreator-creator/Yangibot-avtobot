@@ -167,6 +167,14 @@ def init_db():
     last_updated TIMESTAMP NOT NULL DEFAULT NOW()
 );
 """)
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS user_groups (
+        id SERIAL PRIMARY KEY,
+        user_id BIGINT NOT NULL,
+        group_id BIGINT NOT NULL
+)
+""")
+
     
     conn.commit()
     cur.close()
@@ -1153,9 +1161,6 @@ def get_premium_status(user_id: int):
     return False, 0, False
 
 def get_user_groups(user_id: int):
-    """
-    Userga tegishli guruhlar ro‘yxati.
-    """
     conn = get_db()
     cur = conn.cursor()
 
@@ -1166,5 +1171,5 @@ def get_user_groups(user_id: int):
 
     rows = cur.fetchall()
     conn.close()
-
     return [r[0] for r in rows]
+
