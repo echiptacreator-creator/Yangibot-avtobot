@@ -43,6 +43,7 @@ from database import get_user_groups
 from database import save_user_groups
 from telethon.tl.types import Chat, Channel
 from database import save_temp_groups
+from telethon.utils import get_peer_id
 from risk import (
     get_account_risk,
     increase_risk,
@@ -488,9 +489,8 @@ async def load_groups_handler(message: Message):
             group_id = raw_id
         
         groups.append({
-            "group_id": group_id,
-            "title": dialog.entity.title,
-            "username": getattr(dialog.entity, "username", None)
+            "peer_id": get_peer_id(dialog.entity),
+            "title": dialog.entity.title
         })
 
     if not groups:
@@ -979,7 +979,10 @@ async def send_to_group(client, campaign, group_id):
                 caption=campaign["text"]
             )
         else:
-            await client.send_message(group_id, campaign["text"])
+            peer_id = group_id  # endi bu peer_id bo‘ladi
+
+            entity = await client.get_entity(peer_id)
+            await client.send_message(entity, campaign["text"])
 
         # ✅ MUVAFFAQIYAT
         increment_sent_count(campaign["id"])
