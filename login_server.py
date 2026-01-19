@@ -223,6 +223,30 @@ def verify_password():
         print("VERIFY_PASSWORD ERROR:", repr(e))
         return jsonify({"status": "error"}), 500
 
+# login_server.py
+from flask import request, jsonify
+from database import create_payment
+
+@app.route("/api/payment/init", methods=["POST"])
+def init_payment():
+    data = request.json
+
+    user_id = data["user_id"]
+    months = data["months"]
+    amount = data["amount"]
+
+    payment_id = create_payment(
+        user_id=user_id,
+        months=months,
+        amount=amount
+    )
+
+    return jsonify({
+        "status": "ok",
+        "payment_id": payment_id
+    })
+
+
 # =====================
 # RUN
 # =====================
