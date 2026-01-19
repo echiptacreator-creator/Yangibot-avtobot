@@ -1145,3 +1145,9 @@ def decay_account_risk(user_id: int):
         save_account_risk(user_id, score)
 
     return score
+
+def get_premium_status(user_id: int):
+    """
+    Vaqtincha default premium status.
+    """
+    return False, 0, False
