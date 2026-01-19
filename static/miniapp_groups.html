@@ -64,11 +64,18 @@ tg.ready();
 const userId = tg.initDataUnsafe.user.id;
 let data=[];
 
-async function load(){
-  const r = await fetch(`/api/sync-groups?user_id=${userId}`);
-  data = await r.json();
-  const box=document.getElementById("groups");
-  box.innerHTML="";
+async function loadGroups() {
+  const user = tg.initDataUnsafe.user;
+  const res = await fetch(`/api/temp-groups?user_id=${user.id}`);
+  const groups = await res.json();
+
+  if (!groups.length) {
+    groupsList.innerHTML = "Avval bot orqali guruhlarni yuklang";
+    return;
+  }
+
+  renderGroups(groups);
+}
 
   data.forEach((g,i)=>{
     const d=document.createElement("div");
