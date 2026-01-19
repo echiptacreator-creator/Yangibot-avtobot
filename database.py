@@ -1262,21 +1262,32 @@ def remove_user_group(user_id, group_id):
     conn.commit()
     cur.close()
 
-def save_user_groups_bulk(user_id, groups):
+def save_user_groups(user_id, groups):
     conn = get_db()
     cur = conn.cursor()
+
+    # eski guruhlarni o‘chiramiz
+    cur.execute(
+        "DELETE FROM user_groups WHERE user_id = %s",
+        (user_id,)
+    )
+
     for g in groups:
-    cur.execute("""
-        INSERT INTO user_groups (user_id, peer_id, title, username)
-        VALUES (%s, %s, %s, %s)
-    """, (
-        user_id,
-        g["peer_id"],
-        g["title"],
-        g.get("username")
-    ))
+        cur.execute(
+            """
+            INSERT INTO user_groups (user_id, peer_id, title, username)
+            VALUES (%s, %s, %s, %s)
+            """,
+            (
+                user_id,
+                g["peer_id"],
+                g["title"],
+                g.get("username")
+            )
+        )
+
     conn.commit()
-    cur.close()
+    conn.close()
 
 
 def get_temp_groups_from_db(user_id: int):
