@@ -71,6 +71,21 @@ from database import get_login_session
 def is_logged_in(user_id):
     return get_login_session(user_id) is not None
 
+def calculate_duration_limits(interval: int) -> dict:
+    """
+    Intervalga qarab davomiylik limitlarini hisoblaydi
+    """
+    min_duration = interval * 10
+    safe_max = interval * 15
+    absolute_max = interval * 30
+
+    return {
+        "min": min_duration,
+        "safe": safe_max,
+        "max": absolute_max
+    }
+
+
 # =====================
 # NOTIFICATION XATO
 # =====================
@@ -712,16 +727,52 @@ async def handle_numbers(message: Message):
 
     # 🔒 FAQAT CREATE FLOW
     if step == "enter_interval":
-        data["interval"] = value
+        interval = value
+    
+        if interval < 5 or interval > 30:
+            await message.answer("❌ Interval 5–30 daqiqa oralig‘ida bo‘lishi kerak")
+            return
+    
+        limits = calculate_duration_limits(interval)
+    
+        data["interval"] = interval
+        data["limits"] = limits
+    
         save_user_flow(user_id, "enter_duration", data)
-
+    
         await message.answer(
-            "⏳ Kampaniya davomiyligini kiriting (daqiqada):"
+            "⏳ Kampaniya davomiyligini kiriting (daqiqada):\n\n"
+            f"🟢 Tavsiya etiladi: {limits['min']} – {limits['safe']}\n"
+            f"🟡 Maksimal ruxsat: {limits['max']}\n\n"
+            "⚠️ Tavsiyadan yuqori qiymat akkaunt xavfini oshiradi."
         )
         return
 
+
     if step == "enter_duration":
-        data["duration"] = value
+        duration = value
+        limits = data.get("limits")
+    
+        if not limits:
+            await message.answer("❌ Xatolik: limitlar topilmadi")
+            return
+    
+        if duration < limits["min"]:
+            await message.answer(
+                f"❌ Juda qisqa davomiylik.\n"
+                f"Minimal tavsiya: {limits['min']} daqiqa"
+            )
+            return
+    
+        if duration > limits["max"]:
+            await message.answer(
+                f"❌ Juda katta davomiylik.\n"
+                f"Maksimal ruxsat: {limits['max']} daqiqa"
+            )
+            return
+    
+        data["duration"] = duration
+
 
             # 🔒 AVVAL TEKSHIRAMIZ
         ok, reason = can_user_run_campaign(user_id)
@@ -743,6 +794,12 @@ async def handle_numbers(message: Message):
             chat_id=message.chat.id,
             text="🚀 Kampaniya boshlanmoqda..."
         )
+
+        if duration > limits["safe"]:
+            risk = decay_account_risk(user_id)
+            risk += 20
+            save_account_risk(user_id, risk)
+
     
         # 2️⃣ KAMPANIYA YARATAMIZ
         campaign_id = create_campaign(
