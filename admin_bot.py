@@ -21,6 +21,8 @@ from database import (
     activate_subscription
 )
 from database import get_last_pending_payment, activate_premium
+from database import get_last_pending_payment, enable_premium
+
 
 # =====================
 # CONFIG
