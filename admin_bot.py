@@ -24,7 +24,7 @@ ADMIN_ID = 515902673
 ADMIN_BOT_TOKEN = "8502710270:AAHgqYrfZQQtE9-aTQtHAz7w-ZkHpZfj-Kg"
 logging.basicConfig(level=logging.INFO)
 
-bot = Bot(BOT_TOKEN, parse_mode=ParseMode.MARKDOWN)
+bot = Bot(BOT_TOKEN)
 dp = Dispatcher()
 
 # =========================
@@ -100,7 +100,7 @@ async def receive_receipt(message: Message):
 # ADMIN TASDIQLASH
 # =========================
 @dp.callback_query(F.data.startswith("pay_ok:"))
-async def approve_payment(cb: CallbackQuery):
+async def approve_payment(cb):
     if cb.from_user.id != ADMIN_ID:
         await cb.answer("Ruxsat yo‘q", show_alert=True)
         return
