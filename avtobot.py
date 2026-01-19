@@ -394,11 +394,13 @@ async def show_group_page(message: Message, user_id: int):
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[])
 
-    # 1️⃣ Guruhlar
+    selected = data.get("selected_ids", [])
+    
     for g in page:
+        checked = "✅ " if g["id"] in selected else ""
         keyboard.inline_keyboard.append([
             InlineKeyboardButton(
-                text=g["name"],
+                text=f"{checked}{g['name']}",
                 callback_data=f"pick_{g['id']}"
             )
         ])
@@ -438,6 +440,39 @@ async def show_group_page(message: Message, user_id: int):
         "👉 Guruhni tanlang:",
         reply_markup=keyboard
     )
+
+@dp.callback_query(F.data == "grp_done")
+async def finish_group_selection(cb: CallbackQuery):
+    user_id = cb.from_user.id
+    flow = get_user_flow(user_id)
+
+    if not flow or flow["step"] != "choose_group":
+        await cb.answer("❌ Holat topilmadi", show_alert=True)
+        return
+
+    data = flow["data"]
+    selected = data.get("selected_ids", [])
+
+    if not selected:
+        await cb.answer("❗ Kamida bitta guruh tanlang", show_alert=True)
+        return
+
+    # 👉 keyingi bosqich — matn kiritish
+    save_user_flow(
+        user_id=user_id,
+        step="enter_text",
+        data={
+            "mode": "multi",
+            "selected_ids": selected
+        }
+    )
+
+    await cb.message.edit_text(
+        f"✅ {len(selected)} ta guruh tanlandi.\n\n"
+        "✍️ Endi xabar matnini kiriting:"
+    )
+    await cb.answer()
+
 
 # =====================
 # PAFINATION CALLBACK
@@ -508,19 +543,22 @@ async def pick_group(cb: CallbackQuery):
         return
 
     # multi
-    if group_id not in selected:
+    if group_id in selected:
+        selected.remove(group_id)
+        await cb.answer("➖ Guruh olib tashlandi")
+    else:
         selected.append(group_id)
+        await cb.answer("➕ Guruh qo‘shildi")
 
-    data["selected_ids"] = selected
-    save_user_flow(user_id, "choose_group", data)
-
-    await cb.answer(f"➕ {groups[str(group_id)]['name']} qo‘shildi")
 
 
 from aiogram.fsm.state import StatesGroup, State
 
 class EditCampaign(StatesGroup):
     waiting_value = State()
+
+save_user_flow(user_id, "choose_group", data)
+await show_group_page(cb.message, user_id)
 
 
 # =====================
