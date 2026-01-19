@@ -1086,7 +1086,7 @@ def create_payment(user_id, months, amount):
     return fetch_one(query, (user_id, months, amount))[0]
 
 
-def get_last_pending_payment(user_id):
+def get_last_pending_payment(user_id: int):
     query = """
     SELECT id, user_id, months, amount
     FROM payments
@@ -1096,3 +1096,15 @@ def get_last_pending_payment(user_id):
     """
     return fetch_one(query, (user_id,))
 
+
+def activate_premium(user_id: int, months: int):
+    premium_until = datetime.utcnow() + timedelta(days=30 * months)
+
+    query = """
+    UPDATE users
+    SET
+        is_premium = TRUE,
+        premium_until = %s
+    WHERE user_id = %s
+    """
+    execute(query, (premium_until, user_id))
