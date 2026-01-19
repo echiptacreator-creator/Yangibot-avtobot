@@ -453,84 +453,38 @@ async def load_groups_handler(message: Message):
 # PAFINATION CALLBACK
 # =====================
 
-@dp.callback_query(F.data.in_(["grp_prev", "grp_next"]))
-async def paginate_groups(cb: CallbackQuery):
-    user_id = cb.from_user.id
-    flow = get_user_flow(user_id)
-    if not flow:
-        await cb.answer()
+@dp.message(F.text.in_(["📍 Bitta guruhga", "📍 Ko‘p guruhlarga"]))
+async def choose_send_mode(message: Message):
+    user_id = message.from_user.id
+    mode = "single" if "Bitta" in message.text else "multi"
+
+    groups = get_user_groups(user_id)  # 🔥 DB dan
+
+    if not groups:
+        await message.answer(
+            "❌ Sizda hali saqlangan guruhlar yo‘q.\n\n"
+            "Avval 📥 Guruhlarni yuklash tugmasi orqali guruhlarni qo‘shing.",
+            reply_markup=main_menu()
+        )
         return
 
-    data = flow["data"]
-    offset = data.get("offset", 0)
+    # 🔐 FLOW SAQLAYMIZ
+    save_user_flow(
+        user_id=user_id,
+        step="enter_text",
+        data={
+            "mode": mode,
+            "selected_ids": [g["group_id"] for g in groups] if mode == "multi" else [groups[0]["group_id"]]
+        }
+    )
 
-    if cb.data == "grp_next":
-        offset += PAGE_SIZE
-    else:
-        offset = max(0, offset - PAGE_SIZE)
-
-    data["offset"] = offset
-
-    save_user_flow(user_id, "choose_group", data)
-
-    await show_group_page(cb.message, user_id, edit=True)
-    await cb.answer()
-
+    await message.answer(
+        "✍️ Xabar matnini yuboring:"
+    )
 
 # =====================
 # GURUH TANLASH
 # =====================
-
-@dp.callback_query(F.data.startswith("pick_"))
-async def pick_group(cb: CallbackQuery):
-    user_id = cb.from_user.id
-    group_id = int(cb.data.replace("pick_", ""))
-
-    flow = get_user_flow(user_id)
-    if not flow:
-        await cb.answer()
-        return
-
-    data = flow["data"]
-    groups = data["groups"]
-    mode = data["mode"]
-    selected = data.get("selected_ids", [])
-
-    if str(group_id) not in groups:
-        await cb.answer("❌ Guruh topilmadi", show_alert=True)
-        return
-
-    # 🟢 SINGLE MODE
-    if mode == "single":
-        save_user_flow(
-            user_id,
-            "enter_text",
-            {
-                "mode": "single",
-                "selected_ids": [group_id]
-            }
-        )
-
-        await cb.message.edit_text(
-            f"✅ Tanlandi: {groups[str(group_id)]['name']}\n\n"
-            "✍️ Endi xabar matnini kiriting:"
-        )
-        await cb.answer()
-        return   # ⬅️ bu yerda return TO‘G‘RI
-
-    # 🟡 MULTI MODE
-    if group_id in selected:
-        selected.remove(group_id)
-        await cb.answer("➖ Guruh olib tashlandi")
-    else:
-        selected.append(group_id)
-        await cb.answer("➕ Guruh qo‘shildi")
-
-    data["selected_ids"] = selected
-    save_user_flow(user_id, "choose_group", data)
-
-    await show_group_page(cb.message, user_id, edit=True)
-    await cb.answer()
 
 
 # =====================
