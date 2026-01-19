@@ -286,36 +286,6 @@ def save_groups():
 
     return jsonify({"status": "ok"})
 
-@app.route("/api/sync-groups", methods=["GET"])
-def sync_groups():
-    user_id = request.args.get("user_id", type=int)
-    if not user_id:
-        return jsonify([])
-
-    try:
-        client = get_telethon_client(user_id)
-    except Exception:
-        return jsonify([])
-
-    groups = []
-
-    try:
-        with client:
-            for dialog in client.iter_dialogs():
-                if dialog.is_user:
-                    continue
-                if getattr(dialog.entity, "bot", False):
-                    continue
-                if dialog.is_group:
-                    groups.append({
-                        "group_id": dialog.entity.id,
-                        "title": dialog.entity.title,
-                        "username": getattr(dialog.entity, "username", None)
-                    })
-    except Exception:
-        return jsonify([])
-
-    return jsonify(groups)
 
 @app.route("/api/user-groups/bulk-add", methods=["POST"])
 def api_user_groups_bulk_add():
@@ -328,6 +298,11 @@ def api_user_groups_bulk_add():
     save_user_groups_bulk(user_id, groups)
     return jsonify({"status": "ok"})
 
+@app.route("/api/temp-groups")
+def get_temp_groups():
+    user_id = request.args.get("user_id", type=int)
+    groups = get_temp_groups_from_db(user_id)
+    return jsonify(groups)
 
 # =====================
 # RUN
