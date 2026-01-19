@@ -1747,13 +1747,7 @@ def get_next_group(campaign):
     if not groups:
         raise Exception("Guruhlar yo‘q")
 
-    gid = random.choice(groups)
-
-    # 🔒 Telethon uchun normalizatsiya
-    if isinstance(gid, int) and gid > 0:
-        gid = -1000000000000 + gid
-
-    return gid
+    return random.choice(groups)
 
 @dp.message()
 async def catch_all(message: Message):
