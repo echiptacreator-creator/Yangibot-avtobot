@@ -12,6 +12,8 @@ from database import (
     approve_payment,
     reject_payment
 )
+from database import approve_payment as approve_payment_db, reject_payment
+from aiogram import F
 
 # =====================
 # CONFIG
@@ -94,44 +96,40 @@ async def receive_receipt(message: Message):
     )
 
 
-@dp.callback_query_handler(lambda c: c.data.startswith("pay_ok:"))
-async def approve_payment(callback_query):
-    if callback_query.from_user.id != ADMIN_ID:
-        await callback_query.answer("Ruxsat yo‘q", show_alert=True)
+from aiogram import F
+
+@dp.callback_query(F.data.startswith("pay_ok:"))
+async def approve_payment(callback):
+    if callback.from_user.id != ADMIN_ID:
+        await callback.answer("Ruxsat yo‘q", show_alert=True)
         return
 
-    payment_id = int(callback_query.data.split(":")[1])
+    payment_id = int(callback.data.split(":")[1])
 
-    # paymentni tasdiqlash (subscription yoqiladi)
-    approve_payment_db(payment_id)
+    approve_payment(payment_id)  # database.py dagi funksiya
 
-    await bot.send_message(
-        callback_query.from_user.id,
-        "✅ To‘lov tasdiqlandi"
+    await callback.message.edit_caption(
+        callback.message.caption + "\n\n✅ Tasdiqlandi"
     )
 
-    await callback_query.message.edit_caption(
-        callback_query.message.caption + "\n\n✅ Tasdiqlandi"
-    )
+    await callback.answer("Tasdiqlandi")
 
-    await callback_query.answer("Tasdiqlandi")
-    
-    
-@dp.callback_query_handler(lambda c: c.data.startswith("pay_no:"))
-async def reject_payment(callback_query):
-    if callback_query.from_user.id != ADMIN_ID:
-        await callback_query.answer("Ruxsat yo‘q", show_alert=True)
+
+@dp.callback_query(F.data.startswith("pay_no:"))
+async def reject_payment_cb(callback):
+    if callback.from_user.id != ADMIN_ID:
+        await callback.answer("Ruxsat yo‘q", show_alert=True)
         return
 
-    payment_id = int(callback_query.data.split(":")[1])
+    payment_id = int(callback.data.split(":")[1])
 
-    reject_payment_db(payment_id)
+    reject_payment(payment_id)
 
-    await callback_query.message.edit_caption(
-        callback_query.message.caption + "\n\n❌ Rad etildi"
+    await callback.message.edit_caption(
+        callback.message.caption + "\n\n❌ Rad etildi"
     )
 
-    await callback_query.answer("Rad etildi")
+    await callback.answer("Rad etildi")
 
 # =========================
 # RUN
