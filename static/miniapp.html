@@ -112,6 +112,37 @@
       cursor: pointer;
       font-size: 14px;
     }
+    .groups-status {
+  padding: 24px;
+  text-align: center;
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.groups-list {
+  margin-top: 10px;
+}
+
+.group-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--secondary);
+  padding: 14px;
+  border-radius: 14px;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+
+.group-item input {
+  transform: scale(1.2);
+}
+
+.group-title {
+  font-size: 15px;
+  font-weight: 500;
+}
+
   </style>
 </head>
 
@@ -159,16 +190,28 @@
   </div>
 
   <!-- ===== GROUPS PAGE ===== -->
-  <div id="groups-page" class="hidden">
-    <h1>Guruhlar</h1>
-    <div class="subtitle">Akkauntingizdagi guruhlar</div>
-
-    <div id="groups-list">Yuklanmoqda...</div>
-
-    <div class="back" onclick="closeMiniApp()">Yopish</div>
+<div id="groups-page" class="hidden">
+  <h1>Guruhlar</h1>
+  <div class="subtitle">
+    Akkauntingizdagi guruhlarni tanlang
   </div>
 
+  <!-- STATUS -->
+  <div id="groups-status" class="groups-status">
+    Guruhlar yuklanmoqda…
+  </div>
+
+  <!-- LIST -->
+  <div id="groups-list" class="groups-list"></div>
+
+  <!-- ACTION -->
+  <button id="groups-save" class="cta hidden" onclick="saveGroups()">
+    Tanlangan guruhlarni saqlash
+  </button>
+
+  <div class="back" onclick="closeMiniApp()">Yopish</div>
 </div>
+
 
 <script>
   const tg = Telegram.WebApp;
@@ -234,28 +277,86 @@
   }
 
   async function loadGroups() {
+  const status = document.getElementById("groups-status");
+  const list   = document.getElementById("groups-list");
+  const saveBtn = document.getElementById("groups-save");
+
+  status.innerText = "Guruhlar yuklanmoqda…";
+  list.innerHTML = "";
+  saveBtn.classList.add("hidden");
+
+  try {
     const res = await fetch("/api/get-user-groups");
+
+    if (!res.ok) {
+      throw new Error("Server xatosi");
+    }
+
     const data = await res.json();
 
-    const box = document.getElementById("groups-list");
-    box.innerHTML = "";
-
-    if (!data.length) {
-      box.innerHTML = "Guruhlar topilmadi";
+    if (!data || data.length === 0) {
+      status.innerHTML = `
+        <b>Guruhlar topilmadi</b><br><br>
+        Siz hali guruhlarga qo‘shilmagansiz
+        yoki bot ularni ko‘ra olmayapti.
+      `;
       return;
     }
 
+    status.innerText = "Guruhlarni tanlang:";
+    list.innerHTML = "";
+
     data.forEach(g => {
-      const div = document.createElement("div");
-      div.className = "group";
-      div.textContent = g.title;
-      box.appendChild(div);
+      const item = document.createElement("div");
+      item.className = "group-item";
+      item.innerHTML = `
+        <input type="checkbox" value="${g.id}">
+        <div class="group-title">${g.title || "Nomsiz guruh"}</div>
+      `;
+
+      // bosilganda checkbox ham belgilansin
+      item.onclick = () => {
+        const cb = item.querySelector("input");
+        cb.checked = !cb.checked;
+      };
+
+      list.appendChild(item);
     });
+
+    saveBtn.classList.remove("hidden");
+
+  } catch (e) {
+    status.innerHTML = `
+      <b>Xatolik yuz berdi</b><br><br>
+      Guruhlarni yuklab bo‘lmadi.
+      Iltimos, keyinroq urinib ko‘ring.
+    `;
+  }
+}
+
+  async function saveGroups() {
+  const checked = [
+    ...document.querySelectorAll(".group-item input:checked")
+  ].map(cb => cb.value);
+
+  if (!checked.length) {
+    tg.showPopup({ message: "Hech qanday guruh tanlanmadi" });
+    return;
   }
 
-  function closeMiniApp() {
-    tg.close();
-  }
+  await fetch("/api/save-groups", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      user_id: tg.initDataUnsafe.user.id,
+      groups: checked
+    })
+  });
+
+  tg.showPopup({ message: "Guruhlar saqlandi ✅" });
+  tg.close();
+}
+
 </script>
 
 </body>
