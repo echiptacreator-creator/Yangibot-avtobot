@@ -1205,7 +1205,7 @@ def get_user_groups(user_id):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
-        SELECT group_id, title, username
+        SELECT peer_id, title, username
         FROM user_groups
         WHERE user_id = %s
         ORDER BY id DESC
@@ -1215,7 +1215,7 @@ def get_user_groups(user_id):
 
     return [
         {
-            "group_id": r[0],
+            "peer_id": r[0],
             "title": r[1],
             "username": r[2]
         } for r in rows
@@ -1266,11 +1266,15 @@ def save_user_groups_bulk(user_id, groups):
     conn = get_db()
     cur = conn.cursor()
     for g in groups:
-        cur.execute("""
-            INSERT INTO user_groups (user_id, group_id, title, username)
-            VALUES (%s, %s, %s, %s)
-            ON CONFLICT (user_id, group_id) DO NOTHING
-        """, (user_id, g["group_id"], g["title"], g.get("username")))
+    cur.execute("""
+        INSERT INTO user_groups (user_id, peer_id, title, username)
+        VALUES (%s, %s, %s, %s)
+    """, (
+        user_id,
+        g["peer_id"],
+        g["title"],
+        g.get("username")
+    ))
     conn.commit()
     cur.close()
 
@@ -1310,7 +1314,7 @@ def save_temp_groups(user_id: int, groups: list[dict]):
     for g in groups:
         cur.execute(
             """
-            INSERT INTO telegram_groups_temp (user_id, group_id, title, username)
+            INSERT INTO telegram_groups_temp (user_id, peer_id, title, username)
             VALUES (%s, %s, %s, %s)
             """,
             (
