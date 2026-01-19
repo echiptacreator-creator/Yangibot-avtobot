@@ -181,8 +181,11 @@ def init_db():
         UNIQUE (user_id, group_id)
     )
     """)
-
-
+    cur.execute("""
+    ALTER TABLE user_groups
+    ADD COLUMN IF NOT EXISTS title TEXT,
+    ADD COLUMN IF NOT EXISTS username TEXT;
+    """)
     
     conn.commit()
     cur.close()
