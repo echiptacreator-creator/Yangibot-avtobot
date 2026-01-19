@@ -507,12 +507,11 @@ class EditCampaign(StatesGroup):
 # MATN KIRITISH
 # =====================
 
-from database import get_user_flow, save_user_flow
-
 @dp.message(F.text & ~F.text.regexp(r"^\d+$") & ~F.text.startswith("/"))
-async def handle_enter_text(message: Message):\
+async def handle_enter_text(message: Message, state: FSMContext):
     if await state.get_state() is not None:
         return
+
     user_id = message.from_user.id
     flow = get_user_flow(user_id)
 
