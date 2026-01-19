@@ -490,13 +490,13 @@ async def pick_group(cb: CallbackQuery):
     await cb.answer(f"➕ {groups[str(group_id)]['name']} qo‘shildi")
 
 
-@dp.message(F.text & F.from_user.id.in_())
+@dp.message(F.text)
 async def handle_edit_input(message):
     user_id = message.from_user.id
 
-    edit = .get(user_id)
+    edit = editing_campaign.get(user_id)
     if not edit or "field" not in edit or "campaign_id" not in edit:
-        .pop(user_id, None)
+        editing_campaign.pop(user_id, None)
         return
 
     campaign_id = edit["campaign_id"]
@@ -521,13 +521,11 @@ async def handle_edit_input(message):
         update_campaign_field(campaign_id, "duration", int(value))
 
     else:
-        .pop(user_id, None)
+        editing_campaign.pop(user_id, None)
         return
 
-    # 🔥 MUHIM: STATE TOZALANADI
-    .pop(user_id, None)
+    editing_campaign.pop(user_id, None)
 
-    # ▶ AUTO RESUME FAQAT AGAR PAUSED BO‘LSA
     if resume_after and get_campaign(campaign_id)["status"] == "paused":
         update_campaign_status(campaign_id, "active")
         asyncio.create_task(run_campaign(campaign_id))
