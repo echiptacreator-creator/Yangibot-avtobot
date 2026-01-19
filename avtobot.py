@@ -456,7 +456,7 @@ async def get_client(user_id: int):
 @dp.message(F.text == "📥 Guruhlarni yuklash")
 async def load_groups_handler(message: Message):
     user_id = message.from_user.id
-    await message.answer("⏳ Guruhlar yuklanmoqda...")
+    await message.answer("⏳ Guruhlar yuklanmoqda bu biroz vaqt oladi kuting...")
 
     try:
         client = await get_client(user_id)
@@ -484,7 +484,7 @@ async def load_groups_handler(message: Message):
             raw_id = dialog.entity.id
 
         if raw_id > 0:
-            group_id = 1000000000000 + raw_id
+            group_id = -1000000000000 + raw_id if raw_id > 0 else raw_id
         else:
             group_id = raw_id
         
