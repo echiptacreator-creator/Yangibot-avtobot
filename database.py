@@ -1316,15 +1316,14 @@ def save_temp_groups(user_id: int, groups: list[dict]):
 def get_temp_groups_from_db(user_id):
     conn = get_db()
     cur = conn.cursor()
-
     cur.execute("""
         SELECT group_id, title, username
         FROM telegram_groups_temp
         WHERE user_id = %s
         ORDER BY title
     """, (user_id,))
-
     rows = cur.fetchall()
+    conn.close()
 
     return [
         {
