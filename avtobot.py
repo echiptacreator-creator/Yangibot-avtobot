@@ -371,25 +371,6 @@ async def cancel_send(message: Message):
         reply_markup=main_menu()
     )
 
-    
-# =====================
-# REJIM TANLASH
-# =====================
-
-groups = get_user_groups(user_id)
-
-if not groups:
-    await message.answer(
-        "📭 Guruhlar ro‘yxati bo‘sh.\n\n"
-        "🔄 Guruhlarni yangilash tugmasi orqali "
-        "akkauntingizdagi guruhlarni bir marta yuklang.",
-        reply_markup=update_groups_keyboard()
-    )
-    return
-
-await show_groups_from_db(message, groups)
-
-
 
 async def get_client(user_id: int):
     session_str = get_session(user_id)
