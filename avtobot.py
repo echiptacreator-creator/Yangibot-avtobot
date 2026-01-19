@@ -490,48 +490,11 @@ async def pick_group(cb: CallbackQuery):
     await cb.answer(f"➕ {groups[str(group_id)]['name']} qo‘shildi")
 
 
-@dp.message(F.text & F.from_user.id.in_(editing_campaign))
-async def handle_edit_input(message):
-    user_id = message.from_user.id
+from aiogram.fsm.state import StatesGroup, State
 
-    edit = editing_campaign.get(user_id)
-    if not edit or "field" not in edit or "campaign_id" not in edit:
-        editing_campaign.pop(user_id, None)
-        return
+class EditCampaign(StatesGroup):
+    waiting_value = State()
 
-    campaign_id = edit["campaign_id"]
-    field = edit["field"]
-    resume_after = edit.get("resume_after", False)
-
-    value = message.text.strip()
-
-    if field == "text":
-        update_campaign_text(campaign_id, value)
-
-    elif field == "interval":
-        if not value.isdigit() or int(value) <= 0:
-            await message.answer("❌ Interval musbat raqam bo‘lishi kerak")
-            return
-        update_campaign_field(campaign_id, "interval", int(value))
-
-    elif field == "duration":
-        if not value.isdigit() or int(value) <= 0:
-            await message.answer("❌ Davomiylik musbat raqam bo‘lishi kerak")
-            return
-        update_campaign_field(campaign_id, "duration", int(value))
-
-    else:
-        editing_campaign.pop(user_id, None)
-        return
-
-    editing_campaign.pop(user_id, None)
-
-    if resume_after and get_campaign(campaign_id)["status"] == "paused":
-        update_campaign_status(campaign_id, "active")
-        asyncio.create_task(run_campaign(campaign_id))
-
-    await message.answer("✅ Yangilandi")
-    await render_campaign(campaign_id)
 
 # =====================
 # MATN KIRITISH
@@ -937,39 +900,47 @@ async def edit_campaign_menu(cb: CallbackQuery):
 
 
 @dp.callback_query(F.data.startswith("edit_text:"))
-async def edit_text(cb):
+async def edit_text(cb: CallbackQuery, state: FSMContext):
     campaign_id = int(cb.data.split(":")[1])
-    c = get_campaign(campaign_id)
 
-    # 🟡 Agar active bo‘lsa — pauza qilamiz
-    if c["status"] == "active":
-        update_campaign_status(campaign_id, "paused")
+    await state.set_state(EditCampaign.waiting_value)
+    await state.update_data(
+        campaign_id=campaign_id,
+        field="text"
+    )
 
-        editing_campaign[cb.from_user.id] = {
-            "campaign_id": campaign_id,
-            "field": "text",
-            "resume_after": True   # 🔥 MUHIM
-        }
-    else:
-        editing_campaign[cb.from_user.id] = {
-            "campaign_id": campaign_id,
-            "field": "text",
-            "resume_after": True
-        }
+    await cb.message.edit_text("✏️ Yangi xabar matnini yuboring:")
+    await cb.answer()
 
+
+@dp.message(EditCampaign.waiting_value)
+async def edit_value_handler(message: Message, state: FSMContext):
+    data = await state.get_data()
+    campaign_id = data["campaign_id"]
+    field = data["field"]
+
+    value = message.text.strip()
+
+    if field == "text":
+        update_campaign_text(campaign_id, value)
+
+    elif field == "interval":
+        if not value.isdigit():
+            await message.answer("❌ Raqam kiriting")
+            return
+        update_campaign_field(campaign_id, "interval", int(value))
+
+    elif field == "duration":
+        if not value.isdigit():
+            await message.answer("❌ Raqam kiriting")
+            return
+        update_campaign_field(campaign_id, "duration", int(value))
+
+    await state.clear()
+
+    await message.answer("✅ Yangilandi")
     await render_campaign(campaign_id)
 
-    await cb.message.edit_text(
-        "✏️ Yangi xabar matnini yuboring:",
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=[
-                [InlineKeyboardButton(
-                    "⬅️ Orqaga", callback_data=f"camp_back:{campaign_id}"
-                )]
-            ]
-        )
-    )
-    await cb.answer("⏸ Kampaniya pauzaga qo‘yildi")
 
 
 @dp.callback_query(F.data.startswith("edit_interval:"))
