@@ -379,26 +379,15 @@ async def cancel_send(message: Message):
 @dp.message(F.text.in_(["📍 Bitta guruhga", "📍 Ko‘p guruhlarga"]))
 async def choose_send_mode(message: Message, state: FSMContext):
     user_id = message.from_user.id
+    mode = "single" if "Bitta" in message.text else "multi"
 
-    await state.update_data(send_mode=message.text)
+    await state.update_data(send_mode=mode)
+    save_user_flow(user_id, "choose_group", {"mode": mode})
 
     loading_msg = await message.answer("📂 Guruhlar yuklanmoqda...")
 
-    groups = get_user_groups(user_id)
-
-    await bot.delete_message(
-        chat_id=message.chat.id,
-        message_id=loading_msg.message_id
-    )
-
-    if not groups:
-        await message.answer(
-            "❌ Sizda hali guruhlar yo‘q.",
-            reply_markup=main_menu()
-        )
-        await state.clear()
-        return
-
+    await start_group_selection(message)
+    
     await state.set_state(CampaignStates.choose_group)
 
     await message.answer(
