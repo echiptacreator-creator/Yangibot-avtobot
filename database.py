@@ -1077,34 +1077,17 @@ def get_today_usage(user_id: int) -> int:
     conn.close()
     return row[0] if row else 0
 
-def create_payment(user_id, months, amount):
-    query = """
-    INSERT INTO payments (user_id, months, amount, status)
-    VALUES (%s, %s, %s, 'pending')
-    RETURNING id
-    """
-    return fetch_one(query, (user_id, months, amount))[0]
-
-
 def get_last_pending_payment(user_id: int):
-    query = """
-    SELECT id, user_id, months, amount
-    FROM payments
-    WHERE user_id = %s AND status = 'pending'
-    ORDER BY created_at DESC
-    LIMIT 1
-    """
-    return fetch_one(query, (user_id,))
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT id, user_id, months, price
+        FROM payments
+        WHERE user_id = %s AND status = 'pending'
+        ORDER BY created_at DESC
+        LIMIT 1
+    """, (user_id,))
+    row = cur.fetchone()
+    conn.close()
+    return row
 
-
-def activate_premium(user_id: int, months: int):
-    premium_until = datetime.utcnow() + timedelta(days=30 * months)
-
-    query = """
-    UPDATE users
-    SET
-        is_premium = TRUE,
-        premium_until = %s
-    WHERE user_id = %s
-    """
-    execute(query, (premium_until, user_id))
