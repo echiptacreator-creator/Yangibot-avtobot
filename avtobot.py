@@ -906,20 +906,6 @@ async def edit_campaign_menu(cb: CallbackQuery):
     )
     await cb.answer()
 
-
-
-@dp.callback_query(F.data.startswith("edit_text:"))
-async def edit_text(cb: CallbackQuery, state: FSMContext):
-    campaign_id = int(cb.data.split(":")[1])
-
-    await state.set_state(EditCampaign.waiting_value)
-    await state.update_data(campaign_id=campaign_id, field="text")
-
-    await cb.message.answer("✏️ Yangi xabar matnini yuboring:")
-    await cb.answer()
-
-
-
 @dp.message(EditCampaign.waiting_value)
 async def edit_value_handler(message: Message, state: FSMContext):
     data = await state.get_data()
@@ -948,15 +934,36 @@ async def edit_value_handler(message: Message, state: FSMContext):
     await message.answer("✅ Yangilandi")
     await render_campaign(campaign_id)
 
+@dp.callback_query(F.data.startswith("edit_text:"))
+async def edit_text(cb: CallbackQuery, state: FSMContext):
+    campaign_id = int(cb.data.split(":")[1])
+
+    await update_campaign_status(campaign_id, "paused")
+
+    await state.set_state(EditCampaign.waiting_value)
+    await state.update_data(
+        campaign_id=campaign_id,
+        field="text"
+    )
+
+    await cb.message.edit_text("✏️ Yangi xabar matnini yuboring:")
+    await cb.answer()
+
+
 
 @dp.callback_query(F.data.startswith("edit_interval:"))
 async def edit_interval(cb: CallbackQuery, state: FSMContext):
     campaign_id = int(cb.data.split(":")[1])
 
-    await state.set_state(EditCampaign.waiting_value)
-    await state.update_data(campaign_id=campaign_id, field="interval")
+    await update_campaign_status(campaign_id, "paused")
 
-    await cb.message.answer("⏱ Yangi intervalni daqiqada kiriting:")
+    await state.set_state(EditCampaign.waiting_value)
+    await state.update_data(
+        campaign_id=campaign_id,
+        field="interval"
+    )
+
+    await cb.message.edit_text("⏱ Yangi intervalni daqiqada kiriting:")
     await cb.answer()
 
 
@@ -964,11 +971,17 @@ async def edit_interval(cb: CallbackQuery, state: FSMContext):
 async def edit_duration(cb: CallbackQuery, state: FSMContext):
     campaign_id = int(cb.data.split(":")[1])
 
-    await state.set_state(EditCampaign.waiting_value)
-    await state.update_data(campaign_id=campaign_id, field="duration")
+    await update_campaign_status(campaign_id, "paused")
 
-    await cb.message.answer("⏳ Yangi davomiylikni daqiqada kiriting:")
+    await state.set_state(EditCampaign.waiting_value)
+    await state.update_data(
+        campaign_id=campaign_id,
+        field="duration"
+    )
+
+    await cb.message.edit_text("⏳ Yangi davomiylikni daqiqada kiriting:")
     await cb.answer()
+
 
 
 @dp.callback_query(F.data.startswith("camp_restart:"))
