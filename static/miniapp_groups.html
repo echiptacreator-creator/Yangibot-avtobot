@@ -108,6 +108,9 @@ async function save() {
   });
 
   tg.showPopup({ message: "✅ Guruhlar saqlandi" });
+  setTimeout(() => {
+    tg.close();
+  }, 700);
 }
 
 loadGroups();
