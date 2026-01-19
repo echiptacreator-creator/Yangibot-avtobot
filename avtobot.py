@@ -30,6 +30,10 @@ from database import increment_campaign_error, reset_campaign_error
 from database import get_user_flow, save_user_flow
 from database import reset_campaign_stats
 from database import get_all_campaigns
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.fsm.storage.memory import MemoryStorage
+
 
 # =====================
 # STATE (XABAR YUBORISH)
@@ -46,9 +50,12 @@ ADMIN_BOT_TOKEN = "8502710270:AAHgqYrfZQQtE9-aTQtHAz7w-ZkHpZfj-Kg"
 LOGIN_WEBAPP_URL = "https://yangibot-avtobot-production.up.railway.app/miniapp"
 
 bot = Bot(BOT_TOKEN)
-dp = Dispatcher()
+dp = Dispatcher(storage=MemoryStorage())
 init_db()
 editing_campaign = {}
+class EditCampaign(StatesGroup):
+    waiting_value = State()
+
 
 # =====================
 # HELPERS — ACCESS
