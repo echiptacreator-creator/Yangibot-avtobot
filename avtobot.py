@@ -457,7 +457,7 @@ async def choose_send_mode(message: Message, state: FSMContext):
                     InlineKeyboardButton(
                         text="🔄 Guruhlarni yuklash",
                         web_app=WebAppInfo(
-                            url="https://yangibot-avtobot-production.up.railway.app/miniapp.html"
+                            url="https://yangibot-avtobot-production.up.railway.app/static/miniapp.html?mode=groups"
                         )
                     )
                 ]]
