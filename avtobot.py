@@ -380,13 +380,14 @@ async def start_group_selection(message: Message):
 
 PAGE_SIZE = 20
 
-async def show_group_page(message: Message, user_id: int):
+async def show_group_page(message: Message, user_id: int, edit: bool = False):
     flow = get_user_flow(user_id)
     if not flow:
         return
 
     data = flow["data"]
     groups = list(data["groups"].values())
+    selected = set(data.get("selected_ids", []))
     offset = data.get("offset", 0)
     mode = data.get("mode")
 
@@ -394,8 +395,7 @@ async def show_group_page(message: Message, user_id: int):
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[])
 
-    selected = data.get("selected_ids", [])
-    
+    # 1️⃣ Guruhlar
     for g in page:
         checked = "✅ " if g["id"] in selected else ""
         keyboard.inline_keyboard.append([
@@ -407,39 +407,27 @@ async def show_group_page(message: Message, user_id: int):
 
     # 2️⃣ Navigatsiya
     nav = []
-
     if offset > 0:
-        nav.append(
-            InlineKeyboardButton(
-                text="⬅️ Oldingi",
-                callback_data="grp_prev"
-            )
-        )
-
+        nav.append(InlineKeyboardButton("⬅️ Oldingi", callback_data="grp_prev"))
     if offset + PAGE_SIZE < len(groups):
-        nav.append(
-            InlineKeyboardButton(
-                text="➡️ Keyingi",
-                callback_data="grp_next"
-            )
-        )
-
+        nav.append(InlineKeyboardButton("➡️ Keyingi", callback_data="grp_next"))
     if nav:
         keyboard.inline_keyboard.append(nav)
 
-    # 3️⃣ Tayyor (faqat multi)
+    # 3️⃣ Tayyor
     if mode == "multi":
         keyboard.inline_keyboard.append([
-            InlineKeyboardButton(
-                text="✅ Tayyor",
-                callback_data="grp_done"
-            )
+            InlineKeyboardButton("✅ Tayyor", callback_data="grp_done")
         ])
 
-    await message.answer(
-        "👉 Guruhni tanlang:",
-        reply_markup=keyboard
-    )
+    if edit:
+        await message.edit_reply_markup(reply_markup=keyboard)
+    else:
+        await message.answer(
+            "👉 Guruhlarni tanlang:",
+            reply_markup=keyboard
+        )
+
 
 @dp.callback_query(F.data == "grp_done")
 async def finish_group_selection(cb: CallbackQuery):
@@ -554,8 +542,7 @@ async def pick_group(cb: CallbackQuery):
     data["selected_ids"] = selected
     save_user_flow(user_id, "choose_group", data)
 
-    await show_group_page(cb.message, user_id)
-
+    await show_group_page(cb.message, user_id, edit=True)
 
 
 # =====================
