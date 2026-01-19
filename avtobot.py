@@ -67,7 +67,7 @@ LOGIN_WEBAPP_URL = os.getenv("LOGIN_WEBAPP_URL")
 bot = Bot(BOT_TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
 init_db()
-#editing_campaign = {}
+editing_campaign = {}
 class EditCampaign(StatesGroup):
     waiting_value = State()
 
@@ -179,6 +179,28 @@ def duration_keyboard(min_d: int, safe_d: int, max_d: int):
                 InlineKeyboardButton(
                     text=f"{max_d} daq (🔴)",
                     callback_data=f"pick_duration:{max_d}"
+                ),
+            ]
+        ]
+    )
+
+def interval_keyboard(min_i: int, max_i: int):
+    mid = (min_i + max_i) // 2
+
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=f"{min_i} daq (🟢)",
+                    callback_data=f"pick_interval:{min_i}"
+                ),
+                InlineKeyboardButton(
+                    text=f"{mid} daq (🟡)",
+                    callback_data=f"pick_interval:{mid}"
+                ),
+                InlineKeyboardButton(
+                    text=f"{max_i} daq (🔴)",
+                    callback_data=f"pick_interval:{max_i}"
                 ),
             ]
         ]
@@ -752,16 +774,56 @@ async def pick_interval(cb: CallbackQuery):
 
     await cb.answer("⏱ Interval tanlandi")
     
+@dp.callback_query(F.data.startswith("pick_duration:"))
+async def pick_duration(cb: CallbackQuery):
+    user_id = cb.from_user.id
+    duration = int(cb.data.split(":")[1])
 
-@dp.message(
-    (F.photo | F.video | (F.text & ~F.text.regexp(r"^\d+$"))) &
-    F.from_user.func(lambda u: (
-        (flow := get_user_flow(u.id)) is not None
-        and flow["step"] == "enter_text"
-    ))
-)
+    flow = get_user_flow(user_id)
+    if not flow or flow["step"] != "enter_duration":
+        await cb.answer()
+        return
 
+    data = flow["data"]
+    data["duration"] = duration
 
+    # ⛔ limit tekshiruv
+    ok, reason = can_user_run_campaign(user_id)
+    if not ok:
+        await send_limit_message(
+            chat_id=cb.message.chat.id,
+            used=get_today_usage(user_id),
+            limit=get_user_limits(user_id)["daily_limit"]
+        )
+        clear_user_flow(user_id)
+        return
+
+    status_msg = await bot.send_message(
+        chat_id=cb.message.chat.id,
+        text="🚀 Kampaniya boshlanmoqda..."
+    )
+
+    campaign_id = create_campaign(
+        user_id=user_id,
+        text=data.get("text", ""),
+        groups=data["selected_ids"],
+        interval=data["interval"],
+        duration=data["duration"],
+        chat_id=cb.message.chat.id,
+        status_message_id=status_msg.message_id
+    )
+
+    clear_user_flow(user_id)
+
+    await bot.edit_message_text(
+        chat_id=cb.message.chat.id,
+        message_id=status_msg.message_id,
+        text=build_campaign_status_text(campaign_id),
+        reply_markup=campaign_control_keyboard(campaign_id, "active")
+    )
+
+    asyncio.create_task(run_campaign(campaign_id))
+    await cb.answer("🚀 Kampaniya boshlandi")
 
 
 @dp.message(F.text.regexp(r"^\d+$"))
@@ -811,7 +873,7 @@ async def handle_numbers(message: Message):
         safe_d = interval * 15
         max_d = interval * 30
 
-        await cb.message.edit_text(
+        await message.answer(
             "⏳ *Kampaniya davomiyligini tanlang*\n\n"
             f"🟢 Xavfsiz: {min_d} – {safe_d}\n"
             f"🟡 O‘rtacha: {safe_d} – {max_d}\n"
