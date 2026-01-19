@@ -251,6 +251,32 @@ def init_payment():
 
     return jsonify({"status": "ok"})
 
+@app.route("/api/save-groups", methods=["POST"])
+def save_groups():
+    data = request.json
+    user_id = data["user_id"]
+    groups = data["groups"]
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    for g in groups:
+        cur.execute("""
+            INSERT INTO user_groups (user_id, group_id, title, username)
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT (user_id, group_id) DO NOTHING
+        """, (
+            user_id,
+            g["id"],
+            g.get("title"),
+            g.get("username")
+        ))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "ok"})
+
 
 
 # =====================
