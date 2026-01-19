@@ -445,6 +445,36 @@ async def load_groups_handler(message: Message):
         )
     )
 
+@dp.message(F.text.in_(["📍 Bitta guruhga", "📍 Ko‘p guruhlarga"]))
+async def choose_send_mode(message: Message):
+    user_id = message.from_user.id
+
+    mode = "single" if "Bitta" in message.text else "multi"
+
+    # flow yangilaymiz
+    save_user_flow(
+        user_id=user_id,
+        step="load_groups",
+        data={
+            "mode": mode
+        }
+    )
+
+    await message.answer(
+        "📥 Guruhlar olinmoqda...\n\n"
+        "Iltimos, Mini App orqali guruhlarni tanlang 👇",
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[[
+                InlineKeyboardButton(
+                    text="📋 Guruhlarni tanlash",
+                    web_app=WebAppInfo(
+                        url="https://yangibot-avtobot-production.up.railway.app/static/miniapp.html?mode=groups"
+                    )
+                )
+            ]]
+        )
+    )
+
 
 PAGE_SIZE = 20
 
