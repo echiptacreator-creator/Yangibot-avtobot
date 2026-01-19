@@ -106,7 +106,7 @@ async def approve_payment(callback):
 
     payment_id = int(callback.data.split(":")[1])
 
-    approve_payment(payment_id)  # database.py dagi funksiya
+    await approve_payment_db(payment_id)  # database.py dagi funksiya
 
     await callback.message.edit_caption(
         callback.message.caption + "\n\n✅ Tasdiqlandi"
