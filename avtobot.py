@@ -1227,31 +1227,32 @@ from access_control import can_user_run_campaign
 
 @dp.callback_query(F.data.startswith("camp_resume:"))
 async def resume_campaign(cb: CallbackQuery):
+    # ✅ 1. BIRINCHI JAVOB BERAMIZ (ENG MUHIM)
+    await cb.answer("▶ Kampaniya davom ettirildi")
+
     campaign_id = int(cb.data.split(":")[1])
 
     c = get_campaign(campaign_id)
     if not c:
-        await cb.answer("❌ Kampaniya topilmadi", show_alert=True)
         return
 
     # 🔒 RESUME OLDIDAN TEKSHIRUV
     ok, reason = can_user_run_campaign(c["user_id"])
     if not ok:
-        await cb.answer(reason, show_alert=True)
+        await cb.message.answer(reason)
         return
 
     if c["status"] != "paused":
-        await cb.answer("❗ Kampaniya pauzada emas", show_alert=True)
         return
 
-    # ✅ ENDI DAVOM ETTIRISH MUMKIN
+    # ✅ 2. STATUSNI O‘ZGARTIRAMIZ
     update_campaign_status(campaign_id, "active")
+
+    # ✅ 3. UI NI YANGILAYMIZ
     await render_campaign(campaign_id)
 
+    # ✅ 4. FONDA ISHGA TUSHIRAMIZ
     asyncio.create_task(run_campaign(campaign_id))
-
-    await cb.answer("▶ Kampaniya davom ettirildi")
-
 
 
 
