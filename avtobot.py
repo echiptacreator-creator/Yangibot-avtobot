@@ -470,23 +470,25 @@ async def choose_send_mode(message: Message):
     user_id = message.from_user.id
     mode = "single" if "Bitta" in message.text else "multi"
 
-    groups = get_user_groups(user_id)
 
     if not groups:
-        await message.answer(
-            "❌ Sizda hali doimiy guruh yo‘q.\n\n"
-            "Avval miniapp orqali guruh qo‘shing 👇",
-            reply_markup=InlineKeyboardMarkup(
-                inline_keyboard=[[
-                    InlineKeyboardButton(
-                        text="➕ Guruh qo‘shish",
-                        web_app=WebAppInfo(
-                            url="https://yangibot-avtobot-production.up.railway.app/static/miniapp.html?mode=groups"
-                        )
+        await message.answer("❌ Hech qanday guruh topilmadi")
+        return
+    
+    await message.answer(
+        f"📦 {len(groups)} ta guruh topildi.\n\n"
+        "Endi miniapp orqali qaysilarini doimiy ishlatishni tanlang 👇",
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[[
+                InlineKeyboardButton(
+                    text="📋 Guruhlarni tanlash",
+                    web_app=WebAppInfo(
+                        url="https://yangibot-avtobot-production.up.railway.app/static/miniapp_groups.html"
                     )
-                ]]
-            )
+                )
+            ]]
         )
+    )
         return
 
     # shu joyda flow saqlaysan
