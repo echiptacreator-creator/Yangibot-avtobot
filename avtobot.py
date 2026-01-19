@@ -656,11 +656,11 @@ async def handle_enter_text(message: Message, state: FSMContext):
     
 @dp.message(F.text.regexp(r"^\d+$"))
 async def handle_numbers(message: Message):
+    flow = get_user_flow(message.from_user.id)
+    if not flow or flow["step"] not in ("enter_interval", "enter_duration"):
+        return
     user_id = message.from_user.id
     flow = get_user_flow(user_id)
-
-    if not flow:
-        return
 
     step = flow["step"]
     data = flow["data"]
