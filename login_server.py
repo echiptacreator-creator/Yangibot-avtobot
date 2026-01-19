@@ -302,10 +302,6 @@ def api_user_groups_bulk_add():
 @app.route("/api/temp-groups")
 def get_temp_groups():
     user_id = request.args.get("user_id", type=int)
-
-    if not user_id:
-        return jsonify([])
-
     groups = get_temp_groups_from_db(user_id)
     return jsonify(groups)
 
