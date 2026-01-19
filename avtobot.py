@@ -579,8 +579,14 @@ async def pick_group(cb: CallbackQuery):
 # MATN KIRITISH
 # =====================
 
-@dp.message(F.text & ~F.text.regexp(r"^\d+$"))
-async def handle_enter_text(message: Message, state: FSMContext):
+@dp.message(
+    (F.text & ~F.text.regexp(r"^\d+$")) &
+    F.from_user.func(lambda u: (
+        (flow := get_user_flow(u.id)) is not None
+        and flow["step"] == "enter_text"
+    ))
+)
+async def handle_enter_text_onl(message: Message, state: FSMContext):
     # 🔒 AGAR FLOW YO‘Q BO‘LSA — CHIQIB KETAMIZ
     flow = get_user_flow(message.from_user.id)
     if not flow or flow["step"] != "enter_text":
@@ -613,8 +619,14 @@ async def handle_enter_text(message: Message, state: FSMContext):
     )
 
 
-@dp.message(F.photo | F.video | (F.text & ~F.text.regexp(r"^\d+$")))
-async def handle_enter_text(message: Message, state: FSMContext):
+@dp.message(
+    (F.photo | F.video | (F.text & ~F.text.regexp(r"^\d+$"))) &
+    F.from_user.func(lambda u: (
+        (flow := get_user_flow(u.id)) is not None
+        and flow["step"] == "enter_text"
+    ))
+)
+async def handle_enter_text_media(message: Message, state: FSMContext):
     # 🔒 Agar FSM edit ishlayotgan bo‘lsa — chiqamiz
     if await state.get_state():
         return
