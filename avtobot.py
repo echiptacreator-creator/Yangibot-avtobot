@@ -376,24 +376,19 @@ async def cancel_send(message: Message):
 # REJIM TANLASH
 # =====================
 
-@dp.message(F.text.in_(["📍 Bitta guruhga", "📍 Ko‘p guruhlarga"]))
-async def choose_send_mode(message: Message, state: FSMContext):
-    user_id = message.from_user.id
-    mode = "single" if "Bitta" in message.text else "multi"
+groups = get_user_groups(user_id)
 
-    await state.update_data(send_mode=mode)
-    save_user_flow(user_id, "choose_group", {"mode": mode})
-
-    loading_msg = await message.answer("📂 Guruhlar yuklanmoqda...")
-
-    await start_group_selection(message)
-    
-    await state.set_state(CampaignStates.choose_group)
-
+if not groups:
     await message.answer(
-        "📍 Guruhni tanlang:",
-        reply_markup=build_groups_keyboard(groups)
+        "📭 Guruhlar ro‘yxati bo‘sh.\n\n"
+        "🔄 Guruhlarni yangilash tugmasi orqali "
+        "akkauntingizdagi guruhlarni bir marta yuklang.",
+        reply_markup=update_groups_keyboard()
     )
+    return
+
+await show_groups_from_db(message, groups)
+
 
 
 async def get_client(user_id: int):
@@ -408,38 +403,6 @@ async def get_client(user_id: int):
     )
     await client.connect()
     return client
-
-# 🔥 GURUH YUKLAYMIZ
-from database import get_user_flow, save_user_flow
-
-async def start_group_selection(message: Message):
-    user_id = message.from_user.id
-
-    flow = get_user_flow(user_id)
-    if not flow or flow["step"] != "choose_group":
-        return
-
-    data = flow["data"]
-
-    client = await get_client(user_id)
-
-    groups = {}
-    async for d in client.iter_dialogs(limit=500):
-        if d.is_group or (d.is_channel and getattr(d.entity, "megagroup", False)):
-            groups[str(d.id)] = {
-                "id": d.id,
-                "name": d.name
-            }
-
-    data.update({
-        "groups": groups,
-        "selected_ids": [],
-        "offset": 0
-    })
-
-    save_user_flow(user_id, "choose_group", data)
-
-    await show_group_page(message, user_id)
 
 
 # =====================
