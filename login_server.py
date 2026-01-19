@@ -235,18 +235,22 @@ def init_payment():
     months = data["months"]
     amount = data["amount"]
 
+    # tariff nomini yasaymiz
+    tariff = f"{months}_month"
+
     conn = get_db()
     cur = conn.cursor()
 
     cur.execute("""
-        INSERT INTO payments (user_id, months, price, status)
-        VALUES (%s, %s, %s, 'pending')
-    """, (user_id, months, amount))
+        INSERT INTO payments (user_id, tariff, price, months, status)
+        VALUES (%s, %s, %s, %s, 'pending')
+    """, (user_id, tariff, amount, months))
 
     conn.commit()
     conn.close()
 
     return jsonify({"status": "ok"})
+
 
 
 # =====================
