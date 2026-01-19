@@ -62,6 +62,11 @@ init_db()
 class EditCampaign(StatesGroup):
     waiting_value = State()
 
+account_risk = {
+    "score": 0,
+    "last_reset": time.time()
+}
+
 
 # =====================
 # HELPERS — ACCESS
@@ -872,43 +877,73 @@ async def restore_campaigns():
     print(f"🔒 {paused} ta kampaniya restart sababli pauzaga qo‘yildi")
 
 
+async def run_campaign_safe(client, campaign, account_risk):
+    start_time = time.time()
+    end_time = start_time + campaign["duration"] * 60
+    sent_count = 0
 
+    while time.time() < end_time and campaign["status"] == "active":
 
+        decay_risk(account_risk)
 
-async def run_campaign(client, campaign):
-    start = time.time()
-    end = start + campaign.duration * 60
-    sent = 0
+        # ❌ Juda xavfli → to‘liq blok
+        if account_risk["score"] >= 80:
+            update_campaign_status(campaign["id"], "blocked")
+            notify_user(
+                campaign["chat_id"],
+                "⛔ Kampaniya to‘xtatildi\n"
+                "Sabab: Telegram akkaunt xavfi juda yuqori.\n"
+                "Bir necha soatdan keyin urinib ko‘ring."
+            )
+            break
 
-    while time.time() < end and campaign.active:
-        # SKIP ehtimoli
+        # ⚠️ Xavfli → pauza
+        if account_risk["score"] >= 60:
+            update_campaign_status(campaign["id"], "paused")
+            notify_user(
+                campaign["chat_id"],
+                "⏸ Kampaniya vaqtincha pauzada\n"
+                "Sabab: Telegram cheklovlari xavfi.\n"
+                "Keyinroq davom ettirishingiz mumkin."
+            )
+            break
+
+        # 18% SKIP
         if random.random() < 0.18:
             await asyncio.sleep(random.randint(120, 600))
             continue
 
-        interval = random_interval(campaign.interval)
-        await asyncio.sleep(interval)
+        wait_time = random_interval(campaign["interval"] * 60)
+        await asyncio.sleep(wait_time)
 
         try:
-            group_id = pick_next_group(campaign)
+            group_id = get_next_group(campaign)
 
             async with client.action(group_id, "typing"):
                 await asyncio.sleep(random.uniform(1.5, 4.0))
 
-            await client.send_message(group_id, campaign.text)
-            sent += 1
+            await send_to_group(client, campaign, group_id)
+            sent_count += 1
 
-            # katta pauza
-            if sent % random.randint(3, 5) == 0:
+            # Tez yuborish jazosi
+            if sent_count >= 3:
+                add_risk(account_risk, 10, "3 ta yuborish ketma-ket")
+
+            # Katta pauza
+            if sent_count % random.randint(3, 5) == 0:
                 await asyncio.sleep(random.randint(600, 2400))
 
         except FloodWaitError:
-            pause_campaign()
-            notify_user("Telegram cheklovi sabab kampaniya to‘xtatildi")
+            add_risk(account_risk, 40, "FloodWait")
+            update_campaign_status(campaign["id"], "paused")
+            notify_user(
+                campaign["chat_id"],
+                "⏸ Telegram cheklovi sabab kampaniya to‘xtatildi"
+            )
             break
 
         except Exception as e:
-            log_error(e)
+            add_risk(account_risk, 5, f"Error: {e}")
             await asyncio.sleep(random.randint(60, 300))
 
 
@@ -1507,6 +1542,18 @@ async def send_limit_message(chat_id: int, used: int, limit: int):
         reply_markup=kb,
         parse_mode="Markdown"
     )
+
+def add_risk(account_risk, points, reason=""):
+    account_risk["score"] += points
+    print(f"[RISK +{points}] {reason} → total={account_risk['score']}")
+
+def decay_risk(account_risk):
+    now = time.time()
+    elapsed = now - account_risk["last_reset"]
+
+    if elapsed > 600:  # 10 daqiqa tinch bo‘lsa
+        account_risk["score"] = max(0, account_risk["score"] - 10)
+        account_risk["last_reset"] = now
 
 
 # =====================
