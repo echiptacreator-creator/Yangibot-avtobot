@@ -422,9 +422,9 @@ async def load_groups_handler(message: Message):
         # ✅ faqat guruhlar (private + supergroup)
         if dialog.is_group:
             groups.append({
-                "group_id": dialog.entity.id,
-                "title": dialog.entity.title,
-                "username": getattr(dialog.entity, "username", None)
+                "group_id": entity.id,   # ❗ id EMAS
+                "title": entity.title,
+                "username": getattr(entity, "username", None)
             })
 
     if not groups:
