@@ -317,6 +317,17 @@ def sync_groups():
 
     return jsonify(groups)
 
+@app.route("/api/user-groups/bulk-add", methods=["POST"])
+def api_user_groups_bulk_add():
+    data = request.json
+    user_id = data.get("user_id")
+    groups = data.get("groups", [])
+    if not user_id or not groups:
+        return jsonify({"status": "empty"})
+
+    save_user_groups_bulk(user_id, groups)
+    return jsonify({"status": "ok"})
+
 
 # =====================
 # RUN
