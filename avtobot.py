@@ -894,7 +894,7 @@ def campaign_edit_keyboard(campaign_id: int):
 async def edit_campaign_menu(cb: CallbackQuery):
     campaign_id = int(cb.data.split(":")[1])
 
-    [cb.from_user.id] = {
+    editing_campaign[cb.from_user.id] = {
         "campaign_id": campaign_id,
         "field": None
     }
