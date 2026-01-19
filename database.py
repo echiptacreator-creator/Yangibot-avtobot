@@ -1230,3 +1230,15 @@ def remove_user_group(user_id, group_id):
     """, (user_id, group_id))
     conn.commit()
     cur.close()
+
+def save_user_groups_bulk(user_id, groups):
+    conn = get_db()
+    cur = conn.cursor()
+    for g in groups:
+        cur.execute("""
+            INSERT INTO user_groups (user_id, group_id, title, username)
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT (user_id, group_id) DO NOTHING
+        """, (user_id, g["group_id"], g["title"], g.get("username")))
+    conn.commit()
+    cur.close()
