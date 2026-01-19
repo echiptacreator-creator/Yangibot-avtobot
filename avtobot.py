@@ -575,16 +575,12 @@ async def handle_enter_text(message: Message, state: FSMContext):
     )
 
 
-@dp.message(F.photo | F.video)
-@dp.message(F.text & ~F.text.regexp(r"^\d+$"))
+@dp.message(F.photo | F.video | (F.text & ~F.text.regexp(r"^\d+$")))
 async def handle_enter_text(message: Message, state: FSMContext):
-    # 🔒 Agar edit FSM ishlayotgan bo‘lsa — tegmaymiz
+    # 🔒 Agar FSM edit ishlayotgan bo‘lsa — chiqamiz
     if await state.get_state():
         return
 
-    flow = get_user_flow(message.from_user.id)
-    if not flow or flow["step"] != "enter_text":
-        return_media(message: Message):
     user_id = message.from_user.id
     flow = get_user_flow(user_id)
 
@@ -593,26 +589,32 @@ async def handle_enter_text(message: Message, state: FSMContext):
 
     data = flow["data"]
 
+    # 🖼 MEDIA
     if message.photo:
         data["media_type"] = "photo"
         data["media_file_id"] = message.photo[-1].file_id
-    else:
+        data["text"] = message.caption or ""
+
+    elif message.video:
         data["media_type"] = "video"
         data["media_file_id"] = message.video.file_id
+        data["text"] = message.caption or ""
 
-    data["text"] = message.caption or ""
+    # ✍️ TEXT
+    else:
+        data["text"] = message.text
 
     save_user_flow(
-        user_id,
+        user_id=user_id,
         step="enter_interval",
         data=data
     )
 
     await message.answer(
-        "⏱ Xabar yuborish oralig‘ini kiriting (daqiqada).\n"
-        "Masalan: `15`",
+        "⏱ Xabar yuborish oralig‘ini kiriting (daqiqada).\nMasalan: `10`",
         parse_mode="Markdown"
     )
+
     
 @dp.message(F.text.regexp(r"^\d+$"))
 async def handle_numbers(message: Message):
