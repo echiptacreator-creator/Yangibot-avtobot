@@ -459,60 +459,108 @@ async def load_groups_handler(message: Message):
 # PAFINATION CALLBACK
 # =====================
 
-@dp.message(
-    F.text.in_(["📍 Bitta guruhga", "📍 Ko‘p guruhlarga"]) &
-    F.from_user.func(lambda u: (
-        (flow := get_user_flow(u.id)) is not None
-        and flow["step"] == "choose_mode"
-    ))
-)
+@dp.message(F.text.in_(["📍 Bitta guruhga", "📍 Ko‘p guruhlarga"]))
 async def choose_send_mode(message: Message):
     user_id = message.from_user.id
     mode = "single" if "Bitta" in message.text else "multi"
 
-    groups = get_user_groups(user_id)  # 🔥 DB dan
-
+    groups = get_user_groups(user_id)
     if not groups:
         await message.answer(
-            "❌ Sizda hali saqlangan guruhlar yo‘q.\n\n"
-            "Avval 📥 Guruhlarni yuklash tugmasi orqali guruhlarni qo‘shing.",
+            "❌ Sizda saqlangan guruhlar yo‘q.\nAvval 📥 Guruhlarni yuklang.",
             reply_markup=main_menu()
         )
         return
 
-    # 🔐 FLOW SAQLAYMIZ
+    # FLOW saqlaymiz
     save_user_flow(
-        user_id=user_id,
-        step="enter_text",
+        user_id,
+        step="choose_groups",
         data={
             "mode": mode,
-            "selected_ids": [g["group_id"] for g in groups] if mode == "multi" else [groups[0]["group_id"]]
+            "groups": groups,
+            "selected_ids": []
         }
     )
 
-    await message.answer(
-        "✍️ Xabar matnini yuboring:"
-    )
+    await show_group_picker(message, user_id)
 
+
+
+async def show_group_picker(message, user_id):
+    flow = get_user_flow(user_id)
+    data = flow["data"]
+
+    kb = InlineKeyboardMarkup(inline_keyboard=[])
+
+    for g in data["groups"]:
+        kb.inline_keyboard.append([
+            InlineKeyboardButton(
+                text=f"👥 {g['title']}",
+                callback_data=f"pick_group:{g['group_id']}"
+            )
+        ])
+
+    if data["mode"] == "multi":
+        kb.inline_keyboard.append([
+            InlineKeyboardButton(
+                text="➡️ Davom etish",
+                callback_data="groups_done"
+            )
+        ])
+
+    await message.answer(
+        "📋 Guruhlarni tanlang:",
+        reply_markup=kb
+    )
 # =====================
 # GURUH TANLASH
 # =====================
 
-def get_next_group(campaign):
-    groups = campaign["groups"]
-    if not groups:
-        raise Exception("Guruhlar yo‘q")
+@dp.callback_query(F.data.startswith("pick_group:"))
+async def pick_group(cb: CallbackQuery):
+    user_id = cb.from_user.id
+    group_id = int(cb.data.split(":")[1])
 
-    index = campaign.get("last_group_index", 0)
-    group_id = groups[index % len(groups)]
+    flow = get_user_flow(user_id)
+    data = flow["data"]
 
-    update_campaign_field(
-        campaign["id"],
-        "last_group_index",
-        index + 1
-    )
+    if data["mode"] == "single":
+        data["selected_ids"] = [group_id]
+        save_user_flow(user_id, "enter_text", data)
 
-    return group_id
+        await cb.message.answer("✍️ Endi xabar matnini kiriting:")
+        await cb.answer()
+        return
+
+    # MULTI MODE
+    selected = data["selected_ids"]
+    if group_id in selected:
+        selected.remove(group_id)
+    else:
+        selected.append(group_id)
+
+    save_user_flow(user_id, "choose_groups", data)
+    await cb.answer("✔️ Tanlandi")
+
+
+@dp.callback_query(F.data == "groups_done")
+async def groups_done(cb: CallbackQuery):
+    user_id = cb.from_user.id
+    flow = get_user_flow(user_id)
+
+    if not flow["data"]["selected_ids"]:
+        await cb.answer("❌ Kamida bitta guruh tanlang", show_alert=True)
+        return
+
+    save_user_flow(user_id, "enter_text", flow["data"])
+    await cb.message.answer("✍️ Endi xabar matnini kiriting:")
+    await cb.answer()
+
+
+
+
+
 
 # =====================
 # MATN KIRITISH
