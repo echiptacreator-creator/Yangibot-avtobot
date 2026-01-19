@@ -1572,9 +1572,8 @@ async def main():
     await dp.start_polling(bot)
 
 @dp.message()
-async def debug_catch_all(message: Message):
-    print("⚠️ CATCH:", message.text)
-
+async def catch_all(message: Message):
+    print("CATCH:", message.text)
 
 if __name__ == "__main__":
     asyncio.run(main())
