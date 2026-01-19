@@ -197,6 +197,16 @@ def init_db():
         UNIQUE (user_id, group_id)
     )
     """)
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS telegram_groups_temp (
+        user_id BIGINT NOT NULL,
+        group_id BIGINT NOT NULL,
+        title TEXT,
+        username TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+    )
+    """)
+    
     conn.commit()
     cur.close()
     conn.close()
@@ -1277,23 +1287,32 @@ def get_temp_groups_from_db(user_id: int):
         for r in rows
     ]
 
-def save_temp_groups(user_id, groups):
+def save_temp_groups(user_id: int, groups: list[dict]):
     conn = get_db()
     cur = conn.cursor()
 
+    # eski temp guruhlarni tozalaymiz
+    cur.execute(
+        "DELETE FROM telegram_groups_temp WHERE user_id = %s",
+        (user_id,)
+    )
+
     for g in groups:
-        cur.execute("""
+        cur.execute(
+            """
             INSERT INTO telegram_groups_temp (user_id, group_id, title, username)
             VALUES (%s, %s, %s, %s)
-            ON CONFLICT (user_id, group_id) DO NOTHING
-        """, (
-            user_id,
-            g["id"],
-            g["title"],
-            g.get("username")
-        ))
+            """,
+            (
+                user_id,
+                g["id"],
+                g.get("title"),
+                g.get("username")
+            )
+        )
 
     conn.commit()
+    conn.close()
 
 def get_temp_groups_from_db(user_id):
     conn = get_db()
