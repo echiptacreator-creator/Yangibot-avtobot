@@ -35,6 +35,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
 from database import update_campaign_field
 from database import update_campaign_text
+from database import get_user_campaigns
 
 
 # =====================
