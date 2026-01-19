@@ -1294,7 +1294,6 @@ async def show_tariffs(message: Message):
 
     await message.answer(text, reply_markup=kb, parse_mode="Markdown")
 
-}
 
 @dp.callback_query(F.data.startswith("tariff:"))
 async def select_tariff(cb: CallbackQuery):
