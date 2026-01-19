@@ -273,6 +273,12 @@ def api_temp_groups():
     groups = get_temp_groups_from_db(user_id)
     return jsonify(groups)
 
+@app.route("/api/user-groups/bulk-add", methods=["POST"])
+def save_user_groups_bulk():
+    data = request.json
+    save_user_groups(data["user_id"], data["groups"])
+    return {"status": "ok"}
+
 # =====================
 # RUN
 # =====================
