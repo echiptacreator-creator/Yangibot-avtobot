@@ -42,8 +42,6 @@ from database import get_user_groups
 from database import save_user_groups
 from telethon.tl.types import Chat, Channel
 
-
-
 # =====================
 # STATE (XABAR YUBORISH)
 # =====================
