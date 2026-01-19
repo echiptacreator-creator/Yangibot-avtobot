@@ -5,8 +5,8 @@ from database import (
     get_user_limits,
     get_user_usage,
     get_today_usage,
+    get_db,
 )
-from database import get_db
 
 
 def get_subscription_status(user_id: int) -> str:
@@ -37,32 +37,33 @@ def get_subscription_status(user_id: int) -> str:
 
 
 def can_user_run_campaign(user_id: int) -> tuple[bool, str]:
-    # 1️⃣ LOGIN TEKSHIRUV
+    # 1️⃣ LOGIN
     if not get_login_session(user_id):
         return False, "❌ Avval Telegram login qiling"
 
-    # 2️⃣ SUBSCRIPTION STATUS
+    # 2️⃣ SUBSCRIPTION
     sub_status = get_subscription_status(user_id)
-
     if sub_status == "blocked":
         return False, "⛔ Hisobingiz bloklangan"
 
-    # 3️⃣ QAYSI LIMIT?
+    # 3️⃣ LIMITLAR
     limits = get_user_limits(user_id)
-
     if limits.get("blocked"):
         return False, "⛔ Hisobingiz bloklangan"
 
     usage = get_user_usage(user_id)
 
-    # 4️⃣ KAMPANIYA SONI
+    # 4️⃣ JAMI KAMPANIYALAR
     if usage["total_campaigns"] >= limits["max_campaigns"]:
-        return (
-            False,
-            "❌ Kampaniya limiti tugadi. Obuna xarid qiling."
-        )
+        return False, "❌ Kampaniya limiti tugadi. Obuna xarid qiling."
 
-    # 5️⃣ AKTIV KAMPANIYA
+    # 5️⃣ AKTIV KAMPANIYALAR
     if usage["active_campaigns"] >= limits["max_active"]:
-        return (
-            False,
+        return False, "❌ Aktiv kampaniyalar limiti tugadi."
+
+    # 6️⃣ KUNLIK LIMIT
+    today_used = get_today_usage(user_id)
+    if today_used >= limits["daily_limit"]:
+        return False, "❌ Bugungi xabar limiti tugadi."
+
+    return True, ""
