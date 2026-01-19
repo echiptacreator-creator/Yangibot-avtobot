@@ -144,6 +144,16 @@ def login_menu():
         resize_keyboard=True
     )
 
+TARIFFS = {
+    "1":  {"months": 1,  "price": 35000},
+    "3":  {"months": 3,  "price": 90000},
+    "6":  {"months": 6,  "price": 170000},
+    "9":  {"months": 9,  "price": 250000},
+    "12": {"months": 12, "price": 360000},
+}
+
+PAYMENT_CARD = "8600 **** **** ****"
+
 
 def main_menu():
     return ReplyKeyboardMarkup(
@@ -151,6 +161,7 @@ def main_menu():
             [KeyboardButton(text="➕ Xabar yuborish")],
             [KeyboardButton(text="📋 Mening kampaniyalarim")],
             [KeyboardButton(text="📂 Guruhlar katalogi")],
+            [KeyboardButton(text="💳 Tariflar")],
             [KeyboardButton(text="📊 Statistika")],
             [KeyboardButton(text="👤 Profil")],
             [KeyboardButton(text="🚪 Chiqish")]
@@ -784,11 +795,14 @@ from database import get_campaign
 async def restore_campaigns():
     campaigns = get_all_campaigns()
 
+    paused = 0
     for c in campaigns:
         if c["status"] == "active":
             update_campaign_status(c["id"], "paused")
+            paused += 1
 
-    print("🔒 All active campaigns set to paused after restart")
+    print(f"🔒 {paused} ta kampaniya restart sababli pauzaga qo‘yildi")
+
 
 
 
@@ -1252,116 +1266,130 @@ async def show_profile(message: Message):
 # =====================
 # TOLOV
 # =====================
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-
-def payment_keyboard():
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="💳 To‘lov qilish",
-                    callback_data="pay_start"
-                )
-            ]
-        ]
-    )
-async def show_payment_offer(cb):
+@dp.message(F.text == "💳 Tariflar")
+async def show_tariffs(message: Message):
     text = (
-        "🚫 *Bepul limit tugadi*\n\n"
-        "Davom etish uchun tarif tanlang 👇"
+        "💳 *Tariflar:*\n\n"
+        "1️⃣ 1 oy — 35 000 so‘m\n"
+        "3️⃣ 3 oy — 90 000 so‘m\n"
+        "6️⃣ 6 oy — 170 000 so‘m\n"
+        "9️⃣ 9 oy — 250 000 so‘m\n"
+        "🔟 12 oy — 360 000 so‘m\n\n"
+        "⬇️ Tarifni tanlang:"
     )
 
-    await cb.message.answer(
-        text,
-        reply_markup=tariff_keyboard(),
-        parse_mode="Markdown"
-    )
-
-# =====================
-# PREMIUM TARIFLAR
-# =====================
-def tariff_keyboard():
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton("1 oy — 30 000 so‘m", callback_data="tariff_1")],
-            [InlineKeyboardButton("3 oy — 80 000 so‘m", callback_data="tariff_3")],
-            [InlineKeyboardButton("6 oy — 160 000 so‘m", callback_data="tariff_6")],
-            [InlineKeyboardButton("12 oy — 300 000 so‘m", callback_data="tariff_12")]
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="1 oy", callback_data="tariff:1"),
+            InlineKeyboardButton(text="3 oy", callback_data="tariff:3"),
+        ],
+        [
+            InlineKeyboardButton(text="6 oy", callback_data="tariff:6"),
+            InlineKeyboardButton(text="9 oy", callback_data="tariff:9"),
+        ],
+        [
+            InlineKeyboardButton(text="12 oy", callback_data="tariff:12"),
         ]
-    )
+    ])
 
-TARIFFS = {
-    "tariff_1": (30000, 1),
-    "tariff_3": (80000, 3),
-    "tariff_6": (160000, 6),
-    "tariff_12": (300000, 12),
+    await message.answer(text, reply_markup=kb, parse_mode="Markdown")
+
 }
 
-@dp.callback_query(F.data.startswith("tariff_"))
-async def select_tariff(cb):
-    price, months = TARIFFS[cb.data]
+@dp.callback_query(F.data.startswith("tariff:"))
+async def select_tariff(cb: CallbackQuery):
+    tariff_key = cb.data.split(":")[1]
 
+    if tariff_key not in TARIFFS:
+        await cb.answer("❌ Noto‘g‘ri tarif", show_alert=True)
+        return
+
+    tariff = TARIFFS[tariff_key]
+
+    # user flow ga yozamiz
+    save_user_flow(
+        user_id=cb.from_user.id,
+        step="waiting_receipt",
+        data={
+            "tariff": tariff_key,
+            "months": tariff["months"],
+            "price": tariff["price"]
+        }
+    )
+
+    text = (
+        "💳 *To‘lov ma’lumotlari*\n\n"
+        f"📦 Tarif: {tariff['months']} oy\n"
+        f"💰 Narx: {tariff['price']:,} so‘m\n\n"
+        f"💳 Karta raqami:\n`{PAYMENT_CARD}`\n\n"
+        "📸 To‘lov qilgach, *chek rasmini* shu yerga yuboring."
+    )
+
+    await cb.message.answer(text, parse_mode="Markdown")
+    await cb.answer()
+
+
+@dp.message(F.photo)
+async def receive_receipt(message: Message):
+    user_id = message.from_user.id
+    flow = get_user_flow(user_id)
+
+    if not flow or flow["step"] != "waiting_receipt":
+        return  # oddiy rasm, e’tibor bermaymiz
+
+    data = flow["data"]
+
+    # DB ga payment yozamiz
     conn = get_db()
     cur = conn.cursor()
-
     cur.execute("""
-        INSERT INTO payments (user_id, tariff, price, months, status, created_at)
-        VALUES (%s, %s, %s, %s, 'pending', %s)
+        INSERT INTO payments (user_id, tariff, price, months, status, created_at, receipt_file_id)
+        VALUES (%s, %s, %s, %s, 'pending', EXTRACT(EPOCH FROM NOW()), %s)
         RETURNING id
     """, (
-        cb.from_user.id,
-        cb.data,
-        price,
-        months,
-        int(time.time())
+        user_id,
+        data["tariff"],
+        data["price"],
+        data["months"],
+        message.photo[-1].file_id
     ))
 
     payment_id = cur.fetchone()[0]
     conn.commit()
     conn.close()
 
-    await cb.message.answer(
-        f"💳 *To‘lov ma’lumotlari*\n\n"
-        f"💰 Summa: *{price} so‘m*\n"
-        f"💳 Karta: *8600 **** **** 1234*\n\n"
-        f"📸 To‘lovdan so‘ng chek rasmini yuboring.\n"
-        f"🆔 To‘lov ID: `{payment_id}`",
-        parse_mode="Markdown"
+    clear_user_flow(user_id)
+
+    # admin ga yuboramiz
+    await bot.send_photo(
+        ADMIN_ID,
+        message.photo[-1].file_id,
+        caption=(
+            "🧾 *Yangi to‘lov*\n\n"
+            f"👤 User ID: `{user_id}`\n"
+            f"📦 Tarif: {data['months']} oy\n"
+            f"💰 Kutilgan summa: {data['price']:,} so‘m\n"
+            f"🆔 Payment ID: `{payment_id}`"
+        ),
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="✅ Tasdiqlash",
+                    callback_data=f"pay_ok:{payment_id}"
+                ),
+                InlineKeyboardButton(
+                    text="❌ Rad etish",
+                    callback_data=f"pay_no:{payment_id}"
+                )
+            ]
+        ])
     )
 
-    await cb.answer()
+    await message.answer(
+        "✅ Chek qabul qilindi.\nAdmin tekshirayotganidan so‘ng sizga xabar beriladi."
+    )
 
-
-@dp.message(F.photo)
-async def receive_payment_receipt(message: Message):
-    user_id = message.from_user.id
-
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT id
-        FROM payments
-        WHERE user_id = %s AND status = 'pending'
-        ORDER BY created_at DESC
-        LIMIT 1
-    """, (user_id,))
-    row = cur.fetchone()
-
-    if not row:
-        conn.close()
-        return
-
-    payment_id = row[0]
-    file_id = message.photo[-1].file_id
-
-    cur.execute("""
-        UPDATE payments
-        SET receipt_file_id = %s
-        WHERE id = %s
-    """, (file_id, payment_id))
-
-    conn.commit()
-    conn.close()
 
     # ADMIN’GA YUBORAMIZ
     kb = InlineKeyboardMarkup(
