@@ -34,31 +34,33 @@ body {
   padding: 18px;
 }
 
-/* HERO */
-.hero {
-  text-align: center;
-  padding: 24px 10px 10px;
-}
+/* COMMON */
+.hidden { display: none; }
 
-.hero h1 {
-  font-size: 24px;
-  font-weight: 700;
-  margin-bottom: 8px;
-}
-
-.hero p {
-  font-size: 14px;
-  color: var(--hint);
-  line-height: 1.45;
-}
-
-/* CARD */
 .card {
   background: var(--card);
   border-radius: var(--radius);
   padding: 18px;
   box-shadow: 0 12px 32px rgba(0,0,0,0.08);
   margin-top: 14px;
+}
+
+/* HERO */
+.hero {
+  text-align: center;
+  padding: 22px 10px 8px;
+}
+
+.hero h1 {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.hero p {
+  font-size: 14px;
+  color: var(--hint);
+  line-height: 1.45;
 }
 
 /* TARIFF */
@@ -88,7 +90,7 @@ body {
 
 .tariff h3 {
   margin: 4px 0;
-  font-size: 18px;
+  font-size: 17px;
 }
 
 .tariff p {
@@ -98,10 +100,6 @@ body {
 }
 
 /* CTA */
-.cta {
-  margin-top: 18px;
-}
-
 .cta button {
   width: 100%;
   height: 52px;
@@ -114,16 +112,40 @@ body {
   cursor: pointer;
 }
 
-.cta button:disabled {
-  opacity: 0.4;
+/* PAYMENT */
+.pay-info {
+  font-size: 14px;
+  margin-bottom: 14px;
 }
 
-/* TRUST */
-.trust {
-  margin-top: 14px;
-  font-size: 12px;
+.card-number {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(79,70,229,0.08);
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.copy-btn {
+  width: 100%;
+  height: 46px;
+  border-radius: 14px;
+  border: 1px solid var(--primary);
+  background: transparent;
+  color: var(--primary);
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 14px;
+}
+
+.hint {
+  font-size: 13px;
   color: var(--hint);
   text-align: center;
+  margin-top: 10px;
 }
 </style>
 </head>
@@ -132,48 +154,82 @@ body {
 
 <div class="container">
 
-  <!-- HERO -->
-  <div class="hero">
-    <h1>💳 Premium tariflar</h1>
-    <p>
-      🚕 Taksistlar uchun avtomatik e’lon joylash <br>
-      Ko‘proq buyurtma • Kamroq vaqt • Stresssiz
-    </p>
+  <!-- ================== PAGE 1: TARIFFS ================== -->
+  <div id="page-tariffs">
+
+    <div class="hero">
+      <h1>💳 Premium tariflar</h1>
+      <p>
+        🚕 Taksistlar uchun avtomatik e’lon joylash <br>
+        Ko‘proq buyurtma • Kamroq vaqt • Stresssiz
+      </p>
+    </div>
+
+    <div class="card">
+
+      <div class="tariff" onclick="selectTariff(1, 35000)">
+        <h3>🥉 1 oy — 35 000 so‘m</h3>
+        <p>Sinab ko‘rish uchun</p>
+      </div>
+
+      <div class="tariff" onclick="selectTariff(3, 90000)">
+        <h3>🥈 3 oy — 90 000 so‘m</h3>
+        <p>💸 1 oy = 30 000 so‘m • 5 000 so‘m tejaysiz</p>
+      </div>
+
+      <div class="tariff active" onclick="selectTariff(6, 170000)">
+        <span class="badge">🔥 ENG MASHHUR</span>
+        <h3>🥇 6 oy — 170 000 so‘m</h3>
+        <p>💸 1 oy = ~28 300 so‘m • 40 000 so‘m foyda</p>
+      </div>
+
+      <div class="tariff" onclick="selectTariff(12, 360000)">
+        <span class="badge">👑 MAX FOYDA</span>
+        <h3>12 oy — 360 000 so‘m</h3>
+        <p>🚀 30% gacha arzon</p>
+      </div>
+
+      <div class="cta">
+        <button onclick="goToPayment()">➡️ To‘lovga o‘tish</button>
+      </div>
+
+    </div>
+
+    <div class="hint">
+      ✔️ Telegram qoidalariga mos • ✔️ Qo‘lda tekshiriladi
+    </div>
+
   </div>
 
-  <!-- TARIFFS -->
-  <div class="card">
+  <!-- ================== PAGE 2: PAYMENT ================== -->
+  <div id="page-payment" class="hidden">
 
-    <div class="tariff" onclick="selectTariff(1)">
-      <h3>🥉 1 oy — 35 000 so‘m</h3>
-      <p>Sinab ko‘rish uchun</p>
+    <div class="hero">
+      <h1>💳 To‘lovni yakunlash</h1>
+      <p id="payText"></p>
     </div>
 
-    <div class="tariff" onclick="selectTariff(3)">
-      <h3>🥈 3 oy — 90 000 so‘m</h3>
-      <p>💸 1 oy = 30 000 so‘m • 5 000 so‘m tejaladi</p>
+    <div class="card">
+
+      <div class="card-number" id="cardNumber">
+        8600 **** **** ****
+      </div>
+
+      <button class="copy-btn" onclick="copyCard()">
+        📋 Karta raqamini nusxalash
+      </button>
+
+      <div class="cta">
+        <button onclick="sendReceipt()">📤 Chekni yuborish</button>
+      </div>
+
+      <div class="hint">
+        Chekni <b>@Haydovchiadminbot</b> botiga yuboring.<br>
+        Admin 5–10 daqiqada tasdiqlaydi.
+      </div>
+
     </div>
 
-    <div class="tariff active" onclick="selectTariff(6)">
-      <span class="badge">🔥 ENG MASHHUR</span>
-      <h3>🥇 6 oy — 170 000 so‘m</h3>
-      <p>💸 1 oy = ~28 300 so‘m • 40 000 so‘m foyda</p>
-    </div>
-
-    <div class="tariff" onclick="selectTariff(12)">
-      <span class="badge">👑 MAX FOYDA</span>
-      <h3>12 oy — 360 000 so‘m</h3>
-      <p>🚀 30% gacha arzon</p>
-    </div>
-
-    <div class="cta">
-      <button id="payBtn">➡️ To‘lovga o‘tish</button>
-    </div>
-
-  </div>
-
-  <div class="trust">
-    ✔️ Telegram qoidalariga mos • ✔️ Qo‘lda tekshiriladi • ✔️ Istalgan payt to‘xtatish mumkin
   </div>
 
 </div>
@@ -182,18 +238,30 @@ body {
 const tg = window.Telegram.WebApp;
 tg.ready();
 
-let selectedMonths = 6;
+let selected = { months: 6, price: 170000 };
 
-function selectTariff(months) {
-  selectedMonths = months;
+function selectTariff(months, price) {
+  selected = { months, price };
   document.querySelectorAll(".tariff").forEach(t => t.classList.remove("active"));
   event.currentTarget.classList.add("active");
 }
 
-document.getElementById("payBtn").onclick = () => {
-  // admin botga yo‘naltiramiz
+function goToPayment() {
+  document.getElementById("page-tariffs").classList.add("hidden");
+  document.getElementById("page-payment").classList.remove("hidden");
+
+  document.getElementById("payText").innerText =
+    `📦 Tarif: ${selected.months} oy • 💰 ${selected.price.toLocaleString()} so‘m`;
+}
+
+function copyCard() {
+  navigator.clipboard.writeText("8600XXXXXXXXXXXX");
+  tg.showPopup({ message: "✅ Karta raqami nusxalandi" });
+}
+
+function sendReceipt() {
   tg.openTelegramLink("https://t.me/Haydovchiadminbot");
-};
+}
 </script>
 
 </body>
