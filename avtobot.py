@@ -448,7 +448,8 @@ async def load_groups_handler(message: Message):
         await message.answer("❌ Hech qanday guruh topilmadi")
         return
 
-    save_user_groups(user_id, groups)
+    save_temp_groups(user_id, groups)   # telegram_groups_temp ga
+    save_user_groups(...)               # user_groups ga (tanlangandan keyin)
 
     await message.answer(
         f"✅ {len(groups)} ta guruh yuklandi.\n\n"
