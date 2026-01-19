@@ -279,6 +279,19 @@ def save_user_groups_bulk():
     save_user_groups(data["user_id"], data["groups"])
     return {"status": "ok"}
 
+@app.route("/api/user-groups/bulk-add", methods=["POST"])
+def save_user_groups_bulk():
+    data = request.json
+    user_id = data.get("user_id")
+    groups = data.get("groups", [])
+
+    if not user_id or not groups:
+        return jsonify({"ok": False, "error": "no data"}), 400
+
+    save_user_groups(user_id, groups)
+
+    return jsonify({"ok": True})
+
 # =====================
 # RUN
 # =====================
