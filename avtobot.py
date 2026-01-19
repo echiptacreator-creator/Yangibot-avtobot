@@ -458,7 +458,7 @@ async def load_groups_handler(message: Message):
                 InlineKeyboardButton(
                     text="📋 Guruhlarni tanlash",
                     web_app=WebAppInfo(
-                        url="https://yangibot-avtobot-production.up.railway.app/static/miniapp_groups.html?user_id={user_id}"
+                        url="https://yangibot-avtobot-production.up.railway.app/static/miniapp_groups.html"
                     )
                 )
             ]]
@@ -482,7 +482,7 @@ async def choose_send_mode(message: Message):
                     InlineKeyboardButton(
                         text="➕ Guruh qo‘shish",
                         web_app=WebAppInfo(
-                            url="https://yangibot-avtobot-production.up.railway.app/static/miniapp_groups.html?user_id={user_id}"
+                            url="https://yangibot-avtobot-production.up.railway.app/static/miniapp_groups.html"
                         )
                     )
                 ]]
