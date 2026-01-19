@@ -18,6 +18,12 @@ from database import (
     save_user,
     save_user_session
 )
+from database import (
+    get_user_groups,
+    add_user_group,
+    remove_user_group
+)
+
 
 # =====================
 # CONFIG
@@ -278,13 +284,34 @@ def save_groups():
 
     return jsonify({"status": "ok"})
 
-@app.route("/api/get-user-dialogs")
-def get_user_dialogs():
-    user = get_current_user_from_initdata(request)
-    tg_id = user["id"]
+@app.route("/api/user-groups", methods=["GET"])
+def api_user_groups():
+    user_id = request.args.get("user_id", type=int)
+    if not user_id:
+        return jsonify([])
 
-    dialogs = telegram_api_get_dialogs_webapp(tg_id)
-    return jsonify(dialogs)
+    groups = get_user_groups(user_id)
+    return jsonify(groups)
+
+@app.route("/api/user-groups/add", methods=["POST"])
+def api_add_user_group():
+    data = request.json
+    add_user_group(
+        user_id=data["user_id"],
+        group_id=data["group_id"],
+        title=data["title"],
+        username=data.get("username")
+    )
+    return jsonify({"status": "ok"})
+
+@app.route("/api/user-groups/remove", methods=["POST"])
+def api_remove_user_group():
+    data = request.json
+    remove_user_group(
+        user_id=data["user_id"],
+        group_id=data["group_id"]
+    )
+    return jsonify({"status": "ok"})
 
 
 # =====================
