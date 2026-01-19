@@ -245,14 +245,18 @@ async def start(message: Message):
         f"⏳ Obuna: {left} kun qoldi",
         reply_markup=main_menu()
     )
+   
+    status, left = subscription_status(user_id)
     
-    if is_user_premium(user_id):
+    if status == "active" and left > 0:
         await message.answer(
-            "👑 *Premium obuna faol!*\n\n"
-            "✅ Siz cheklovsiz kampaniyalar ishga tushira olasiz\n"
-            "⚠️ Telegram qoidalariga amal qiling\n"
-            "⏸ Flood bo‘lsa kampaniya avtomatik pauzaga qo‘yiladi\n\n"
-            "Omad tilaymiz! 🚖🔥",
+            "👑 *Premium obuna faollashtirildi!*\n\n"
+            f"⏳ Muddati: *{left} kun*\n\n"
+            "✅ Endi siz:\n"
+            "• Cheklovsiz kampaniyalar ishga tushira olasiz\n"
+            "• Limitlarsiz foydalanasiz\n\n"
+            "⚠️ Iltimos, Telegram qoidalariga amal qiling.\n"
+            "Omad! 🚀",
             parse_mode="Markdown"
         )
 
