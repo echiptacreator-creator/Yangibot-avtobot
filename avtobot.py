@@ -770,10 +770,9 @@ async def pick_interval(cb: CallbackQuery):
 
     data = flow["data"]
     data["interval"] = interval
-
     save_user_flow(user_id, "enter_duration", data)
-
-    min_d, safe_d, max_d = calculate_duration_limits(interval)0
+    
+    min_d, safe_d, max_d = calculate_duration_limits(interval)
     
     await cb.message.edit_text(
         "⏳ *Kampaniya davomiyligini tanlang (daqiqada)*\n\n"
