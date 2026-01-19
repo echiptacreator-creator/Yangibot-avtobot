@@ -22,9 +22,6 @@
       padding: 12px;
       border-radius: 12px;
       margin-bottom: 10px;
-      display: flex;
-      gap: 10px;
-      align-items: center;
     }
 
     button {
@@ -54,7 +51,7 @@
 
   <div id="groups">⏳ Yuklanmoqda...</div>
 
-  <button onclick="saveGroups()">Tanlanganlarni saqlash</button>
+  <button onclick="save()">Tanlanganlarni saqlash</button>
   <div class="back" onclick="Telegram.WebApp.close()">Yopish</div>
 </div>
 
@@ -62,16 +59,7 @@
 const tg = Telegram.WebApp;
 tg.ready();
 
-// 🔐 user_id ni URL'dan olamiz
-const params = new URLSearchParams(window.location.search);
-const userId = params.get("user_id");
-
-if (!userId) {
-  document.getElementById("groups").innerText =
-    "❌ MiniApp bot orqali ochilishi kerak";
-  throw new Error("No user_id");
-}
-
+const userId = tg.initDataUnsafe.user.id;
 let groupsData = [];
 
 async function loadGroups() {
@@ -80,34 +68,35 @@ async function loadGroups() {
 
   try {
     const res = await fetch(`/api/temp-groups?user_id=${userId}`);
-    const data = await res.json();
-    groupsData = data;
+    groupsData = await res.json();
 
-    if (!data.length) {
+    if (!groupsData.length) {
       box.innerHTML = "❌ Guruhlar topilmadi. Avval bot orqali yuklang.";
       return;
     }
 
     box.innerHTML = "";
 
-    data.forEach((g, i) => {
+    groupsData.forEach((g, i) => {
       const div = document.createElement("div");
       div.className = "group";
       div.innerHTML = `
-        <input type="checkbox" data-i="${i}">
-        <div>${g.title}</div>
+        <label>
+          <input type="checkbox" data-i="${i}">
+          ${g.title}
+        </label>
       `;
       box.appendChild(div);
     });
 
   } catch (e) {
-    box.innerHTML = "❌ Xatolik yuz berdi";
     console.error(e);
+    box.innerHTML = "❌ Xatolik yuz berdi";
   }
 }
 
-async function saveGroups() {
-  const selected = [...document.querySelectorAll("input[type=checkbox]:checked")]
+async function save() {
+  const selected = [...document.querySelectorAll("input:checked")]
     .map(x => groupsData[x.dataset.i]);
 
   if (!selected.length) {
@@ -124,10 +113,10 @@ async function saveGroups() {
     })
   });
 
-  tg.showPopup({ message: "✅ Saqlandi" });
+  tg.showPopup({ message: "✅ Guruhlar saqlandi" });
 }
 
-window.onload = loadGroups;
+loadGroups();
 </script>
 </body>
 </html>
