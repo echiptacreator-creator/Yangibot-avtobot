@@ -23,6 +23,8 @@ from database import (
     add_user_group,
     remove_user_group
 )
+from telethon.tl.types import Chat, Channel
+from telethon.errors import SessionRevokedError
 
 
 # =====================
@@ -312,6 +314,50 @@ def api_remove_user_group():
         group_id=data["group_id"]
     )
     return jsonify({"status": "ok"})
+
+@app.route("/api/telegram-groups", methods=["GET"])
+def api_telegram_groups():
+    user_id = request.args.get("user_id", type=int)
+    if not user_id:
+        return jsonify([])
+
+    try:
+        client = get_telethon_client(user_id)
+    except Exception:
+        return jsonify([])
+
+    groups = []
+
+    try:
+        with client:
+            for dialog in client.iter_dialogs():
+                entity = dialog.entity
+
+                # ❌ shaxsiy chatlar
+                if not isinstance(entity, (Chat, Channel)):
+                    continue
+
+                # ❌ kanallar
+                if isinstance(entity, Channel) and entity.broadcast:
+                    continue
+
+                # ❌ botlar
+                if getattr(entity, "bot", False):
+                    continue
+
+                groups.append({
+                    "group_id": entity.id,
+                    "title": entity.title,
+                    "username": getattr(entity, "username", None)
+                })
+
+    except SessionRevokedError:
+        return jsonify({
+            "error": "session_revoked",
+            "message": "Telegram sessiya yopilgan"
+        })
+
+    return jsonify(groups)
 
 
 # =====================
