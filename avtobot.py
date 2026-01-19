@@ -1331,83 +1331,21 @@ async def select_tariff(cb: CallbackQuery):
             "price": tariff["price"]
         }
     )
-
+    
     text = (
         "💳 *To‘lov ma’lumotlari*\n\n"
         f"📦 Tarif: {tariff['months']} oy\n"
         f"💰 Narx: {tariff['price']:,} so‘m\n\n"
         f"💳 Karta raqami:\n`{PAYMENT_CARD}`\n\n"
-        "📸 To‘lov qilgach, *chek rasmini* shu yerga yuboring."
+        "📸 To‘lov qilgach, *chek rasmini* quyidagi botga yuboring:\n\n"
+        "👉 @Haydovchiadminbot\n\n"
+        "⏳ Admin tekshiradi va tasdiqlagach, obunangiz faollashadi."
     )
+
 
     await cb.message.answer(text, parse_mode="Markdown")
     await cb.answer()
 
-
-@dp.message(F.photo)
-async def receive_receipt(message: Message):
-    # 🔒 AGAR FLOW YO‘Q BO‘LSA — CHIQIB KETAMIZ
-    flow = get_user_flow(message.from_user.id)
-    if not flow or flow["step"] != "waiting_receipt":
-        return  # oddiy rasm, e’tibor bermaymiz
-    user_id = message.from_user.id
-    flow = get_user_flow(user_id)
-
-    if not flow or flow["step"] != "waiting_receipt":
-        return  # oddiy rasm, e’tibor bermaymiz
-
-    data = flow["data"]
-
-    # DB ga payment yozamiz
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("""
-        INSERT INTO payments (user_id, tariff, price, months, status, created_at, receipt_file_id)
-        VALUES (%s, %s, %s, %s, 'pending', EXTRACT(EPOCH FROM NOW()), %s)
-        RETURNING id
-    """, (
-        user_id,
-        data["tariff"],
-        data["price"],
-        data["months"],
-        message.photo[-1].file_id
-    ))
-
-    payment_id = cur.fetchone()[0]
-    conn.commit()
-    conn.close()
-
-    clear_user_flow(user_id)
-
-    # admin ga yuboramiz
-    await bot.send_photo(
-        ADMIN_ID,
-        message.photo[-1].file_id,
-        caption=(
-            "🧾 *Yangi to‘lov*\n\n"
-            f"👤 User ID: `{user_id}`\n"
-            f"📦 Tarif: {data['months']} oy\n"
-            f"💰 Kutilgan summa: {data['price']:,} so‘m\n"
-            f"🆔 Payment ID: `{payment_id}`"
-        ),
-        parse_mode="Markdown",
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="✅ Tasdiqlash",
-                    callback_data=f"pay_ok:{payment_id}"
-                ),
-                InlineKeyboardButton(
-                    text="❌ Rad etish",
-                    callback_data=f"pay_no:{payment_id}"
-                )
-            ]
-        ])
-    )
-
-    await message.answer(
-        "✅ Chek qabul qilindi.\nAdmin tekshirayotganidan so‘ng sizga xabar beriladi."
-    )
 
 
     # ADMIN’GA YUBORAMIZ
