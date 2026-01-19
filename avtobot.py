@@ -413,50 +413,6 @@ async def fetch_only_groups(client):
 
     return groups
 
-@dp.callback_query(F.data == "load_groups_now")
-async def load_groups_from_flow(cb: CallbackQuery):
-    user_id = cb.from_user.id
-    await cb.message.answer("⏳ Guruhlar yuklanmoqda...")
-
-    client = await get_client(user_id)
-    groups = []
-
-    async for dialog in client.iter_dialogs():
-        if dialog.is_user:
-            continue
-        if getattr(dialog.entity, "bot", False):
-            continue
-        if dialog.is_group:
-            groups.append({
-                "id": dialog.entity.id,
-                "title": dialog.entity.title,
-                "username": getattr(dialog.entity, "username", None)
-            })
-
-    if not groups:
-        await cb.message.answer("❌ Hech qanday guruh topilmadi")
-        return
-
-    save_temp_groups(user_id, groups)
-
-    await cb.message.answer(
-        f"✅ {len(groups)} ta guruh yuklandi.\n\n"
-        "Endi miniapp orqali tanlang 👇",
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(
-                        text="📋 Guruhlarni tanlash (MiniApp)",
-                        web_app=WebAppInfo(
-                            url="https://yangibot-avtobot-production.up.railway.app/static/miniapp_groups.html"
-                        )
-                    )
-                ]
-            ]
-        )
-    )
-    await cb.answer()
-
 @dp.message(F.text.in_(["📍 Bitta guruhga", "📍 Ko‘p guruhlarga"]))
 async def choose_send_mode(message: Message):
     user_id = message.from_user.id
@@ -464,41 +420,30 @@ async def choose_send_mode(message: Message):
 
     groups = get_user_groups(user_id)
 
+    # ❌ AGAR DOIMIY GURUHLAR YO‘Q BO‘LSA
     if not groups:
         await message.answer(
-            "❌ Sizda hali doimiy guruhlar yo‘q.\n\n"
-            "Avval guruhlarni yuklang, so‘ng miniapp orqali tanlang 👇",
+            "❗ Sizda hali doimiy guruhlar yo‘q.\n\n"
+            "Avval guruhlarni yuklab olaylik 👇",
             reply_markup=InlineKeyboardMarkup(
                 inline_keyboard=[
                     [
                         InlineKeyboardButton(
                             text="📥 Guruhlarni yuklash",
-                            callback_data="load_groups_now"
-                        )
-                    ],
-                    [
-                        InlineKeyboardButton(
-                            text="📋 Guruhlarni tanlash (MiniApp)",
-                            web_app=WebAppInfo(
-                                url="https://yangibot-avtobot-production.up.railway.app/static/miniapp_groups.html"
-                            )
+                            callback_data="load_groups_and_continue"
                         )
                     ]
                 ]
             )
         )
         return
-        
-    # qolgan kod shu yerdan davom etadi
 
-    # shu joyda flow saqlaysan
+    # ✅ AGAR BOR BO‘LSA — ODATIY DAVOM ETADI
     save_user_flow(
         user_id=user_id,
         step="choose_group",
         data={"mode": mode}
     )
-
-    text = "📍 Qaysi guruhga yuboramiz?\n\n" if mode == "single" else "📍 Qaysi guruhlarga yuboramiz?\n\n"
 
     kb = []
     for g in groups:
@@ -509,7 +454,10 @@ async def choose_send_mode(message: Message):
             )
         ])
 
-    await message.answer(text, reply_markup=InlineKeyboardMarkup(inline_keyboard=kb))
+    await message.answer(
+        "📍 Qaysi guruhga yuboramiz?",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=kb)
+    )
 
 @dp.callback_query(F.data.startswith("group:"))
 async def on_group_selected(call: CallbackQuery):
@@ -533,6 +481,51 @@ async def on_group_selected(call: CallbackQuery):
     )
     await call.answer()
 
+@dp.callback_query(F.data == "load_groups_and_continue")
+async def load_groups_and_continue(cb: CallbackQuery):
+    user_id = cb.from_user.id
+    await cb.message.answer("⏳ Guruhlar yuklanmoqda...")
+
+    client = await get_client(user_id)
+    groups = []
+
+    async for dialog in client.iter_dialogs():
+        if dialog.is_user:
+            continue
+        if getattr(dialog.entity, "bot", False):
+            continue
+        if dialog.is_group:
+            groups.append({
+                "id": dialog.entity.id,
+                "title": dialog.entity.title,
+                "username": getattr(dialog.entity, "username", None)
+            })
+
+    if not groups:
+        await cb.message.answer("❌ Hech qanday guruh topilmadi")
+        return
+
+    # 🔥 MUHIM: AVTOMAT SAQLANADI
+    save_temp_groups(user_id, groups)
+
+    await cb.message.answer(
+        f"✅ {len(groups)} ta guruh yuklandi.\n\n"
+        "Endi qaysilarini doimiy ishlatishni tanlang 👇",
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="📋 Guruhlarni tanlash (MiniApp)",
+                        web_app=WebAppInfo(
+                            url="https://yangibot-avtobot-production.up.railway.app/static/miniapp_groups.html"
+                        )
+                    )
+                ]
+            ]
+        )
+    )
+
+    await cb.answer()
 
 # =====================
 # PAFINATION CALLBACK
