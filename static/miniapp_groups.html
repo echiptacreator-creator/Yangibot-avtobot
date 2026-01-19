@@ -1,58 +1,105 @@
 <!DOCTYPE html>
 <html lang="uz">
 <head>
-  <meta charset="UTF-8">
-  <title>Guruhlarni tanlash</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<meta charset="UTF-8">
+<title>Guruhlarni tanlash</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-  <style>
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system;
-      background: var(--tg-theme-bg-color);
-      color: var(--tg-theme-text-color);
-    }
-    .wrap { padding: 20px; }
-    h1 { margin-bottom: 6px; }
-    .sub { opacity: .7; margin-bottom: 16px; }
+<style>
+:root {
+  --blue:#2f80ff;
+}
+body {
+  margin:0;
+  font-family: system-ui,-apple-system;
+  background:var(--tg-theme-bg-color);
+  color:var(--tg-theme-text-color);
+}
+.wrap { padding:16px; padding-bottom:90px; }
 
-    .group {
-      background: var(--tg-theme-secondary-bg-color);
-      padding: 12px;
-      border-radius: 12px;
-      margin-bottom: 10px;
-    }
+h1 { margin:0 0 6px }
+.sub { opacity:.7; margin-bottom:12px }
 
-    button {
-      width: 100%;
-      padding: 14px;
-      border-radius: 14px;
-      border: none;
-      background: #2f80ff;
-      color: #fff;
-      font-size: 15px;
-      font-weight: 600;
-      margin-top: 16px;
-    }
+.search {
+  width:100%;
+  padding:12px;
+  border-radius:12px;
+  border:1px solid rgba(0,0,0,.1);
+  margin-bottom:12px;
+  font-size:15px;
+}
 
-    .back {
-      text-align: center;
-      margin-top: 14px;
-      color: #2f80ff;
-    }
-  </style>
+.group {
+  background:var(--tg-theme-secondary-bg-color);
+  padding:12px;
+  border-radius:12px;
+  margin-bottom:10px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.group.saved {
+  opacity:.5;
+}
+
+.group.selected {
+  outline:2px solid var(--blue);
+}
+
+.group input { transform:scale(1.2) }
+
+.action-bar {
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  background:var(--tg-theme-bg-color);
+  border-top:1px solid rgba(0,0,0,.1);
+  padding:12px;
+}
+
+button {
+  width:100%;
+  padding:14px;
+  border:none;
+  border-radius:14px;
+  background:var(--blue);
+  color:#fff;
+  font-size:15px;
+  font-weight:600;
+}
+
+.toast {
+  position:fixed;
+  bottom:100px;
+  left:50%;
+  transform:translateX(-50%);
+  background:var(--blue);
+  color:#fff;
+  padding:10px 14px;
+  border-radius:10px;
+}
+</style>
 </head>
 
 <body>
 <div class="wrap">
   <h1>Guruhlar</h1>
-  <div class="sub">Faqat tanlangan guruhlar saqlanadi</div>
+  <div class="sub">Xabar yuborish uchun guruhlarni tanlang</div>
+
+  <input
+    class="search"
+    placeholder="🔍 Guruh nomi yoki @username"
+    oninput="filterGroups(this.value)"
+  >
 
   <div id="groups">⏳ Yuklanmoqda...</div>
+</div>
 
-  <button onclick="save()">Tanlanganlarni saqlash</button>
-  <div class="back" onclick="Telegram.WebApp.close()">Yopish</div>
+<div class="action-bar">
+  <button onclick="save()">➕ Tanlanganlarni qo‘shish (<span id="count">0</span>)</button>
 </div>
 
 <script>
@@ -60,57 +107,84 @@ const tg = Telegram.WebApp;
 tg.ready();
 
 const userId = tg.initDataUnsafe.user.id;
-let groupsData = [];
+let groups = [];
+let selected = new Set();
 
-async function loadGroups() {
-  const box = document.getElementById("groups");
-  box.innerHTML = "⏳ Yuklanmoqda...";
+function showToast(text){
+  const t=document.createElement("div");
+  t.className="toast";
+  t.innerText=text;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2500);
+}
 
-  const res = await fetch(`/api/temp-groups?user_id=${userId}`);
-  groupsData = await res.json();
+async function loadGroups(){
+  const box=document.getElementById("groups");
+  const res=await fetch(`/api/temp-groups?user_id=${userId}`);
+  groups=await res.json();
 
-  if (!groupsData.length) {
-    box.innerHTML = "❌ Guruhlar topilmadi. Avval bot orqali yuklang.";
+  if(!groups.length){
+    box.innerHTML="❌ Guruhlar topilmadi";
     return;
   }
 
-  box.innerHTML = "";
+  box.innerHTML="";
+  groups.forEach(g=>{
+    const div=document.createElement("div");
+    div.className="group";
+    div.dataset.search=(g.title+" "+(g.username||"")).toLowerCase();
 
-  groupsData.forEach((g, i) => {
-    const div = document.createElement("div");
-    div.className = "group";
-    div.innerHTML = `
-      <label>
-        <input type="checkbox" data-i="${i}">
-        ${g.title}
-      </label>
+    div.innerHTML=`
+      <input type="checkbox" onchange="toggle(${g.group_id},this)">
+      <div>
+        <b>${g.title}</b><br>
+        <small>${g.username? "@"+g.username : ""}</small>
+      </div>
     `;
     box.appendChild(div);
   });
 }
 
-async function save() {
-  const selected = [...document.querySelectorAll("input:checked")]
-    .map(x => groupsData[x.dataset.i]);
+function toggle(id,el){
+  const card=el.closest(".group");
+  if(el.checked){
+    selected.add(id);
+    card.classList.add("selected");
+  }else{
+    selected.delete(id);
+    card.classList.remove("selected");
+  }
+  document.getElementById("count").innerText=selected.size;
+}
 
-  if (!selected.length) {
-    tg.showPopup({ message: "Hech qanday guruh tanlanmadi" });
+function filterGroups(q){
+  q=q.toLowerCase();
+  document.querySelectorAll(".group").forEach(el=>{
+    el.style.display=el.dataset.search.includes(q)?"flex":"none";
+  });
+}
+
+async function save(){
+  if(!selected.size){
+    tg.showPopup({message:"Hech narsa tanlanmadi"});
     return;
   }
 
-  await fetch("/api/user-groups/bulk-add", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      user_id: userId,
-      groups: selected
+  const payload=groups.filter(g=>selected.has(g.group_id));
+
+  await fetch("/api/user-groups/bulk-add",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({
+      user_id:userId,
+      groups:payload
     })
   });
 
-  tg.showPopup({ message: "✅ Guruhlar saqlandi" });
-  setTimeout(() => {
-    tg.close();
-  }, 700);
+  showToast(`✅ ${payload.length} ta guruh qo‘shildi`);
+  tg.showPopup({message:"✅ Guruhlar muvaffaqiyatli qo‘shildi"});
+  selected.clear();
+  document.getElementById("count").innerText=0;
 }
 
 loadGroups();
