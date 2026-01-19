@@ -30,6 +30,11 @@ logging.basicConfig(level=logging.INFO)
 bot = Bot(ADMIN_BOT_TOKEN)
 dp = Dispatcher()
 
+# 🔥 ENG MUHIM QISM
+router = Router()
+dp.include_router(router)
+# 🔥 SHU QATOR BO‘LMASA — TUGMA ISHLAMAYDI
+
 # =========================
 # START (admin uchun)
 # =========================
