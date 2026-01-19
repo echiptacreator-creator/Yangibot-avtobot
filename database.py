@@ -186,7 +186,17 @@ def init_db():
     ADD COLUMN IF NOT EXISTS title TEXT,
     ADD COLUMN IF NOT EXISTS username TEXT;
     """)
-    
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS telegram_groups_temp (
+        id SERIAL PRIMARY KEY,
+        user_id BIGINT NOT NULL,
+        group_id BIGINT NOT NULL,
+        title TEXT NOT NULL,
+        username TEXT,
+        added_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE (user_id, group_id)
+    )
+    """)
     conn.commit()
     cur.close()
     conn.close()
@@ -1266,3 +1276,21 @@ def get_temp_groups_from_db(user_id: int):
         }
         for r in rows
     ]
+
+def save_temp_groups(user_id, groups):
+    conn = get_db()
+    cur = conn.cursor()
+
+    for g in groups:
+        cur.execute("""
+            INSERT INTO telegram_groups_temp (user_id, group_id, title, username)
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT (user_id, group_id) DO NOTHING
+        """, (
+            user_id,
+            g["id"],
+            g["title"],
+            g.get("username")
+        ))
+
+    conn.commit()
