@@ -48,6 +48,7 @@ LOGIN_WEBAPP_URL = "https://yangibot-avtobot-production.up.railway.app/miniapp"
 bot = Bot(BOT_TOKEN)
 dp = Dispatcher()
 init_db()
+editing_campaign = {}
 
 # =====================
 # HELPERS — ACCESS
@@ -489,13 +490,13 @@ async def pick_group(cb: CallbackQuery):
     await cb.answer(f"➕ {groups[str(group_id)]['name']} qo‘shildi")
 
 
-@dp.message(F.text & F.from_user.id.in_(editing_campaign))
+@dp.message(F.text & F.from_user.id.in_())
 async def handle_edit_input(message):
     user_id = message.from_user.id
 
-    edit = editing_campaign.get(user_id)
+    edit = .get(user_id)
     if not edit or "field" not in edit or "campaign_id" not in edit:
-        editing_campaign.pop(user_id, None)
+        .pop(user_id, None)
         return
 
     campaign_id = edit["campaign_id"]
@@ -520,11 +521,11 @@ async def handle_edit_input(message):
         update_campaign_field(campaign_id, "duration", int(value))
 
     else:
-        editing_campaign.pop(user_id, None)
+        .pop(user_id, None)
         return
 
     # 🔥 MUHIM: STATE TOZALANADI
-    editing_campaign.pop(user_id, None)
+    .pop(user_id, None)
 
     # ▶ AUTO RESUME FAQAT AGAR PAUSED BO‘LSA
     if resume_after and get_campaign(campaign_id)["status"] == "paused":
@@ -880,7 +881,7 @@ def campaign_control_keyboard(campaign_id: int, status: str):
 async def camp_back(cb):
     campaign_id = int(cb.data.split(":")[1])
 
-    edit = editing_campaign.pop(cb.from_user.id, None)
+    edit = .pop(cb.from_user.id, None)
 
     if edit and edit.get("resume_after"):
         update_campaign_status(campaign_id, "active")
@@ -927,7 +928,7 @@ def campaign_edit_keyboard(campaign_id: int):
 async def edit_campaign_menu(cb: CallbackQuery):
     campaign_id = int(cb.data.split(":")[1])
 
-    editing_campaign[cb.from_user.id] = {
+    [cb.from_user.id] = {
         "campaign_id": campaign_id,
         "field": None
     }
@@ -937,8 +938,6 @@ async def edit_campaign_menu(cb: CallbackQuery):
         reply_markup=campaign_edit_keyboard(campaign_id)
     )
     await cb.answer()
-
-editing_campaign = {}
 
 
 @dp.callback_query(F.data.startswith("edit_text:"))
