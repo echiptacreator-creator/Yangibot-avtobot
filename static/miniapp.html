@@ -359,6 +359,54 @@ tg.onEvent("themeChanged", () => {
   );
 });
 
+<script>
+Telegram.WebApp.ready();
+
+function openGroupsPage() {
+  document.getElementById("groups-page").style.display = "block";
+  loadGroups();
+}
+
+async function loadGroups() {
+  const res = await fetch("/api/get-user-dialogs");
+  const groups = await res.json();
+
+  const list = document.getElementById("groups-list");
+  list.innerHTML = "";
+
+  groups.forEach(g => {
+    const div = document.createElement("div");
+    div.innerHTML = `
+      <label>
+        <input type="checkbox" value="${g.id}">
+        ${g.title}
+      </label>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function saveSelectedGroups() {
+  const checked = [...document.querySelectorAll("#groups-list input:checked")]
+    .map(i => ({
+      id: Number(i.value),
+      title: i.parentElement.textContent.trim()
+    }));
+
+  fetch("/api/save-groups", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      user_id: Telegram.WebApp.initDataUnsafe.user.id,
+      groups: checked
+    })
+  }).then(() => {
+    Telegram.WebApp.showPopup({ message: "✅ Guruhlar saqlandi" });
+    Telegram.WebApp.close();
+  });
+}
+</script>
+
   
 </script>
 
