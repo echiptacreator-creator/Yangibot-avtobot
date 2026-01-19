@@ -7,8 +7,6 @@ from aiogram.types import (
     InlineKeyboardButton
 )
 from aiogram.filters import Command
-from aiogram.enums import ParseMode
-
 from database import (
     get_last_pending_payment,
     approve_payment,
