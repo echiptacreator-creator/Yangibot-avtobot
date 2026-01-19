@@ -233,26 +233,27 @@ async def start(message: Message):
     if status == "blocked":
         await message.answer("⛔ Siz bloklangansiz.")
         return
-
-    if status == "expired":
-        await message.answer("⌛ Obunangiz muddati tugagan.")
+    
+    elif status == "expired":
+        await message.answer("⏳ Obunangiz muddati tugagan.")
         return
-
+    
+    # bu yerga kelgan bo‘lsa — active
     await message.answer(
         f"👋 Xush kelibsiz!\n"
         f"⏳ Obuna: {left} kun qoldi",
         reply_markup=main_menu()
     )
     
-    if is_user_premium(message.from_user.id):
-    await message.answer(
-        "👑 *Premium obuna faol!*\n\n"
-        "✅ Siz cheklovsiz kampaniyalar ishga tushira olasiz\n"
-        "⚠️ Telegram qoidalariga amal qiling\n"
-        "⏸ Flood bo‘lsa kampaniya avtomatik pauzaga qo‘yiladi\n\n"
-        "Omad tilaymiz! 🚖🔥",
-        parse_mode="Markdown"
-    )
+    if is_user_premium(user_id):
+        await message.answer(
+            "👑 *Premium obuna faol!*\n\n"
+            "✅ Siz cheklovsiz kampaniyalar ishga tushira olasiz\n"
+            "⚠️ Telegram qoidalariga amal qiling\n"
+            "⏸ Flood bo‘lsa kampaniya avtomatik pauzaga qo‘yiladi\n\n"
+            "Omad tilaymiz! 🚖🔥",
+            parse_mode="Markdown"
+        )
 
 
 # =====================
