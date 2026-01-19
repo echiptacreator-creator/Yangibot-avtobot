@@ -507,8 +507,13 @@ class EditCampaign(StatesGroup):
 # MATN KIRITISH
 # =====================
 
-@dp.message(F.text & ~F.text.regexp(r"^\d+$") & ~F.text.startswith("/"))
-async def handle_enter_text(message: Message, state: FSMContext):
+@dp.message(
+    F.text 
+    & ~F.text.regexp(r"^\d+$") 
+    & ~F.text.startswith("/")
+    & ~F.state(EditCampaign.waiting_value)
+)
+async def handle_enter_text(message: Message):
     if await state.get_state() is not None:
         return
 
@@ -566,7 +571,8 @@ async def handle_media(message: Message):
         "Masalan: `15`",
         parse_mode="Markdown"
     )
-@dp.message(F.text.regexp(r"^\d+$"))
+    
+@dp.message(F.text.regexp(r"^\d+$") & ~F.state(EditCampaign.waiting_value))
 async def handle_numbers(message: Message):
     if await state.get_state() is not None:
         return
@@ -938,7 +944,7 @@ async def edit_value_handler(message: Message, state: FSMContext):
 async def edit_text(cb: CallbackQuery, state: FSMContext):
     campaign_id = int(cb.data.split(":")[1])
 
-    await update_campaign_status(campaign_id, "paused")
+    update_campaign_status(campaign_id, "paused")
 
     await state.set_state(EditCampaign.waiting_value)
     await state.update_data(
@@ -948,7 +954,6 @@ async def edit_text(cb: CallbackQuery, state: FSMContext):
 
     await cb.message.edit_text("✏️ Yangi xabar matnini yuboring:")
     await cb.answer()
-
 
 
 @dp.callback_query(F.data.startswith("edit_interval:"))
