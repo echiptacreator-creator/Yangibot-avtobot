@@ -33,7 +33,10 @@ from database import get_all_campaigns
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
-
+from database import (
+    update_campaign_text,
+    update_campaign_field
+)
 
 # =====================
 # STATE (XABAR YUBORISH)
@@ -511,7 +514,6 @@ class EditCampaign(StatesGroup):
     F.text 
     & ~F.text.regexp(r"^\d+$") 
     & ~F.text.startswith("/")
-    & ~F.state(EditCampaign.waiting_value)
 )
 async def handle_enter_text(message: Message):
 
@@ -567,7 +569,7 @@ async def handle_media(message: Message):
         parse_mode="Markdown"
     )
     
-@dp.message(F.text.regexp(r"^\d+$") & ~F.state(EditCampaign.waiting_value))
+@dp.message(F.text.regexp(r"^\d+$"))
 async def handle_numbers(message: Message):
     user_id = message.from_user.id
     flow = get_user_flow(user_id)
@@ -863,6 +865,39 @@ async def camp_back(cb):
     await render_campaign(campaign_id)
     await cb.answer()
 
+@dp.message(EditCampaign.waiting_value)
+async def edit_value_handler(message: Message, state: FSMContext):
+    data = await state.get_data()
+    campaign_id = data["campaign_id"]
+    field = data["field"]
+    resume_after = data.get("resume_after", False)
+
+    value = message.text.strip()
+
+    if field == "text":
+        update_campaign_text(campaign_id, value)
+
+    elif field == "interval":
+        if not value.isdigit() or int(value) <= 0:
+            await message.answer("❌ Interval musbat raqam bo‘lishi kerak")
+            return
+        update_campaign_field(campaign_id, "interval", int(value))
+
+    elif field == "duration":
+        if not value.isdigit() or int(value) <= 0:
+            await message.answer("❌ Davomiylik musbat raqam bo‘lishi kerak")
+            return
+        update_campaign_field(campaign_id, "duration", int(value))
+
+    await state.clear()
+
+    if resume_after:
+        update_campaign_status(campaign_id, "active")
+        asyncio.create_task(run_campaign(campaign_id))
+
+    await message.answer("✅ Yangilandi")
+    await render_campaign(campaign_id)
+
 
 def campaign_edit_keyboard(campaign_id: int):
     return InlineKeyboardMarkup(
@@ -905,41 +940,6 @@ async def edit_campaign_menu(cb: CallbackQuery):
     )
     await cb.answer()
 
-@dp.message(EditCampaign.waiting_value)
-async def edit_value_handler(message: Message, state: FSMContext):
-    data = await state.get_data()
-    campaign_id = data["campaign_id"]
-    field = data["field"]
-    resume_after = data.get("resume_after", False)
-
-    value = message.text.strip()
-
-    if field == "text":
-        update_campaign_text(campaign_id, value)
-
-    elif field == "interval":
-        if not value.isdigit() or int(value) <= 0:
-            await message.answer("❌ Interval musbat raqam bo‘lishi kerak")
-            return
-        update_campaign_field(campaign_id, "interval", int(value))
-
-    elif field == "duration":
-        if not value.isdigit() or int(value) <= 0:
-            await message.answer("❌ Davomiylik musbat raqam bo‘lishi kerak")
-            return
-        update_campaign_field(campaign_id, "duration", int(value))
-
-    await state.clear()
-
-    # 🔥 MANA ASOSIY JOY
-    if resume_after:
-        update_campaign_status(campaign_id, "active")
-        asyncio.create_task(run_campaign(campaign_id))
-
-    await message.answer("✅ Yangilandi va qo‘llanildi")
-    await render_campaign(campaign_id)
-
-
 
 @dp.callback_query(F.data.startswith("edit_text:"))
 async def edit_text(cb: CallbackQuery, state: FSMContext):
@@ -950,9 +950,9 @@ async def edit_text(cb: CallbackQuery, state: FSMContext):
     await state.set_state(EditCampaign.waiting_value)
     await state.update_data(
         campaign_id=campaign_id,
-        field="text"
+        field="text",
+        resume_after=True
     )
-
     await cb.message.edit_text("✏️ Yangi xabar matnini yuboring:")
     await cb.answer()
 
@@ -972,9 +972,8 @@ async def edit_interval(cb: CallbackQuery, state: FSMContext):
     await state.update_data(
         campaign_id=campaign_id,
         field="interval",
-        resume_after=was_active   # 🔥 MUHIM
+        resume_after=True
     )
-
     await cb.message.edit_text("⏱ Yangi intervalni daqiqada kiriting:")
     await cb.answer()
 
@@ -989,9 +988,9 @@ async def edit_duration(cb: CallbackQuery, state: FSMContext):
     await state.set_state(EditCampaign.waiting_value)
     await state.update_data(
         campaign_id=campaign_id,
-        field="duration"
+        field="duration",
+        resume_after=True
     )
-
     await cb.message.edit_text("⏳ Yangi davomiylikni daqiqada kiriting:")
     await cb.answer()
 
