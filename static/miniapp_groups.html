@@ -7,250 +7,107 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
   <style>
-    :root {
-      --bg: var(--tg-theme-bg-color, #f5f5f5);
-      --card: var(--tg-theme-secondary-bg-color, #ffffff);
-      --text: var(--tg-theme-text-color, #111);
-      --hint: var(--tg-theme-hint-color, #777);
-      --accent: #2f80ff;
-      --ok: #27ae60;
-      --border: rgba(0,0,0,.08);
-    }
-
     body {
       margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont;
-      background: var(--bg);
-      color: var(--text);
+      font-family: system-ui, -apple-system;
+      background: var(--tg-theme-bg-color);
+      color: var(--tg-theme-text-color);
     }
+    .wrap { padding: 20px; }
+    h1 { margin-bottom: 6px; }
+    .sub { opacity: .7; margin-bottom: 16px; }
 
-    .wrap {
-      padding: 16px;
-    }
-
-    h1 {
-      margin: 0 0 6px;
-      font-size: 22px;
-    }
-
-    .sub {
-      font-size: 14px;
-      color: var(--hint);
-      margin-bottom: 16px;
-    }
-
-    .group-card {
-      background: var(--card);
-      border-radius: 16px;
-      padding: 14px;
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      border: 2px solid transparent;
-      cursor: pointer;
-      transition: .15s;
-    }
-
-    .group-card.active {
-      border-color: var(--accent);
-    }
-
-    .icon {
-      font-size: 22px;
-    }
-
-    .info {
-      flex: 1;
-    }
-
-    .title {
-      font-weight: 600;
-      font-size: 15px;
-    }
-
-    .meta {
-      font-size: 13px;
-      color: var(--hint);
-      margin-top: 2px;
-    }
-
-    .badge {
-      display: inline-block;
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 999px;
-      margin-right: 6px;
-      background: rgba(0,0,0,.06);
-    }
-
-    .badge.private {
-      background: rgba(47,128,255,.15);
-      color: #2f80ff;
-    }
-
-    .badge.supergroup {
-      background: rgba(39,174,96,.15);
-      color: #27ae60;
-    }
-
-    .check {
-      font-size: 20px;
-      color: var(--accent);
-      display: none;
-    }
-
-    .group-card.active .check {
-      display: block;
+    .group {
+      background: var(--tg-theme-secondary-bg-color);
+      padding: 12px;
+      border-radius: 12px;
+      margin-bottom: 10px;
     }
 
     button {
       width: 100%;
-      border: none;
-      border-radius: 14px;
       padding: 14px;
+      border-radius: 14px;
+      border: none;
+      background: #2f80ff;
+      color: #fff;
       font-size: 15px;
       font-weight: 600;
-      background: var(--accent);
-      color: #fff;
       margin-top: 16px;
-    }
-
-    button:disabled {
-      opacity: .5;
     }
 
     .back {
       text-align: center;
       margin-top: 14px;
-      color: var(--accent);
-      font-weight: 500;
-    }
-
-    .empty {
-      text-align: center;
-      color: var(--hint);
-      margin-top: 40px;
-      font-size: 15px;
+      color: #2f80ff;
     }
   </style>
 </head>
 
 <body>
 <div class="wrap">
-  <h1>Guruhlarni tanlash</h1>
-  <div class="sub">
-    Xabar yuborishda ishlatiladigan guruhlarni belgilang
-  </div>
+  <h1>Guruhlar</h1>
+  <div class="sub">Faqat tanlangan guruhlar saqlanadi</div>
 
-  <div id="list">⏳ Guruhlar yuklanmoqda...</div>
+  <div id="groups">⏳ Yuklanmoqda...</div>
 
-  <button id="saveBtn" onclick="save()" disabled>
-    💾 Tanlanganlarni saqlash
-  </button>
-
-  <div class="back" onclick="Telegram.WebApp.close()">
-    Yopish
-  </div>
+  <button onclick="save()">Tanlanganlarni saqlash</button>
+  <div class="back" onclick="Telegram.WebApp.close()">Yopish</div>
 </div>
 
 <script>
 const tg = Telegram.WebApp;
 tg.ready();
 
-const userId = tg.initDataUnsafe?.user?.id;
-const list = document.getElementById("list");
-const saveBtn = document.getElementById("saveBtn");
+const userId = tg.initDataUnsafe.user.id;
+let groupsData = [];
 
-let groups = [];
-let selected = new Set();
-
-/* =========================
-   GURUHLARNI YUKLASH
-========================= */
 async function loadGroups() {
-  try {
-    const res = await fetch(`/api/temp-groups?user_id=${userId}`);
-    const data = await res.json();
+  const box = document.getElementById("groups");
+  box.innerHTML = "⏳ Yuklanmoqda...";
 
-    if (!Array.isArray(data) || data.length === 0) {
-      list.innerHTML = `
-        <div class="empty">
-          Avval bot orqali <b>📥 Guruhlarni yuklash</b> tugmasini bosing
-        </div>
-      `;
-      return;
-    }
+  const res = await fetch(`/api/temp-groups?user_id=${userId}`);
+  groupsData = await res.json();
 
-    groups = data;
-    render();
-
-  } catch (e) {
-    list.innerHTML = `<div class="empty">Xatolik yuz berdi</div>`;
-    console.error(e);
+  if (!groupsData.length) {
+    box.innerHTML = "❌ Guruhlar topilmadi. Avval bot orqali yuklang.";
+    return;
   }
-}
 
-/* =========================
-   RENDER
-========================= */
-function render() {
-  list.innerHTML = "";
-  groups.forEach(g => {
+  box.innerHTML = "";
+
+  groupsData.forEach((g, i) => {
     const div = document.createElement("div");
-    div.className = "group-card";
-    div.onclick = () => toggle(g.group_id, div);
-
+    div.className = "group";
     div.innerHTML = `
-      <div class="icon">👥</div>
-      <div class="info">
-        <div class="title">${g.title}</div>
-        <div class="meta">
-          <span class="badge ${g.type}">
-            ${g.type === "private" ? "Private" : "Supergroup"}
-          </span>
-          ${g.username ? "@" + g.username : ""}
-        </div>
-      </div>
-      <div class="check">✓</div>
+      <label>
+        <input type="checkbox" data-i="${i}">
+        ${g.title}
+      </label>
     `;
-
-    list.appendChild(div);
+    box.appendChild(div);
   });
 }
 
-/* =========================
-   TOGGLE
-========================= */
-function toggle(id, el) {
-  if (selected.has(id)) {
-    selected.delete(id);
-    el.classList.remove("active");
-  } else {
-    selected.add(id);
-    el.classList.add("active");
-  }
-
-  saveBtn.disabled = selected.size === 0;
-}
-
-/* =========================
-   SAQLASH
-========================= */
 async function save() {
-  const payload = groups.filter(g => selected.has(g.group_id));
+  const selected = [...document.querySelectorAll("input:checked")]
+    .map(x => groupsData[x.dataset.i]);
+
+  if (!selected.length) {
+    tg.showPopup({ message: "Hech qanday guruh tanlanmadi" });
+    return;
+  }
 
   await fetch("/api/user-groups/bulk-add", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       user_id: userId,
-      groups: payload
+      groups: selected
     })
   });
 
   tg.showPopup({ message: "✅ Guruhlar saqlandi" });
-  setTimeout(() => tg.close(), 600);
 }
 
 loadGroups();
