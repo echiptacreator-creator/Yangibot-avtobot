@@ -161,7 +161,7 @@ def init_db():
     """)
 
     cur.execute("""
-    CREATE TABLE account_risk (
+    CREATE TABLE IF NOT EXISTS account_risk (
     user_id BIGINT PRIMARY KEY,
     risk_score INTEGER NOT NULL DEFAULT 0,
     last_updated TIMESTAMP NOT NULL DEFAULT NOW()
