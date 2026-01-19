@@ -11,11 +11,10 @@ from aiogram.enums import ParseMode
 
 from database import (
     get_last_pending_payment,
-    mark_payment_approved,
-    mark_payment_rejected,
-    activate_premium,
-    get_payment_by_id
+    approve_payment,
+    reject_payment,
 )
+
 
 # =====================
 # CONFIG
@@ -112,8 +111,7 @@ async def approve_payment(cb: CallbackQuery):
     user_id = payment["user_id"]
     months = payment["months"]
 
-    activate_premium(user_id, months)
-    mark_payment_approved(payment_id)
+    approve_payment(payment_id)
 
     await bot.send_message(
         user_id,
@@ -141,7 +139,7 @@ async def reject_payment(cb: CallbackQuery):
     payment_id = int(cb.data.split(":")[1])
     payment = get_payment_by_id(payment_id)
 
-    mark_payment_rejected(payment_id)
+    approve_payment(payment_id)
 
     await bot.send_message(
         payment["user_id"],
