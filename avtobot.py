@@ -184,6 +184,7 @@ def main_menu():
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="➕ Xabar yuborish")],
+            [KeyboardButton(text="📥 Guruhlarni yuklash")],  # 🔥 MUHIM
             [KeyboardButton(text="📋 Mening kampaniyalarim")],
             [KeyboardButton(text="📂 Guruhlar katalogi")],
             [KeyboardButton(text="💳 Tariflar")],
@@ -413,75 +414,22 @@ async def fetch_only_groups(client):
 
     return groups
 
-@dp.message(F.text.in_(["📍 Bitta guruhga", "📍 Ko‘p guruhlarga"]))
-async def choose_send_mode(message: Message):
-    user_id = message.from_user.id
-    mode = "single" if "Bitta" in message.text else "multi"
+groups = get_user_groups(user_id)
 
-    groups = get_user_groups(user_id)
-
-    # ❌ AGAR DOIMIY GURUHLAR YO‘Q BO‘LSA
-    if not groups:
-        await message.answer(
-            "❗ Sizda hali doimiy guruhlar yo‘q.\n\n"
-            "Avval guruhlarni yuklab olaylik 👇",
-            reply_markup=InlineKeyboardMarkup(
-                inline_keyboard=[
-                    [
-                        InlineKeyboardButton(
-                            text="📥 Guruhlarni yuklash",
-                            callback_data="load_groups_and_continue"
-                        )
-                    ]
-                ]
-            )
-        )
-        return
-
-    # ✅ AGAR BOR BO‘LSA — ODATIY DAVOM ETADI
-    save_user_flow(
-        user_id=user_id,
-        step="choose_group",
-        data={"mode": mode}
-    )
-
-    kb = []
-    for g in groups:
-        kb.append([
-            InlineKeyboardButton(
-                text=g["title"],
-                callback_data=f"group:{g['group_id']}"
-            )
-        ])
-
+if not groups:
     await message.answer(
-        "📍 Qaysi guruhga yuboramiz?",
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=kb)
+        "❌ Sizda hali guruh yo‘q.\n\n"
+        "Avval guruhlarni yuklang 👇",
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[[
+                InlineKeyboardButton(
+                    text="📥 Guruhlarni yuklash",
+                    callback_data="noop"
+                )
+            ]]
+        )
     )
-
-@dp.callback_query(F.data.startswith("group:"))
-async def on_group_selected(call: CallbackQuery):
-    user_id = call.from_user.id
-    group_id = int(call.data.split(":")[1])
-
-    flow = get_user_flow(user_id)
-    mode = flow["data"]["mode"]
-
-    save_user_flow(
-        user_id=user_id,
-        step="enter_text",
-        data={
-            "mode": mode,
-            "groups": [group_id]
-        }
-    )
-
-    await call.message.answer(
-        "✍️ Yuboriladigan xabar matnini kiriting:"
-    )
-    await call.answer()
-
-from telethon.errors import SessionRevokedError
+    return
 
 @dp.message(F.text == "📥 Guruhlarni yuklash")
 async def load_groups_handler(message: Message):
@@ -490,46 +438,54 @@ async def load_groups_handler(message: Message):
 
     try:
         client = await get_client(user_id)
+    except Exception:
+        await message.answer("❌ Telegram login topilmadi. Avval login qiling.")
+        return
 
-        groups = []
-        async for dialog in client.iter_dialogs():
-            if dialog.is_user:
-                continue
-            if getattr(dialog.entity, "bot", False):
-                continue
-            if dialog.is_group:
-                groups.append({
-                    "id": dialog.entity.id,
-                    "title": dialog.entity.title,
-                    "username": getattr(dialog.entity, "username", None)
-                })
+    groups = []
 
-        if not groups:
-            await message.answer("❌ Hech qanday guruh topilmadi")
-            return
+    async for dialog in client.iter_dialogs():
+        # ❌ shaxsiy chatlar
+        if dialog.is_user:
+            continue
 
-        save_temp_groups(user_id, groups)
+        # ❌ botlar
+        if getattr(dialog.entity, "bot", False):
+            continue
 
-        await message.answer(
-            f"✅ {len(groups)} ta guruh yuklandi.\n\n"
-            "Endi miniapp orqali tanlang 👇",
-            reply_markup=InlineKeyboardMarkup(
-                inline_keyboard=[[
-                    InlineKeyboardButton(
-                        text="📋 Guruhlarni tanlash",
-                        web_app=WebAppInfo(
-                            url="https://.../static/miniapp_groups.html"
-                        )
+        # ❌ kanallar
+        if dialog.is_channel and dialog.entity.broadcast:
+            continue
+
+        # ✅ faqat guruhlar (private + supergroup)
+        if dialog.is_group:
+            groups.append({
+                "group_id": dialog.entity.id,
+                "title": dialog.entity.title,
+                "username": getattr(dialog.entity, "username", None)
+            })
+
+    if not groups:
+        await message.answer("❌ Hech qanday guruh topilmadi")
+        return
+
+    # 🔥 TEMP DB GA YOZAMIZ
+    save_temp_groups(user_id, groups)
+
+    await message.answer(
+        f"✅ {len(groups)} ta guruh topildi.\n\n"
+        "Endi qaysilarini doimiy saqlashni tanlang 👇",
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[[
+                InlineKeyboardButton(
+                    text="📋 Guruhlarni tanlash",
+                    web_app=WebAppInfo(
+                        url="https://yangibot-avtobot-production.up.railway.app/static/miniapp_groups.html"
                     )
-                ]]
-            )
+                )
+            ]]
         )
-
-    except SessionRevokedError:
-        await message.answer(
-            "❌ Telegram sessiya bekor bo‘lgan.\n\n"
-            "Iltimos, qayta login qiling 🔐"
-        )
+    )
 
 # =====================
 # PAFINATION CALLBACK
