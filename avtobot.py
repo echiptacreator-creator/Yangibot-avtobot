@@ -39,6 +39,9 @@ from database import get_user_campaigns
 from access_control import can_user_run_campaign
 from database import get_premium_status
 from database import get_user_groups
+from database import save_user_groups
+from telethon.tl.types import Chat, Channel
+
 
 
 # =====================
@@ -390,6 +393,58 @@ async def get_client(user_id: int):
 # GURUH YUKLASH
 # =====================
 
+@dp.message(F.text == "📥 Guruhlarni yuklash")
+async def load_groups_handler(message: Message):
+    user_id = message.from_user.id
+
+    await message.answer("⏳ Guruhlar yuklanmoqda...")
+
+    client = get_telethon_client(user_id)
+
+    groups = []
+
+    async for dialog in client.iter_dialogs():
+        entity = dialog.entity
+
+        # ❌ shaxsiy chatlar, botlar chiqmasin
+        if not isinstance(entity, (Chat, Channel)):
+            continue
+
+        # ❌ kanallar chiqmasin
+        if isinstance(entity, Channel) and entity.broadcast:
+            continue
+
+        # ❌ botlar
+        if getattr(entity, "bot", False):
+            continue
+
+        groups.append({
+            "id": entity.id,
+            "title": entity.title,
+            "username": getattr(entity, "username", None)
+        })
+
+    if not groups:
+        await message.answer("❌ Hech qanday guruh topilmadi")
+        return
+
+    save_user_groups(user_id, groups)
+
+    await message.answer(
+        f"✅ {len(groups)} ta guruh yuklandi.\n\n"
+        "Endi Mini App orqali ularni tanlashingiz mumkin 👇",
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[[
+                InlineKeyboardButton(
+                    text="📋 Guruhlarni tanlash",
+                    web_app=WebAppInfo(
+                        url="https://yangibot-avtobot-production.up.railway.app/static/miniapp.html?mode=groups"
+                    )
+                )
+            ]]
+        )
+    )
+
 
 PAGE_SIZE = 20
 
@@ -437,36 +492,6 @@ async def show_group_page(message: Message, user_id: int, edit: bool = False):
             "👉 Guruhni tanlang:",
             reply_markup=keyboard
         )
-
-@dp.message(F.text.in_(["📍 Bitta guruhga", "📍 Ko‘p guruhlarga"]))
-async def choose_send_mode(message: Message, state: FSMContext):
-    user_id = message.from_user.id
-    mode = "single" if "Bitta" in message.text else "multi"
-
-    await state.update_data(send_mode=mode)
-    save_user_flow(user_id, "choose_group", {"mode": mode})
-
-    groups = get_user_groups(user_id)
-
-    if not groups:
-        await message.answer(
-            "📭 Guruhlar ro‘yxati bo‘sh.\n\n"
-            "🔄 Avval akkauntingizdagi guruhlarni MiniApp orqali yuklang.",
-            reply_markup=InlineKeyboardMarkup(
-                inline_keyboard=[[
-                    InlineKeyboardButton(
-                        text="🔄 Guruhlarni yuklash",
-                        web_app=WebAppInfo(
-                            url="https://yangibot-avtobot-production.up.railway.app/static/miniapp.html?mode=groups"
-                        )
-                    )
-                ]]
-            )
-        )
-        return
-
-    await show_groups_from_db(message, groups)
-
 
 
 @dp.callback_query(F.data == "grp_done")
