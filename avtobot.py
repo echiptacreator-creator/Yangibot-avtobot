@@ -166,6 +166,26 @@ async def admin_notification_worker():
 # /START
 # =====================
 
+@dp.message(EditCampaign.waiting_value)
+async def edit_value_handler(message: Message, state: FSMContext):
+    data = await state.get_data()
+    campaign_id = data["campaign_id"]
+    field = data["field"]
+    resume_after = data.get("resume_after", False)
+
+    value = message.text.strip()
+
+    update_campaign_field(campaign_id, field, value)
+
+    await state.clear()
+
+    if resume_after:
+        update_campaign_status(campaign_id, "active")
+        asyncio.create_task(run_campaign(campaign_id))
+
+    await message.answer("✅ Yangilandi")
+    await render_campaign(campaign_id)
+
 @dp.message(CommandStart())
 async def start(message: Message):
     user_id = message.from_user.id
@@ -511,8 +531,9 @@ class EditCampaign(StatesGroup):
 async def handle_enter_text(message: Message, state: FSMContext):
     current_state = await state.get_state()
     if current_state is not None:
-        return  # FSM ishlayapti — bu handler ARALASHMAYDI
+        return  # ✋ agar FSM ishlayapti bo‘lsa — bu handler chiqib ketsin
 
+    # pastdagi kod faqat FSM YO‘Q paytda ishlaydi
     user_id = message.from_user.id
     flow = get_user_flow(user_id)
 
@@ -855,28 +876,6 @@ async def camp_back(cb):
 
     await render_campaign(campaign_id)
     await cb.answer()
-
-@dp.message(EditCampaign.waiting_value)
-async def edit_value_handler(message: Message, state: FSMContext):
-    data = await state.get_data()
-    campaign_id = data["campaign_id"]
-    field = data["field"]
-    resume_after = data.get("resume_after", False)
-
-    value = message.text.strip()
-
-    update_campaign_field(campaign_id, field, value)
-
-    await state.clear()
-
-    if resume_after:
-        update_campaign_status(campaign_id, "active")
-        asyncio.create_task(run_campaign(campaign_id))
-
-    await message.answer("✅ Yangilandi")
-    await render_campaign(campaign_id)
-
-
 
 def campaign_edit_keyboard(campaign_id: int):
     return InlineKeyboardMarkup(
