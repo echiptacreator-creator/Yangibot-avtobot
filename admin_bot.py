@@ -1,29 +1,15 @@
+from aiogram import Bot, Dispatcher, F, Router
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.filters import Command
 import os
 import logging
-from aiogram import Bot, Dispatcher, F
-from aiogram.types import (
-    Message,
-    CallbackQuery,
-    InlineKeyboardMarkup,
-    InlineKeyboardButton
-)
-from aiogram.filters import Command
+import asyncio
+
 from database import (
     get_last_pending_payment,
     approve_payment,
     reject_payment
 )
-from database import approve_payment as approve_payment_db, reject_payment
-from aiogram import F
-from aiogram import Router
-
-router = Router()
-
-
-# =====================
-# CONFIG
-# =====================
-
 
 ADMIN_BOT_TOKEN = os.getenv("ADMIN_BOT_TOKEN")
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
@@ -32,11 +18,10 @@ logging.basicConfig(level=logging.INFO)
 
 bot = Bot(ADMIN_BOT_TOKEN)
 dp = Dispatcher()
-
-# 🔥 ENG MUHIM QISM
 router = Router()
+
 dp.include_router(router)
-# 🔥 SHU QATOR BO‘LMASA — TUGMA ISHLAMAYDI
+
 
 # =========================
 # START (admin uchun)
@@ -55,23 +40,20 @@ async def start(message: Message):
 # =========================
 # CHEK QABUL QILISH (USERDAN)
 # =========================
-@dp.message(F.photo)
+@router.message(F.photo)
 async def receive_receipt(message: Message):
     user_id = message.from_user.id
 
-    # 1️⃣ user tanlagan pending tarifni olamiz
     payment = get_last_pending_payment(user_id)
-
     if not payment:
         await message.answer(
-            "❌ Siz uchun kutilayotgan to‘lov topilmadi.\n\n"
+            "❌ Kutilayotgan to‘lov topilmadi.\n"
             "Iltimos, avval miniapp orqali tarif tanlang."
         )
         return
 
     payment_id, user_id, months, amount = payment
 
-    # 2️⃣ Admin ko‘radigan xabar
     caption = (
         "🧾 *Yangi to‘lov cheki*\n\n"
         f"👤 User ID: `{user_id}`\n"
@@ -93,27 +75,21 @@ async def receive_receipt(message: Message):
         ]
     ])
 
-    # 3️⃣ Admin’ga yuboramiz
     await bot.send_photo(
         chat_id=ADMIN_ID,
         photo=message.photo[-1].file_id,
         caption=caption,
-        reply_markup=kb
+        reply_markup=kb,
+        parse_mode="Markdown"
     )
 
-    # 4️⃣ Userga javob
     await message.answer(
         "✅ Chek qabul qilindi.\n"
         "⏳ Admin tekshirganidan so‘ng Premium faollashadi."
     )
 
-
-from aiogram import F
-
-from database import approve_payment as approve_payment_db
-
 @router.callback_query(F.data.startswith("pay_ok:"))
-async def approve_payment_cb(callback):
+async def approve_payment_cb(callback: CallbackQuery):
     if callback.from_user.id != ADMIN_ID:
         await callback.answer("Ruxsat yo‘q", show_alert=True)
         return
@@ -123,7 +99,7 @@ async def approve_payment_cb(callback):
     user_id = int(user_id)
     months = int(months)
 
-    await approve_payment_db(payment_id)
+    await approve_payment(payment_id)
 
     await callback.message.edit_caption(
         callback.message.caption + "\n\n✅ Tasdiqlandi"
@@ -144,7 +120,7 @@ async def approve_payment_cb(callback):
 
 
 @router.callback_query(F.data.startswith("pay_no:"))
-async def reject_payment_cb(callback):
+async def reject_payment_cb(callback: CallbackQuery):
     if callback.from_user.id != ADMIN_ID:
         await callback.answer("Ruxsat yo‘q", show_alert=True)
         return
@@ -152,16 +128,20 @@ async def reject_payment_cb(callback):
     _, payment_id, user_id = callback.data.split(":")
     payment_id = int(payment_id)
     user_id = int(user_id)
-    
+
     await reject_payment(payment_id)
-    
+
+    await callback.message.edit_caption(
+        callback.message.caption + "\n\n❌ Rad etildi"
+    )
+
     await bot.send_message(
         user_id,
         "❌ To‘lov rad etildi.\nIltimos, chekni tekshirib qayta yuboring."
     )
 
-
     await callback.answer("Rad etildi")
+
 
 # =========================
 # RUN
@@ -170,5 +150,5 @@ async def main():
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
-    import asyncio
     asyncio.run(main())
+
