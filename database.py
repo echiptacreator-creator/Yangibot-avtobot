@@ -183,8 +183,8 @@ def init_db():
     """)
     cur.execute("""
     ALTER TABLE user_groups
-    ADD COLUMN IF NOT EXISTS title TEXT,
-    ADD COLUMN IF NOT EXISTS username TEXT;
+    ALTER TABLE user_groups DROP COLUMN IF EXISTS group_id;
+    ALTER TABLE user_groups ADD COLUMN peer_id BIGINT;
     """)
     cur.execute("""
     CREATE TABLE IF NOT EXISTS telegram_groups_temp (
