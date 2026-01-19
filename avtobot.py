@@ -179,7 +179,7 @@ async def edit_value_handler(message: Message, state: FSMContext):
     value = message.text.strip()
 
     if field == "text":
-        update_campaign_text(campaign_id, value)
+        update_campaign_field(campaign_id, "text", value)
 
     elif field == "interval":
         if not value.isdigit() or int(value) <= 0:
