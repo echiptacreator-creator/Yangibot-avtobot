@@ -1270,24 +1270,26 @@ def save_user_groups(user_id, groups):
     cur = conn.cursor()
 
     # eski guruhlarni o‘chiramiz
-    cur.execute(
-        "DELETE FROM user_groups WHERE user_id = %s",
-        (user_id,)
-    )
+    cur.execute("DELETE FROM user_groups WHERE user_id = %s", (user_id,))
 
     for g in groups:
-        cur.execute(
-            """
+        raw_id = g.get("group_id")
+        if not raw_id:
+            continue
+
+        # 🔑 TELETHON UCHUN TO‘G‘RI peer_id
+        peer_id = raw_id if raw_id < 0 else -1000000000000 + raw_id
+
+        cur.execute("""
             INSERT INTO user_groups (user_id, peer_id, title, username)
             VALUES (%s, %s, %s, %s)
-            """,
-            (
-                user_id,
-                g["peer_id"],
-                g["title"],
-                g.get("username")
-            )
-        )
+            ON CONFLICT (user_id, peer_id) DO NOTHING
+        """, (
+            user_id,
+            peer_id,
+            g.get("title"),
+            g.get("username")
+        ))
 
     conn.commit()
     conn.close()
