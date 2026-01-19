@@ -277,6 +277,13 @@ def save_groups():
 
     return jsonify({"status": "ok"})
 
+@app.route("/api/get-user-dialogs")
+def get_user_dialogs():
+    user = get_current_user_from_initdata(request)
+    tg_id = user["id"]
+
+    dialogs = telegram_api_get_dialogs_webapp(tg_id)
+    return jsonify(dialogs)
 
 
 # =====================
