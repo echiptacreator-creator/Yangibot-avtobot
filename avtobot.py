@@ -879,7 +879,7 @@ def campaign_control_keyboard(campaign_id: int, status: str):
 async def camp_back(cb):
     campaign_id = int(cb.data.split(":")[1])
 
-    edit = .pop(cb.from_user.id, None)
+    edit = editing_campaign.pop(cb.from_user.id, None)
 
     if edit and edit.get("resume_after"):
         update_campaign_status(campaign_id, "active")
@@ -887,8 +887,6 @@ async def camp_back(cb):
 
     await render_campaign(campaign_id)
     await cb.answer()
-
-
 
 
 def campaign_edit_keyboard(campaign_id: int):
