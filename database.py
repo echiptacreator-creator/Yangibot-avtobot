@@ -171,9 +171,14 @@ def init_db():
     CREATE TABLE IF NOT EXISTS user_groups (
         id SERIAL PRIMARY KEY,
         user_id BIGINT NOT NULL,
-        group_id BIGINT NOT NULL
-)
-""")
+        group_id BIGINT NOT NULL,
+        title TEXT,
+        username TEXT,
+        added_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE (user_id, group_id)
+    )
+    """)
+
 
     
     conn.commit()
@@ -1165,11 +1170,46 @@ def get_user_groups(user_id: int):
     cur = conn.cursor()
 
     cur.execute("""
-        SELECT group_id FROM user_groups
+        SELECT group_id, title, username
+        FROM user_groups
         WHERE user_id = %s
     """, (user_id,))
 
     rows = cur.fetchall()
     conn.close()
-    return [r[0] for r in rows]
 
+    return [
+        {
+            "group_id": r[0],
+            "title": r[1],
+            "username": r[2]
+        }
+        for r in rows
+    ]
+
+
+@app.route("/api/save-groups", methods=["POST"])
+def save_groups():
+    data = request.json
+    user_id = data["user_id"]
+    groups = data["groups"]  # list of dicts
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    for g in groups:
+        cur.execute("""
+            INSERT INTO user_groups (user_id, group_id, title, username)
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT (user_id, group_id) DO NOTHING
+        """, (
+            user_id,
+            g["id"],
+            g.get("title"),
+            g.get("username")
+        ))
+
+    conn.commit()
+    conn.close()
+
+    return {"status": "ok"}
