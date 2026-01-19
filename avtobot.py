@@ -617,23 +617,23 @@ async def handle_numbers(message: Message):
         )
         return
 
-    data["interval"] = interval
-
-    save_user_flow(user_id, "enter_duration", data)
-
-    await message.answer(
-        f"⏳ Endi davomiylikni kiriting.\n"
-        f"Tavsiya: {interval * 10} – {interval * 15} daqiqa"
-    )
-
-    data["interval"] = interval
-
-    save_user_flow(user_id, "enter_duration", data)
-
-    await message.answer(
-        f"⏳ Endi davomiylikni kiriting.\n"
-        f"Tavsiya: {interval * 10} – {interval * 15} daqiqa"
-    )
+        data["interval"] = interval
+    
+        save_user_flow(user_id, "enter_duration", data)
+    
+        await message.answer(
+            f"⏳ Endi davomiylikni kiriting.\n"
+            f"Tavsiya: {interval * 10} – {interval * 15} daqiqa"
+        )
+    
+        data["interval"] = interval
+    
+        save_user_flow(user_id, "enter_duration", data)
+    
+        await message.answer(
+            f"⏳ Endi davomiylikni kiriting.\n"
+            f"Tavsiya: {interval * 10} – {interval * 15} daqiqa"
+        )
     
         await message.answer(
             "⏳ Kampaniya davomiyligini kiriting (daqiqada):\n\n"
