@@ -82,6 +82,14 @@ async def notify_user(chat_id: int, text: str):
     except Exception:
         pass
 
+def random_interval(base_seconds: int) -> int:
+    """
+    Foydalanuvchi tanlagan interval atrofida random vaqt beradi
+    """
+    return random.randint(
+        int(base_seconds * 0.7),
+        int(base_seconds * 1.8)
+    )
 
 def get_subscription(user_id: int):
     conn = get_db()
@@ -867,45 +875,42 @@ async def restore_campaigns():
 
 
 
-async def run_campaign(campaign_id: int):
-    print(f"🚀 run_campaign started for {campaign_id}")
+async def run_campaign(client, campaign):
+    start = time.time()
+    end = start + campaign.duration * 60
+    sent = 0
 
-    campaign = get_campaign(campaign_id)
-    if not campaign or campaign["status"] != "active":
-        return
-
-    client = await get_client(campaign["user_id"])
-
-    start_time = time.time()
-
-    while True:
-        campaign = get_campaign(campaign_id)
-        if campaign["status"] != "active":
-            return
-        # ⛔ STOP / FINISHED
-        if campaign["status"] != "active":
-            await asyncio.sleep(2)
+    while time.time() < end and campaign.active:
+        # SKIP ehtimoli
+        if random.random() < 0.18:
+            await asyncio.sleep(random.randint(120, 600))
             continue
 
-        elapsed = time.time() - start_time
-        duration_sec = campaign["duration"] * 60
+        interval = random_interval(campaign.interval)
+        await asyncio.sleep(interval)
 
-        if elapsed >= duration_sec:
+        try:
+            group_id = pick_next_group(campaign)
+
+            async with client.action(group_id, "typing"):
+                await asyncio.sleep(random.uniform(1.5, 4.0))
+
+            await client.send_message(group_id, campaign.text)
+            sent += 1
+
+            # katta pauza
+            if sent % random.randint(3, 5) == 0:
+                await asyncio.sleep(random.randint(600, 2400))
+
+        except FloodWaitError:
+            pause_campaign()
+            notify_user("Telegram cheklovi sabab kampaniya to‘xtatildi")
             break
 
-        # 📤 YUBORISH
-        for group_id in campaign["groups"]:
-            await send_to_group(client, campaign, group_id)
+        except Exception as e:
+            log_error(e)
+            await asyncio.sleep(random.randint(60, 300))
 
-        # 🔄 STATUSNI YANGILAYMIZ
-        await render_campaign(campaign_id)
-
-        interval_sec = campaign["interval"] * 60
-        await asyncio.sleep(interval_sec)
-
-    update_campaign_status(campaign_id, "finished")
-    await render_campaign(campaign_id)
-    print("✅ campaign finished")
 
 # =====================
 # STATUSNI YANGILASH
