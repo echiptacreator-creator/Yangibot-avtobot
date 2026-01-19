@@ -436,7 +436,10 @@ async def load_groups_handler(message: Message):
             "title": entity.title,
             "username": getattr(entity, "username", None)
         })
-
+    print("TOPILGAN GURUHLAR SONI:", len(groups))
+    save_temp_groups(user_id, groups)
+    print("TEMP GROUPS DB GA SAQLANDI:", user_id)
+    
     if not groups:
         await message.answer("❌ Hech qanday guruh topilmadi")
         return
@@ -458,11 +461,6 @@ async def load_groups_handler(message: Message):
             ]]
         )
     )
-
-    print("TOPILGAN GURUHLAR SONI:", len(groups))
-
-    save_temp_groups(user_id, groups)
-    print("TEMP GROUPS DB GA SAQLANDI:", user_id)
 
 @dp.message(F.text.in_(["📍 Bitta guruhga", "📍 Ko‘p guruhlarga"]))
 async def choose_send_mode(message: Message):
