@@ -206,6 +206,14 @@ def init_db():
         created_at TIMESTAMP DEFAULT NOW()
     )
     """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS user_accounts (
+        user_id BIGINT PRIMARY KEY,
+        risk_score INTEGER DEFAULT 0,
+        last_reset TIMESTAMP DEFAULT NOW()
+    )
+    """)
     
     conn.commit()
     cur.close()
