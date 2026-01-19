@@ -65,24 +65,36 @@ const userId = tg.initDataUnsafe.user.id;
 let data=[];
 
 async function loadGroups() {
-  const user = tg.initDataUnsafe.user;
-  const res = await fetch(`/api/temp-groups?user_id=${user.id}`);
-  const groups = await res.json();
+  const box = document.getElementById("groups-list");
+  box.innerHTML = "⏳ Yuklanmoqda...";
 
-  if (!groups.length) {
-    groupsList.innerHTML = "Avval bot orqali guruhlarni yuklang";
-    return;
+  try {
+    const res = await fetch(`/api/temp-groups?user_id=${userId}`);
+    const data = await res.json();
+
+    if (!data.length) {
+      box.innerHTML = "❌ Guruhlar topilmadi. Avval bot orqali yuklang.";
+      return;
+    }
+
+    box.innerHTML = "";
+
+    data.forEach(g => {
+      const div = document.createElement("div");
+      div.className = "group-item";
+      div.innerHTML = `
+        <label>
+          <input type="checkbox" value="${g.group_id}">
+          ${g.title}
+        </label>
+      `;
+      box.appendChild(div);
+    });
+
+  } catch (e) {
+    box.innerHTML = "❌ Xatolik yuz berdi";
+    console.error(e);
   }
-
-  renderGroups(groups);
-}
-
-  data.forEach((g,i)=>{
-    const d=document.createElement("div");
-    d.className="group";
-    d.innerHTML=`<input type="checkbox" data-i="${i}"><span>${g.title}</span>`;
-    box.appendChild(d);
-  });
 }
 
 async function save(){
