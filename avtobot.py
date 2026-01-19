@@ -380,14 +380,13 @@ async def start_group_selection(message: Message):
 
 PAGE_SIZE = 20
 
-async def show_group_page(message: Message, user_id: int, edit: bool = False):
+async def show_group_page(message: Message, user_id: int):
     flow = get_user_flow(user_id)
     if not flow:
         return
 
     data = flow["data"]
     groups = list(data["groups"].values())
-    selected = set(data.get("selected_ids", []))
     offset = data.get("offset", 0)
     mode = data.get("mode")
 
@@ -395,7 +394,8 @@ async def show_group_page(message: Message, user_id: int, edit: bool = False):
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[])
 
-    # 1️⃣ Guruhlar
+    selected = data.get("selected_ids", [])
+    
     for g in page:
         checked = "✅ " if g["id"] in selected else ""
         keyboard.inline_keyboard.append([
@@ -407,27 +407,39 @@ async def show_group_page(message: Message, user_id: int, edit: bool = False):
 
     # 2️⃣ Navigatsiya
     nav = []
+
     if offset > 0:
-        nav.append(InlineKeyboardButton("⬅️ Oldingi", callback_data="grp_prev"))
+        nav.append(
+            InlineKeyboardButton(
+                text="⬅️ Oldingi",
+                callback_data="grp_prev"
+            )
+        )
+
     if offset + PAGE_SIZE < len(groups):
-        nav.append(InlineKeyboardButton("➡️ Keyingi", callback_data="grp_next"))
+        nav.append(
+            InlineKeyboardButton(
+                text="➡️ Keyingi",
+                callback_data="grp_next"
+            )
+        )
+
     if nav:
         keyboard.inline_keyboard.append(nav)
 
-    # 3️⃣ Tayyor
+    # 3️⃣ Tayyor (faqat multi)
     if mode == "multi":
         keyboard.inline_keyboard.append([
-            InlineKeyboardButton("✅ Tayyor", callback_data="grp_done")
+            InlineKeyboardButton(
+                text="✅ Tayyor",
+                callback_data="grp_done"
+            )
         ])
 
-    if edit:
-        await message.edit_reply_markup(reply_markup=keyboard)
-    else:
-        await message.answer(
-            "👉 Guruhlarni tanlang:",
-            reply_markup=keyboard
-        )
-
+    await message.answer(
+        "👉 Guruhni tanlang:",
+        reply_markup=keyboard
+    )
 
 @dp.callback_query(F.data == "grp_done")
 async def finish_group_selection(cb: CallbackQuery):
@@ -543,6 +555,8 @@ async def pick_group(cb: CallbackQuery):
     save_user_flow(user_id, "choose_group", data)
 
     await show_group_page(cb.message, user_id, edit=True)
+
+
 
 
 # =====================
@@ -1412,4 +1426,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
