@@ -43,6 +43,11 @@ from database import get_user_groups
 from database import save_user_groups
 from telethon.tl.types import Chat, Channel
 from database import save_temp_groups
+from risk import (
+    get_account_risk,
+    increase_risk,
+    decay_account_risk
+)
 
 # =====================
 # STATE (XABAR YUBORISH)
@@ -591,18 +596,45 @@ async def handle_numbers(message: Message):
 
     # 🔒 FAQAT CREATE FLOW
     if step == "enter_interval":
-        interval = value
-    
-        if interval < 5 or interval > 30:
-            await message.answer("❌ Interval 5–30 daqiqa oralig‘ida bo‘lishi kerak")
-            return
-    
-        limits = calculate_duration_limits(interval)
-    
-        data["interval"] = interval
-        data["limits"] = limits
-    
-        save_user_flow(user_id, "enter_duration", data)
+        if step == "enter_interval":
+    interval = value
+
+    risk = get_account_risk(user_id)
+
+    # RISKGA QARAB INTERVAL
+    if risk < 20:
+        min_i, max_i = 5, 10
+    elif risk < 40:
+        min_i, max_i = 8, 15
+    elif risk < 60:
+        min_i, max_i = 12, 20
+    else:
+        min_i, max_i = 20, 30
+
+    if interval < min_i or interval > max_i:
+        await message.answer(
+            f"❌ Sizning akkaunt xavfiga mos interval:\n"
+            f"{min_i} – {max_i} daqiqa"
+        )
+        return
+
+    data["interval"] = interval
+
+    save_user_flow(user_id, "enter_duration", data)
+
+    await message.answer(
+        f"⏳ Endi davomiylikni kiriting.\n"
+        f"Tavsiya: {interval * 10} – {interval * 15} daqiqa"
+    )
+
+    data["interval"] = interval
+
+    save_user_flow(user_id, "enter_duration", data)
+
+    await message.answer(
+        f"⏳ Endi davomiylikni kiriting.\n"
+        f"Tavsiya: {interval * 10} – {interval * 15} daqiqa"
+    )
     
         await message.answer(
             "⏳ Kampaniya davomiyligini kiriting (daqiqada):\n\n"
@@ -615,27 +647,32 @@ async def handle_numbers(message: Message):
 
     if step == "enter_duration":
         duration = value
-        limits = data.get("limits")
     
-        if not limits:
-            await message.answer("❌ Xatolik: limitlar topilmadi")
-            return
+        interval = data["interval"]
+        risk = get_account_risk(user_id)
     
-        if duration < limits["min"]:
+        base = interval * 10
+    
+        if risk < 30:
+            min_d, safe_d, max_d = base, int(base * 1.5), base * 3
+        elif risk < 60:
+            min_d, safe_d, max_d = base, int(base * 1.2), base * 2
+        else:
+            min_d, safe_d, max_d = base, base, int(base * 1.3)
+    
+        if duration < min_d or duration > max_d:
             await message.answer(
-                f"❌ Juda qisqa davomiylik.\n"
-                f"Minimal tavsiya: {limits['min']} daqiqa"
+                f"❌ Ruxsat etilgan davomiylik:\n"
+                f"{min_d} – {max_d} daqiqa"
             )
             return
     
-        if duration > limits["max"]:
-            await message.answer(
-                f"❌ Juda katta davomiylik.\n"
-                f"Maksimal ruxsat: {limits['max']} daqiqa"
-            )
-            return
+        if duration > safe_d:
+            increase_risk(user_id, 10)
     
         data["duration"] = duration
+
+    # pastdagi koding (kampaniya yaratish) SHU YERDAN davom etadi
 
 
             # 🔒 AVVAL TEKSHIRAMIZ
@@ -797,19 +834,38 @@ async def run_campaign(campaign_id: int):
         return
 
     client = await get_client(campaign["user_id"])
-    await run_campaign_safe(client, campaign)
 
+    try:
+        await run_campaign_safe(client, campaign)
+    finally:
+        await client.disconnect()
 
-    while time.time() < end_time and campaign["status"] == "active":
+async def run_campaign_safe(client, campaign):
+    user_id = campaign["user_id"]
 
+    start_time = time.time()
+    end_time = start_time + campaign["duration"] * 60
+
+    sent_count = 0
+
+    while time.time() < end_time:
+
+        # 🔴 STATUS TEKSHIRISH
+        campaign = get_campaign(campaign["id"])
+        if campaign["status"] != "active":
+            return
+
+        # =====================
+        # 🔥 RISK LOGIKA
+        # =====================
         risk = decay_account_risk(user_id)
 
         if risk >= 80:
             update_campaign_status(campaign["id"], "blocked")
             await notify_user(
                 campaign["chat_id"],
-                "⛔ Kampaniya to‘xtatildi.\n"
-                "Sabab: Telegram akkaunt xavfi juda yuqori."
+                "⛔ Kampaniya to‘xtatildi\n"
+                "Sabab: akkaunt xavfi juda yuqori"
             )
             return
 
@@ -817,48 +873,89 @@ async def run_campaign(campaign_id: int):
             update_campaign_status(campaign["id"], "paused")
             await notify_user(
                 campaign["chat_id"],
-                "⏸ Kampaniya vaqtincha pauzada.\n"
-                "Sabab: Telegram cheklovlari xavfi."
+                "⏸ Kampaniya pauzaga qo‘yildi\n"
+                "Sabab: akkaunt xavfi oshdi"
             )
             return
 
-        # 18% SKIP
+        # =====================
+        # 🎲 RANDOM SKIP (18%)
+        # =====================
         if random.random() < 0.18:
             await asyncio.sleep(random.randint(120, 600))
             continue
 
-        await asyncio.sleep(random_interval(campaign["interval"] * 60))
+        # =====================
+        # ⏱ RANDOM INTERVAL
+        # =====================
+        delay = random.randint(
+            int(campaign["interval"] * 60 * 0.7),
+            int(campaign["interval"] * 60 * 1.8)
+        )
+        await asyncio.sleep(delay)
 
         try:
+            # 📍 NAVBATDAGI GURUH
             group_id = get_next_group(campaign)
 
+            # ✍️ TYPING
             async with client.action(group_id, "typing"):
                 await asyncio.sleep(random.uniform(1.5, 4.0))
 
+            # 📤 YUBORISH
             ok = await send_to_group(client, campaign, group_id)
+
             if ok:
                 sent_count += 1
+                reset_campaign_error(campaign["id"])
 
-            if sent_count % random.randint(3, 5) == 0:
+            # ⏸ HAR 3–5 TA XABARDAN KEYIN DAM
+            if sent_count > 0 and sent_count % random.randint(3, 5) == 0:
                 await asyncio.sleep(random.randint(600, 2400))
 
-        except FloodWaitError:
-            risk = decay_account_risk(user_id)
+        # =====================
+        # 🚨 FLOODWAIT
+        # =====================
+        except FloodWaitError as e:
             risk += 40
             save_account_risk(user_id, risk)
 
             update_campaign_status(campaign["id"], "paused")
             await notify_user(
                 campaign["chat_id"],
-                "⏸ Telegram cheklovi sabab kampaniya to‘xtatildi."
+                "⏸ Kampaniya pauzaga qo‘yildi\n"
+                f"Sabab: FloodWait ({e.seconds} soniya)"
             )
             return
 
+        # =====================
+        # ❌ BOSHQA XATOLAR
+        # =====================
         except Exception:
-            risk = decay_account_risk(user_id)
             risk += 5
             save_account_risk(user_id, risk)
+
+            increment_campaign_error(campaign["id"])
+
+            if campaign["error_count"] + 1 >= 3:
+                update_campaign_status(campaign["id"], "paused")
+                await notify_user(
+                    campaign["chat_id"],
+                    "⏸ Kampaniya pauzaga qo‘yildi\n"
+                    "Sabab: ketma-ket xatolar"
+                )
+                return
+
             await asyncio.sleep(120)
+
+    # =====================
+    # ✅ MUDDAT TUGADI
+    # =====================
+    update_campaign_status(campaign["id"], "finished")
+    await notify_user(
+        campaign["chat_id"],
+        "✅ Kampaniya yakunlandi"
+    )
 
 
 
