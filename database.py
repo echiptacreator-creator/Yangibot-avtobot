@@ -185,8 +185,6 @@ def init_db():
     ALTER TABLE user_groups
     ADD COLUMN IF NOT EXISTS title TEXT,
     ADD COLUMN IF NOT EXISTS username TEXT;
-    ALTER TABLE user_groups DROP COLUMN IF EXISTS group_id;
-    ALTER TABLE user_groups ADD COLUMN peer_id BIGINT;
     """)
     cur.execute("""
     CREATE TABLE IF NOT EXISTS telegram_groups_temp (
@@ -215,6 +213,11 @@ def init_db():
         risk_score INTEGER DEFAULT 0,
         last_reset TIMESTAMP DEFAULT NOW()
     )
+    """)
+
+    cur.execute("""
+        ALTER TABLE user_groups
+        ADD COLUMN IF NOT EXISTS peer_id BIGINT;
     """)
     
     conn.commit()
