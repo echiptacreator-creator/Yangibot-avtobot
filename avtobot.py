@@ -514,8 +514,6 @@ class EditCampaign(StatesGroup):
     & ~F.state(EditCampaign.waiting_value)
 )
 async def handle_enter_text(message: Message):
-    if await state.get_state() is not None:
-        return
 
     user_id = message.from_user.id
     flow = get_user_flow(user_id)
@@ -540,9 +538,6 @@ async def handle_enter_text(message: Message):
 
 @dp.message(F.photo | F.video)
 async def handle_media(message: Message):
-    
-    if await state.get_state() is not None:
-        return
     user_id = message.from_user.id
     flow = get_user_flow(user_id)
 
@@ -574,8 +569,6 @@ async def handle_media(message: Message):
     
 @dp.message(F.text.regexp(r"^\d+$") & ~F.state(EditCampaign.waiting_value))
 async def handle_numbers(message: Message):
-    if await state.get_state() is not None:
-        return
     user_id = message.from_user.id
     flow = get_user_flow(user_id)
 
@@ -935,10 +928,12 @@ async def edit_value_handler(message: Message, state: FSMContext):
             return
         update_campaign_field(campaign_id, "duration", int(value))
 
+    # 🔥 FSM NI TOZALAYMIZ
     await state.clear()
 
     await message.answer("✅ Yangilandi")
     await render_campaign(campaign_id)
+
 
 @dp.callback_query(F.data.startswith("edit_text:"))
 async def edit_text(cb: CallbackQuery, state: FSMContext):
@@ -956,11 +951,13 @@ async def edit_text(cb: CallbackQuery, state: FSMContext):
     await cb.answer()
 
 
+
 @dp.callback_query(F.data.startswith("edit_interval:"))
 async def edit_interval(cb: CallbackQuery, state: FSMContext):
     campaign_id = int(cb.data.split(":")[1])
 
-    await update_campaign_status(campaign_id, "paused")
+    update_campaign_status(campaign_id, "paused")
+
 
     await state.set_state(EditCampaign.waiting_value)
     await state.update_data(
@@ -976,7 +973,7 @@ async def edit_interval(cb: CallbackQuery, state: FSMContext):
 async def edit_duration(cb: CallbackQuery, state: FSMContext):
     campaign_id = int(cb.data.split(":")[1])
 
-    await update_campaign_status(campaign_id, "paused")
+    update_campaign_status(campaign_id, "paused")
 
     await state.set_state(EditCampaign.waiting_value)
     await state.update_data(
