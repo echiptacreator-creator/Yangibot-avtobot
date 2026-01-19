@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="uz">
 <head>
+<meta name="color-scheme" content="light dark">
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Premium tariflar</title>
@@ -12,7 +13,7 @@
   --bg: var(--tg-theme-bg-color, #f5f7fb);
   --card: var(--tg-theme-secondary-bg-color, #ffffff);
   --text: var(--tg-theme-text-color, #0f172a);
-  --hint: var(--tg-theme-hint-color, #6b7280);
+  --muted: var(--tg-theme-hint-color, #6b7280);
   --primary: var(--tg-theme-button-color, #4f46e5);
   --primary-text: var(--tg-theme-button-text-color, #ffffff);
   --radius: 18px;
@@ -26,7 +27,10 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
     Roboto, Helvetica, Arial, sans-serif;
   color: var(--text);
+
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
+
 
 .container {
   max-width: 420px;
@@ -34,72 +38,92 @@ body {
   padding: 18px;
 }
 
-/* COMMON */
 .hidden { display: none; }
 
+/* ---------- COMMON ---------- */
 .card {
   background: var(--card);
   border-radius: var(--radius);
-  padding: 18px;
-  box-shadow: 0 12px 32px rgba(0,0,0,0.08);
-  margin-top: 14px;
+  padding: 20px;
+  box-shadow: 0 14px 40px rgba(0,0,0,0.08);
+  margin-top: 16px;
 }
 
-/* HERO */
-.hero {
-  text-align: center;
-  padding: 22px 10px 8px;
-}
-
-.hero h1 {
+h1 {
   font-size: 24px;
-  font-weight: 700;
+  margin: 12px 0 6px;
+}
+
+p {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* ---------- ICON ---------- */
+.icon-circle {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: rgba(79,70,229,0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+  color: var(--primary);
+}
+
+/* ---------- BADGE ---------- */
+.badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
   margin-bottom: 6px;
 }
 
-.hero p {
-  font-size: 14px;
-  color: var(--hint);
-  line-height: 1.45;
+.badge-primary {
+  background: rgba(79,70,229,0.12);
+  color: var(--primary);
 }
 
-/* TARIFF */
+/* ---------- TARIFF ---------- */
 .tariff {
   border: 2px solid transparent;
   border-radius: 16px;
-  padding: 14px;
-  margin-bottom: 12px;
+  padding: 16px;
+  margin-bottom: 14px;
   cursor: pointer;
-  transition: .15s ease;
+  transition: 0.15s ease;
 }
 
 .tariff.active {
   border-color: var(--primary);
-  box-shadow: 0 8px 24px rgba(79,70,229,0.25);
-}
-
-.badge {
-  display: inline-block;
-  font-size: 11px;
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: rgba(79,70,229,0.1);
-  color: var(--primary);
-  margin-bottom: 6px;
+  box-shadow: 0 10px 28px rgba(79,70,229,0.25);
 }
 
 .tariff h3 {
-  margin: 4px 0;
   font-size: 17px;
+  margin: 4px 0;
+}
+
+.price {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 4px;
 }
 
 .tariff p {
-  margin: 0;
   font-size: 13px;
-  color: var(--hint);
 }
 
-/* CTA */
+/* ---------- CTA ---------- */
 .cta button {
   width: 100%;
   height: 52px;
@@ -112,7 +136,16 @@ body {
   cursor: pointer;
 }
 
-/* PAYMENT */
+/* ---------- PAYMENT ---------- */
+.back-btn {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-weight: 600;
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+
 .pay-info {
   font-size: 14px;
   margin-bottom: 14px;
@@ -126,14 +159,14 @@ body {
   border-radius: 14px;
   background: rgba(79,70,229,0.08);
   text-align: center;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .copy-btn {
   width: 100%;
   height: 46px;
   border-radius: 14px;
-  border: 1px solid var(--primary);
+  border: 1.5px solid var(--primary);
   background: transparent;
   color: var(--primary);
   font-weight: 600;
@@ -143,7 +176,7 @@ body {
 
 .hint {
   font-size: 13px;
-  color: var(--hint);
+  color: var(--muted);
   text-align: center;
   margin-top: 10px;
 }
@@ -154,83 +187,107 @@ body {
 
 <div class="container">
 
-  <!-- ================== PAGE 1: TARIFFS ================== -->
-  <div id="page-tariffs">
+<!-- ================= PAGE 1: TARIFFS ================= -->
+<div id="page-tariffs">
 
-    <div class="hero">
-      <h1>💳 Premium tariflar</h1>
-      <p>
-        🚕 Taksistlar uchun avtomatik e’lon joylash <br>
-        Ko‘proq buyurtma • Kamroq vaqt • Stresssiz
-      </p>
+  <div class="icon-circle">
+    <!-- CREDIT CARD SVG -->
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="1.8"
+      stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="4" width="20" height="16" rx="3"/>
+      <line x1="2" y1="10" x2="22" y2="10"/>
+    </svg>
+  </div>
+
+  <h1 align="center">Premium tariflar</h1>
+  <p align="center">
+    Avtomatik e’lon joylash xizmati orqali<br>
+    ko‘proq buyurtma va kamroq vaqt sarfi
+  </p>
+
+  <div class="card">
+
+    <div class="tariff" onclick="selectTariff(1, 35000)">
+      <h3>1 oy</h3>
+      <div class="price">35 000 so‘m</div>
+      <p>Sinab ko‘rish uchun</p>
     </div>
 
-    <div class="card">
+    <div class="tariff" onclick="selectTariff(3, 90000)">
+      <h3>3 oy</h3>
+      <div class="price">90 000 so‘m</div>
+      <p>1 oy = 30 000 so‘m</p>
+    </div>
 
-      <div class="tariff" onclick="selectTariff(1, 35000)">
-        <h3>🥉 1 oy — 35 000 so‘m</h3>
-        <p>Sinab ko‘rish uchun</p>
-      </div>
+    <div class="tariff active" onclick="selectTariff(6, 170000)">
+      <span class="badge badge-primary">Eng mashhur</span>
+      <h3>6 oy</h3>
+      <div class="price">170 000 so‘m</div>
+      <p>1 oy ≈ 28 300 so‘m</p>
+    </div>
 
-      <div class="tariff" onclick="selectTariff(3, 90000)">
-        <h3>🥈 3 oy — 90 000 so‘m</h3>
-        <p>💸 1 oy = 30 000 so‘m • 5 000 so‘m tejaysiz</p>
-      </div>
+    <div class="tariff" onclick="selectTariff(12, 360000)">
+      <h3>12 oy</h3>
+      <div class="price">360 000 so‘m</div>
+      <p>Eng tejamkor variant</p>
+    </div>
 
-      <div class="tariff active" onclick="selectTariff(6, 170000)">
-        <span class="badge">🔥 ENG MASHHUR</span>
-        <h3>🥇 6 oy — 170 000 so‘m</h3>
-        <p>💸 1 oy = ~28 300 so‘m • 40 000 so‘m foyda</p>
-      </div>
+    <div class="cta">
+      <button onclick="goToPayment()">To‘lovga o‘tish</button>
+    </div>
 
-      <div class="tariff" onclick="selectTariff(12, 360000)">
-        <span class="badge">👑 MAX FOYDA</span>
-        <h3>12 oy — 360 000 so‘m</h3>
-        <p>🚀 30% gacha arzon</p>
-      </div>
+  </div>
 
-      <div class="cta">
-        <button onclick="goToPayment()">➡️ To‘lovga o‘tish</button>
-      </div>
+  <div class="hint">
+    Xavfsiz • Qo‘lda tekshiriladi • Telegram qoidalariga mos
+  </div>
 
+</div>
+
+<!-- ================= PAGE 2: PAYMENT ================= -->
+<div id="page-payment" class="hidden">
+
+  <button class="back-btn" onclick="goBackToTariffs()">
+    ← Tariflarni o‘zgartirish
+  </button>
+
+  <div class="icon-circle">
+    <!-- WALLET SVG -->
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="1.8"
+      stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+      <path d="M16 3h5v5"/>
+      <path d="M16 8l5-5"/>
+    </svg>
+  </div>
+
+  <h1 align="center">To‘lovni yakunlash</h1>
+  <p align="center" id="payText"></p>
+
+  <div class="card">
+
+    <div class="card-number">
+      8600 **** **** ****
+    </div>
+
+    <button class="copy-btn" onclick="copyCard()">
+      Karta raqamini nusxalash
+    </button>
+
+    <div class="cta">
+      <button onclick="sendReceipt()">Chekni yuborish</button>
     </div>
 
     <div class="hint">
-      ✔️ Telegram qoidalariga mos • ✔️ Qo‘lda tekshiriladi
+      Chekni <b>@Haydovchiadminbot</b> botiga yuboring.<br>
+      Admin tasdiqlagach Premium faollashadi.
     </div>
 
   </div>
 
-  <!-- ================== PAGE 2: PAYMENT ================== -->
-  <div id="page-payment" class="hidden">
-
-    <div class="hero">
-      <h1>💳 To‘lovni yakunlash</h1>
-      <p id="payText"></p>
-    </div>
-
-    <div class="card">
-
-      <div class="card-number" id="cardNumber">
-        8600 **** **** ****
-      </div>
-
-      <button class="copy-btn" onclick="copyCard()">
-        📋 Karta raqamini nusxalash
-      </button>
-
-      <div class="cta">
-        <button onclick="sendReceipt()">📤 Chekni yuborish</button>
-      </div>
-
-      <div class="hint">
-        Chekni <b>@Haydovchiadminbot</b> botiga yuboring.<br>
-        Admin 5–10 daqiqada tasdiqlaydi.
-      </div>
-
-    </div>
-
-  </div>
+</div>
 
 </div>
 
@@ -251,17 +308,45 @@ function goToPayment() {
   document.getElementById("page-payment").classList.remove("hidden");
 
   document.getElementById("payText").innerText =
-    `📦 Tarif: ${selected.months} oy • 💰 ${selected.price.toLocaleString()} so‘m`;
+    `Tarif: ${selected.months} oy • ${selected.price.toLocaleString()} so‘m`;
+}
+
+function goBackToTariffs() {
+  document.getElementById("page-payment").classList.add("hidden");
+  document.getElementById("page-tariffs").classList.remove("hidden");
 }
 
 function copyCard() {
-  navigator.clipboard.writeText("9860 2601 0768 0035");
-  tg.showPopup({ message: "✅ Karta raqami nusxalandi" });
+  navigator.clipboard.writeText("8600XXXXXXXXXXXX");
+  tg.showPopup({ message: "Karta raqami nusxalandi" });
 }
 
 function sendReceipt() {
   tg.openTelegramLink("https://t.me/Haydovchiadminbot");
 }
+  
+/* 🔥 Telegram theme o‘zgarsa — avtomatik moslash */
+tg.onEvent("themeChanged", () => {
+  // Telegram theme ranglarini qayta o‘qiymiz
+  document.documentElement.style.setProperty(
+    "--bg",
+    "var(--tg-theme-bg-color)"
+  );
+  document.documentElement.style.setProperty(
+    "--card",
+    "var(--tg-theme-secondary-bg-color)"
+  );
+  document.documentElement.style.setProperty(
+    "--text",
+    "var(--tg-theme-text-color)"
+  );
+  document.documentElement.style.setProperty(
+    "--muted",
+    "var(--tg-theme-hint-color)"
+  );
+});
+
+  
 </script>
 
 </body>
