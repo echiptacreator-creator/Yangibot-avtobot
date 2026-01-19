@@ -510,7 +510,9 @@ class EditCampaign(StatesGroup):
 from database import get_user_flow, save_user_flow
 
 @dp.message(F.text & ~F.text.regexp(r"^\d+$") & ~F.text.startswith("/"))
-async def handle_enter_text(message: Message):
+async def handle_enter_text(message: Message):\
+    if await state.get_state() is not None:
+        return
     user_id = message.from_user.id
     flow = get_user_flow(user_id)
 
@@ -534,6 +536,9 @@ async def handle_enter_text(message: Message):
 
 @dp.message(F.photo | F.video)
 async def handle_media(message: Message):
+    
+    if await state.get_state() is not None:
+        return
     user_id = message.from_user.id
     flow = get_user_flow(user_id)
 
@@ -564,6 +569,8 @@ async def handle_media(message: Message):
     )
 @dp.message(F.text.regexp(r"^\d+$"))
 async def handle_numbers(message: Message):
+    if await state.get_state() is not None:
+        return
     user_id = message.from_user.id
     flow = get_user_flow(user_id)
 
@@ -941,8 +948,6 @@ async def edit_value_handler(message: Message, state: FSMContext):
 
     await message.answer("✅ Yangilandi")
     await render_campaign(campaign_id)
-
-
 
 
 @dp.callback_query(F.data.startswith("edit_interval:"))
