@@ -1006,6 +1006,29 @@ async def edit_interval(cb: CallbackQuery, state: FSMContext):
 
     await cb.message.edit_text("⏱ Yangi intervalni daqiqada kiriting:")
     await cb.answer()
+    
+
+@dp.callback_query(F.data.startswith("edit_duration:"))
+async def edit_duration(cb: CallbackQuery, state: FSMContext):
+    campaign_id = int(cb.data.split(":")[1])
+
+    c = get_campaign(campaign_id)
+    resume_after = c["status"] == "active"
+
+    # 🔒 Agar kampaniya active bo‘lsa — pauzaga qo‘yamiz
+    if resume_after:
+        update_campaign_status(campaign_id, "paused")
+
+    # FSM ga o‘tamiz
+    await state.set_state(EditCampaign.waiting_value)
+    await state.update_data(
+        campaign_id=campaign_id,
+        field="duration",
+        resume_after=resume_after
+    )
+
+    await cb.message.edit_text("⏳ Yangi davomiylikni daqiqada kiriting:")
+    await cb.answer()
 
 
 @dp.message(EditCampaign.waiting_value)
