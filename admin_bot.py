@@ -10,9 +10,8 @@ from aiogram.filters import Command
 from database import (
     get_last_pending_payment,
     approve_payment,
-    reject_payment,
+    reject_payment
 )
-
 
 # =====================
 # CONFIG
