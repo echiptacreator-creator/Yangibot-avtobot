@@ -483,7 +483,7 @@ async def load_groups_handler(message: Message):
         raw_id = dialog.entity.id
 
         if raw_id > 0:
-            group_id = -1000000000000 + raw_id
+            group_id = -1000000000000 + -raw_id
         else:
             group_id = raw_id
         
