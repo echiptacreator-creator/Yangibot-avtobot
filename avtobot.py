@@ -489,7 +489,7 @@ async def choose_send_mode(message: Message):
             ]]
         )
     )
-        return
+    return
 
     # shu joyda flow saqlaysan
     save_user_flow(
