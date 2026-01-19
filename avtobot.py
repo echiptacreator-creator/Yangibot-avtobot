@@ -270,8 +270,9 @@ async def logout(message: Message):
 
 from database import save_user_flow, clear_user_flow
 
-@dp.message(F.text == "➕ Xabar yuborish", state=None)
-async def send_message_start(message: Message):
+@dp.message(F.text == "➕ Xabar yuborish")
+async def send_message_start(message, state):
+    await state.clear()
     user_id = message.from_user.id
 
     # eski flow bo‘lsa — tozalaymiz
@@ -1106,8 +1107,9 @@ async def render_campaign(campaign_id: int):
 # =====================
 # KOMPANIYALARIM
 # =====================
-@dp.message(F.text == "📋 Mening kampaniyalarim", state=None)
-async def my_campaigns(message: Message):
+@dp.message(F.text == "📋 Mening kampaniyalarim")
+async def my_campaigns(message, state):
+    await state.clear()
     user_id = message.from_user.id
     campaigns = get_user_campaigns(user_id)
 
