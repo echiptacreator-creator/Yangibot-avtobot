@@ -38,7 +38,7 @@ from database import update_campaign_text
 from database import get_user_campaigns
 from access_control import can_user_run_campaign
 from database import get_premium_status
-
+from database import get_user_groups
 
 
 # =====================
