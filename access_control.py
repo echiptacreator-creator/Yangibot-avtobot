@@ -67,3 +67,20 @@ def can_user_run_campaign(user_id: int) -> tuple[bool, str]:
         return False, "❌ Bugungi xabar limiti tugadi."
 
     return True, ""
+
+from datetime import datetime, timedelta
+
+def activate_premium(user_id: int, months: int):
+    now = datetime.utcnow()
+    premium_until = now + timedelta(days=30 * months)
+
+    query = """
+    UPDATE users
+    SET
+        is_premium = TRUE,
+        premium_until = %s,
+        daily_limit = 1000000
+    WHERE user_id = %s
+    """
+    execute(query, (premium_until, user_id))
+
