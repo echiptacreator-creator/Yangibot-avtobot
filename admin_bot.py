@@ -77,100 +77,66 @@ async def start(message: Message):
 # =====================
 # USER CHEK YUBORSA
 # =====================
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from database import get_last_pending_payment
+
 @dp.message(F.photo)
-async def receive_receipt(message: Message):
-    if message.from_user.id == ADMIN_ID:
+async def receive_receipt(message):
+    user_id = message.from_user.id
+
+    # 1️⃣ User tanlagan oxirgi pending tarifni olamiz
+    payment = get_last_pending_payment(user_id)
+
+    if not payment:
+        await message.answer(
+            "❌ Siz uchun kutilayotgan to‘lov topilmadi.\n\n"
+            "Iltimos, avval tarif tanlab, keyin chek yuboring."
+        )
         return
 
-    user_id = message.from_user.id
-    payment = get_last_pending_payment(user_id)
-    
-    if not payment:
-        await message.answer("❌ Bu foydalanuvchi uchun kutilayotgan to‘lov topilmadi.")
-        return
-    
     payment_id, user_id, months, amount = payment
 
+    # 2️⃣ Admin ko‘radigan xabar
+    caption = (
+        "🧾 *Yangi to‘lov cheki*\n\n"
+        f"👤 User ID: `{user_id}`\n"
+        f"📦 Tarif: *{months} oy*\n"
+        f"💰 Summa: *{amount:,} so‘m*\n\n"
+        "Tasdiqlaysizmi?"
+    )
 
-    if not is_logged_in_user(user_id):
-        await message.answer("❌ Avval login qiling.")
-        return
-
+    # 3️⃣ Tasdiqlash / Rad etish tugmalari
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(
                 text="✅ Tasdiqlash",
-                callback_data=f"approve:{user_id}"
+                callback_data=f"pay_ok:{payment_id}"
             ),
             InlineKeyboardButton(
                 text="❌ Rad etish",
-                callback_data=f"reject:{user_id}"
+                callback_data=f"pay_no:{payment_id}"
             )
         ]
     ])
 
+    # 4️⃣ Admin botga yuboramiz
     await bot.send_photo(
-        ADMIN_ID,
-        message.photo[-1].file_id,
-        caption=(
-            "🧾 Yangi to‘lov cheki\n\n"
-            f"👤 User ID: {user_id}\n"
-            f"👤 Ism: {message.from_user.first_name}"
-        ),
-        reply_markup=kb
+        chat_id=ADMIN_ID,
+        photo=message.photo[-1].file_id,
+        caption=caption,
+        reply_markup=kb,
+        parse_mode="Markdown"
     )
 
+    # 5️⃣ Userga xabar
     await message.answer(
-        "✅ Chek qabul qilindi.\nAdmin tekshiradi."
+        "✅ Chek qabul qilindi.\n"
+        "⏳ Admin tekshirgach Premium faollashadi."
     )
-
 
 # =====================
 # APPROVE
 # =====================
-from database import approve_payment, reject_payment
-
-def approve_payment(payment_id: int):
-    from datetime import timedelta
-
-    conn = get_db()
-    cur = conn.cursor()
-
-    cur.execute("""
-        SELECT user_id, months
-        FROM payments
-        WHERE id = %s AND status = 'pending'
-    """, (payment_id,))
-    row = cur.fetchone()
-
-    if not row:
-        conn.close()
-        return False
-
-    user_id, months = row
-
-    # payment tasdiqlanadi
-    cur.execute("""
-        UPDATE payments
-        SET status = 'approved', approved_at = NOW()
-        WHERE id = %s
-    """, (payment_id,))
-
-    # subscription faollashadi
-    cur.execute("""
-        INSERT INTO subscriptions (user_id, paid_until, status)
-        VALUES (%s, CURRENT_DATE + INTERVAL '%s days', 'active')
-        ON CONFLICT (user_id)
-        DO UPDATE SET
-            paid_until = COALESCE(subscriptions.paid_until, CURRENT_DATE)
-                         + INTERVAL '%s days',
-            status = 'active'
-    """, (user_id, months * 30, months * 30))
-
-    conn.commit()
-    conn.close()
-    return True
-
 
 @dp.callback_query(F.data.startswith("pay_ok:"))
 async def admin_approve(cb: CallbackQuery):
@@ -588,6 +554,24 @@ async def unblock_user(cb):
 # =====================
 # RUN
 # =====================
+
+@dp.callback_query(F.data.startswith("pay_ok:"))
+async def approve_payment(cb):
+    payment_id = int(cb.data.split(":")[1])
+
+    payment = get_payment(payment_id)
+    user_id = payment["user_id"]
+    months = payment["months"]
+
+    activate_premium(user_id, months)
+
+    await bot.send_message(
+        user_id,
+        f"🎉 Premium faollashtirildi!\n📦 Tarif: {months} oy"
+    )
+
+    await cb.answer("Tasdiqlandi ✅")
+
 
 # =====================
 # RUN
