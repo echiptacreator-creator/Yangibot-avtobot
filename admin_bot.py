@@ -93,63 +93,6 @@ async def receive_receipt(message: Message):
         "⏳ Admin tekshirganidan so‘ng Premium faollashadi."
     )
 
-# =========================
-# ADMIN TASDIQLASH
-# =========================
-@dp.callback_query(F.data.startswith("pay_ok:"))
-async def approve_payment(cb):
-    if cb.from_user.id != ADMIN_ID:
-        await cb.answer("Ruxsat yo‘q", show_alert=True)
-        return
-
-    payment_id = int(cb.data.split(":")[1])
-
-    payment = get_payment_by_id(payment_id)
-    user_id = payment["user_id"]
-    months = payment["months"]
-
-    approve_payment(payment_id)
-
-    await bot.send_message(
-        user_id,
-        "🎉 *Premium obuna faollashtirildi!*\n\n"
-        f"📦 Tarif: *{months} oy*\n"
-        "🚀 Endi cheklovsiz foydalanishingiz mumkin."
-    )
-
-    await cb.message.edit_caption(
-        cb.message.caption + "\n\n✅ *Tasdiqlandi*",
-        parse_mode="Markdown"
-    )
-
-    await cb.answer("Tasdiqlandi ✅")
-
-# =========================
-# ADMIN RAD ETISH
-# =========================
-@dp.callback_query(F.data.startswith("pay_no:"))
-async def reject_payment(cb: CallbackQuery):
-    if cb.from_user.id != ADMIN_ID:
-        await cb.answer("Ruxsat yo‘q", show_alert=True)
-        return
-
-    payment_id = int(cb.data.split(":")[1])
-    payment = get_payment_by_id(payment_id)
-
-    approve_payment(payment_id)
-
-    await bot.send_message(
-        payment["user_id"],
-        "❌ To‘lov rad etildi.\n"
-        "Iltimos, chekni tekshirib qayta yuboring."
-    )
-
-    await cb.message.edit_caption(
-        cb.message.caption + "\n\n❌ *Rad etildi*",
-        parse_mode="Markdown"
-    )
-
-    await cb.answer("Rad etildi")
 
 @dp.callback_query_handler(lambda c: c.data.startswith("pay_ok:"))
 async def approve_payment(callback_query):
