@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="uz">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Premium obuna</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini App</title>
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
@@ -32,85 +32,51 @@
 
     h1 {
       font-size: 22px;
-      font-weight: 700;
       margin-bottom: 6px;
     }
 
     .subtitle {
       font-size: 14px;
       opacity: 0.7;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
+    }
+
+    .hidden {
+      display: none;
     }
 
     /* ===== PRICING ===== */
 
-    .pricing-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
     .plan {
-      position: relative;
       background: var(--secondary);
       border-radius: 16px;
       padding: 16px;
+      margin-bottom: 14px;
       border: 2px solid transparent;
       cursor: pointer;
-      transition: all 0.25s ease;
     }
 
     .plan.active {
       border-color: var(--accent);
-      box-shadow: 0 0 0 2px rgba(47, 128, 255, 0.15);
     }
 
-    .plan-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .plan-header h2 {
-      margin: 0;
-      font-size: 18px;
-    }
-
-    .plan-tag {
-      font-size: 12px;
-      opacity: 0.6;
+    .badge {
+      background: var(--accent);
+      color: #fff;
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 8px;
+      display: inline-block;
+      margin-bottom: 6px;
     }
 
     .price {
       font-size: 20px;
       font-weight: 700;
-      margin-top: 8px;
-    }
-
-    .per {
-      font-size: 13px;
-      opacity: 0.7;
-    }
-
-    .save {
-      font-size: 13px;
       margin-top: 6px;
-      color: var(--accent);
-    }
-
-    .badge {
-      position: absolute;
-      top: -10px;
-      right: 12px;
-      background: var(--accent);
-      color: #fff;
-      font-size: 11px;
-      padding: 4px 8px;
-      border-radius: 10px;
     }
 
     .cta {
-      margin-top: 22px;
       width: 100%;
       padding: 14px;
       font-size: 16px;
@@ -120,45 +86,31 @@
       background: var(--accent);
       color: #fff;
       cursor: pointer;
+      margin-top: 16px;
     }
 
     .note {
-      margin-top: 12px;
       font-size: 12px;
       opacity: 0.6;
+      margin-top: 10px;
       text-align: center;
     }
 
-    /* ===== PAYMENT PAGE ===== */
+    /* ===== GROUPS ===== */
 
-    #payment-page {
-      display: none;
-    }
-
-    .card-box {
+    .group {
       background: var(--secondary);
-      border-radius: 14px;
-      padding: 14px;
-      margin: 16px 0;
-      font-size: 16px;
-      font-weight: 600;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .copy-btn {
-      font-size: 13px;
-      color: var(--accent);
-      cursor: pointer;
+      padding: 12px;
+      border-radius: 12px;
+      margin-bottom: 10px;
     }
 
     .back {
-      margin-top: 16px;
-      font-size: 14px;
-      color: var(--accent);
       text-align: center;
+      color: var(--accent);
+      margin-top: 14px;
       cursor: pointer;
+      font-size: 14px;
     }
   </style>
 </head>
@@ -169,61 +121,51 @@
   <!-- ===== PRICING PAGE ===== -->
   <div id="pricing-page">
     <h1>Premium obuna</h1>
-    <div class="subtitle">
-      Avtomatik e’lon joylash orqali ko‘proq buyurtma va kamroq vaqt
+    <div class="subtitle">Avtomatik e’lon joylash xizmati</div>
+
+    <div class="plan" onclick="selectTariff(this,1,35000)">
+      <b>1 oy</b>
+      <div class="price">35 000 so‘m</div>
     </div>
 
-    <div class="pricing-grid">
-      <div class="plan" onclick="selectTariff(this, 1, 35000)">
-        <div class="plan-header">
-          <h2>1 oy</h2>
-          <span class="plan-tag">Sinab ko‘rish</span>
-        </div>
-        <div class="price">35 000 so‘m</div>
-        <div class="per">1 oy = 35 000 so‘m</div>
-      </div>
+    <div class="plan active" onclick="selectTariff(this,6,170000)">
+      <span class="badge">Eng mashhur</span>
+      <b>6 oy</b>
+      <div class="price">170 000 so‘m</div>
+    </div>
 
-      <div class="plan active" onclick="selectTariff(this, 6, 170000)">
-        <div class="badge">Eng mashhur</div>
-        <div class="plan-header">
-          <h2>6 oy</h2>
-          <span class="plan-tag">Tavsiya qilinadi</span>
-        </div>
-        <div class="price">170 000 so‘m</div>
-        <div class="per">1 oy ≈ 28 300 so‘m</div>
-        <div class="save">≈ 40 000 so‘m tejaysiz</div>
-      </div>
-
-      <div class="plan" onclick="selectTariff(this, 12, 360000)">
-        <div class="plan-header">
-          <h2>12 oy</h2>
-          <span class="plan-tag">Eng tejamkor</span>
-        </div>
-        <div class="price">360 000 so‘m</div>
-        <div class="per">1 oy = 30 000 so‘m</div>
-        <div class="save">Maksimal foyda</div>
-      </div>
+    <div class="plan" onclick="selectTariff(this,12,360000)">
+      <b>12 oy</b>
+      <div class="price">360 000 so‘m</div>
     </div>
 
     <button class="cta" onclick="goToPayment()">To‘lovga o‘tish</button>
-    <div class="note">Xavfsiz • Qo‘lda tekshiriladi • Telegram qoidalariga mos</div>
+    <div class="note">Xavfsiz • Qo‘lda tekshiriladi</div>
   </div>
 
   <!-- ===== PAYMENT PAGE ===== -->
-  <div id="payment-page">
+  <div id="payment-page" class="hidden">
     <h1>To‘lov qilish</h1>
-    <div class="subtitle">
-      Quyidagi karta raqamiga to‘lov qiling va chekni adminga yuboring
+    <div class="subtitle">Karta raqamiga to‘lov qilib, chekni yuboring</div>
+
+    <div class="plan">
+      8600 1234 1234 1234
     </div>
 
-    <div class="card-box">
-      <span id="card-number">8600 12XX XXXX XXXX</span>
-      <span class="copy-btn" onclick="copyCard()">Nusxalash</span>
-    </div>
-
+    <button class="cta" onclick="copyCard()">Karta nusxalash</button>
     <button class="cta" onclick="sendReceipt()">Chekni yuborish</button>
 
     <div class="back" onclick="goBack()">← Tariflarga qaytish</div>
+  </div>
+
+  <!-- ===== GROUPS PAGE ===== -->
+  <div id="groups-page" class="hidden">
+    <h1>Guruhlar</h1>
+    <div class="subtitle">Akkauntingizdagi guruhlar</div>
+
+    <div id="groups-list">Yuklanmoqda...</div>
+
+    <div class="back" onclick="closeMiniApp()">Yopish</div>
   </div>
 
 </div>
@@ -232,36 +174,46 @@
   const tg = Telegram.WebApp;
   tg.ready();
 
-  let selected = {
-    months: 6,
-    price: 170000,
-    tariff: "6 oy"
-  };
+  const params = new URLSearchParams(window.location.search);
+  const mode = params.get("mode") || "pricing";
 
-  function selectTariff(el, months, price) {
-    document.querySelectorAll(".plan").forEach(p => p.classList.remove("active"));
+  const pricingPage = document.getElementById("pricing-page");
+  const paymentPage = document.getElementById("payment-page");
+  const groupsPage  = document.getElementById("groups-page");
+
+  let selected = { months: 6, price: 170000 };
+
+  function show(page) {
+    pricingPage.classList.add("hidden");
+    paymentPage.classList.add("hidden");
+    groupsPage.classList.add("hidden");
+    page.classList.remove("hidden");
+  }
+
+  if (mode === "groups") {
+    show(groupsPage);
+    loadGroups();
+  } else {
+    show(pricingPage);
+  }
+
+  function selectTariff(el, m, p) {
+    document.querySelectorAll(".plan").forEach(x => x.classList.remove("active"));
     el.classList.add("active");
-
-    selected = {
-      months,
-      price,
-      tariff: months + " oy"
-    };
+    selected = { months: m, price: p };
   }
 
   function goToPayment() {
-    document.getElementById("pricing-page").style.display = "none";
-    document.getElementById("payment-page").style.display = "block";
+    show(paymentPage);
   }
 
   function goBack() {
-    document.getElementById("payment-page").style.display = "none";
-    document.getElementById("pricing-page").style.display = "block";
+    show(pricingPage);
   }
 
   function copyCard() {
     navigator.clipboard.writeText("8600123412341234");
-    tg.showPopup({ message: "Karta raqami nusxalandi" });
+    tg.showPopup({ message: "Karta nusxalandi" });
   }
 
   async function sendReceipt() {
@@ -274,60 +226,35 @@
         user_id: user.id,
         months: selected.months,
         amount: selected.price,
-        tariff: selected.tariff
+        tariff: selected.months + " oy"
       })
     });
 
-    tg.openTelegramLink("https://t.me/Haydovchiadminbot");
+    tg.openTelegramLink("https://t.me/taxiadminrobot");
+  }
 
-    <script>
-Telegram.WebApp.ready();
+  async function loadGroups() {
+    const res = await fetch("/api/get-user-groups");
+    const data = await res.json();
 
-function openGroupsPage() {
-  document.getElementById("groups-page").style.display = "block";
-  loadGroups();
-}
+    const box = document.getElementById("groups-list");
+    box.innerHTML = "";
 
-async function loadGroups() {
-  const res = await fetch("/api/get-user-dialogs");
-  const groups = await res.json();
+    if (!data.length) {
+      box.innerHTML = "Guruhlar topilmadi";
+      return;
+    }
 
-  const list = document.getElementById("groups-list");
-  list.innerHTML = "";
+    data.forEach(g => {
+      const div = document.createElement("div");
+      div.className = "group";
+      div.textContent = g.title;
+      box.appendChild(div);
+    });
+  }
 
-  groups.forEach(g => {
-    const div = document.createElement("div");
-    div.innerHTML = `
-      <label>
-        <input type="checkbox" value="${g.id}">
-        ${g.title}
-      </label>
-    `;
-    list.appendChild(div);
-  });
-}
-
-function saveSelectedGroups() {
-  const checked = [...document.querySelectorAll("#groups-list input:checked")]
-    .map(i => ({
-      id: Number(i.value),
-      title: i.parentElement.textContent.trim()
-    }));
-
-  fetch("/api/save-groups", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      user_id: Telegram.WebApp.initDataUnsafe.user.id,
-      groups: checked
-    })
-  }).then(() => {
-    Telegram.WebApp.showPopup({ message: "✅ Guruhlar saqlandi" });
-    Telegram.WebApp.close();
-  });
-}
-</script>
-
+  function closeMiniApp() {
+    tg.close();
   }
 </script>
 
