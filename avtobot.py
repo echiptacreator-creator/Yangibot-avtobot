@@ -215,6 +215,28 @@ async def admin_notification_worker():
 # /START
 # =====================
 
+def interval_keyboard(min_i: int, max_i: int):
+    mid = (min_i + max_i) // 2
+
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=f"{min_i} daq",
+                    callback_data=f"pick_interval:{min_i}"
+                ),
+                InlineKeyboardButton(
+                    text=f"{mid} daq",
+                    callback_data=f"pick_interval:{mid}"
+                ),
+                InlineKeyboardButton(
+                    text=f"{max_i} daq",
+                    callback_data=f"pick_interval:{max_i}"
+                )
+            ]
+        ]
+    )
+
 @dp.message(EditCampaign.waiting_value)
 async def edit_value_handler(message: Message, state: FSMContext):
     data = await state.get_data()
@@ -586,15 +608,20 @@ async def pick_group(cb: CallbackQuery):
         await cb.answer()
         return
 
-    # MULTI MODE
-    selected = data["selected_ids"]
-    if group_id in selected:
-        selected.remove(group_id)
-    else:
-        selected.append(group_id)
-
-    save_user_flow(user_id, "choose_groups", data)
-    await cb.answer("✔️ Tanlandi")
+        # MULTI MODE
+        selected = data["selected_ids"]
+    
+        if group_id in selected:
+            selected.remove(group_id)
+        else:
+            selected.append(group_id)
+    
+        data["selected_ids"] = selected
+        save_user_flow(user_id, "choose_groups", data)
+    
+        # 🔥 MUHIM: UI NI QAYTA CHIZAMIZ
+        await show_group_picker(cb.message, user_id, edit=True)
+        await cb.answer()
 
 
 @dp.callback_query(F.data == "groups_done")
@@ -663,7 +690,61 @@ async def handle_enter_text_onl(message: Message):
 
     save_user_flow(user_id, "enter_interval", data)
 
-    await message.answer("⏱ Intervalni kiriting (daqiqada):")
+    # 🔐 RISKKA MOS INTERVALNI OLDINDAN KO‘RSATAMIZ
+    risk = get_account_risk(user_id)
+
+    if risk < 20:
+        min_i, max_i = 10, 30
+        level = "🟢 Juda xavfsiz"
+    elif risk < 40:
+        min_i, max_i = 12, 25
+        level = "🟡 Xavfsiz"
+    elif risk < 60:
+        min_i, max_i = 15, 20
+        level = "🟠 Ehtiyotkor"
+    else:
+        min_i, max_i = 20, 30
+        level = "🔴 Yuqori xavf"
+
+    await message.answer(
+        "⏱ *Xabar yuborish intervalini tanlang*\n\n"
+        f"🔐 Akkaunt holati: *{level}*\n\n"
+        f"👉 Tavsiya etilgan oraliq:\n"
+        f"*{min_i} – {max_i} daqiqa*\n\n"
+        "👇 Tugmalardan birini tanlang yoki raqam yozing:",
+        parse_mode="Markdown",
+        reply_markup=interval_keyboard(min_i, max_i)
+    )
+
+@dp.callback_query(F.data.startswith("pick_interval:"))
+async def pick_interval(cb: CallbackQuery):
+    user_id = cb.from_user.id
+    interval = int(cb.data.split(":")[1])
+
+    flow = get_user_flow(user_id)
+    if not flow or flow["step"] != "enter_interval":
+        await cb.answer()
+        return
+
+    data = flow["data"]
+    data["interval"] = interval
+
+    save_user_flow(user_id, "enter_duration", data)
+
+    min_d = interval * 10
+    safe_d = interval * 15
+    max_d = interval * 30
+
+    await cb.message.edit_text(
+        "⏳ *Kampaniya davomiyligini tanlang (daqiqada)*\n\n"
+        f"🟢 Xavfsiz: {min_d} – {safe_d}\n"
+        f"🟡 O‘rtacha: {safe_d} – {max_d}\n\n"
+        "✍️ Raqam kiriting:",
+        parse_mode="Markdown"
+    )
+
+    await cb.answer("⏱ Interval tanlandi")
+    
 
 @dp.message(
     (F.photo | F.video | (F.text & ~F.text.regexp(r"^\d+$"))) &
