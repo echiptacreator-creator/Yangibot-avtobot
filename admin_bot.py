@@ -22,7 +22,7 @@ ADMIN_ID = 515902673
 ADMIN_BOT_TOKEN = "8502710270:AAHgqYrfZQQtE9-aTQtHAz7w-ZkHpZfj-Kg"
 logging.basicConfig(level=logging.INFO)
 
-bot = Bot(BOT_TOKEN)
+bot = Bot(ADMIN_BOT_TOKEN)
 dp = Dispatcher()
 
 # =========================
