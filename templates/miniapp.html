@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Premium tariflar</title>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<style>
+:root {
+  --bg: var(--tg-theme-bg-color, #f5f7fb);
+  --card: var(--tg-theme-secondary-bg-color, #ffffff);
+  --text: var(--tg-theme-text-color, #0f172a);
+  --hint: var(--tg-theme-hint-color, #6b7280);
+  --primary: var(--tg-theme-button-color, #4f46e5);
+  --primary-text: var(--tg-theme-button-text-color, #ffffff);
+  --radius: 18px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
+  color: var(--text);
+}
+
+.container {
+  max-width: 420px;
+  margin: auto;
+  padding: 18px;
+}
+
+/* HERO */
+.hero {
+  text-align: center;
+  padding: 24px 10px 10px;
+}
+
+.hero h1 {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.hero p {
+  font-size: 14px;
+  color: var(--hint);
+  line-height: 1.45;
+}
+
+/* CARD */
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+  margin-top: 14px;
+}
+
+/* TARIFF */
+.tariff {
+  border: 2px solid transparent;
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: .15s ease;
+}
+
+.tariff.active {
+  border-color: var(--primary);
+  box-shadow: 0 8px 24px rgba(79,70,229,0.25);
+}
+
+.badge {
+  display: inline-block;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(79,70,229,0.1);
+  color: var(--primary);
+  margin-bottom: 6px;
+}
+
+.tariff h3 {
+  margin: 4px 0;
+  font-size: 18px;
+}
+
+.tariff p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--hint);
+}
+
+/* CTA */
+.cta {
+  margin-top: 18px;
+}
+
+.cta button {
+  width: 100%;
+  height: 52px;
+  border-radius: 16px;
+  border: none;
+  background: var(--primary);
+  color: var(--primary-text);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cta button:disabled {
+  opacity: 0.4;
+}
+
+/* TRUST */
+.trust {
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--hint);
+  text-align: center;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <!-- HERO -->
+  <div class="hero">
+    <h1>💳 Premium tariflar</h1>
+    <p>
+      🚕 Taksistlar uchun avtomatik e’lon joylash <br>
+      Ko‘proq buyurtma • Kamroq vaqt • Stresssiz
+    </p>
+  </div>
+
+  <!-- TARIFFS -->
+  <div class="card">
+
+    <div class="tariff" onclick="selectTariff(1)">
+      <h3>🥉 1 oy — 35 000 so‘m</h3>
+      <p>Sinab ko‘rish uchun</p>
+    </div>
+
+    <div class="tariff" onclick="selectTariff(3)">
+      <h3>🥈 3 oy — 90 000 so‘m</h3>
+      <p>💸 1 oy = 30 000 so‘m • 5 000 so‘m tejaladi</p>
+    </div>
+
+    <div class="tariff active" onclick="selectTariff(6)">
+      <span class="badge">🔥 ENG MASHHUR</span>
+      <h3>🥇 6 oy — 170 000 so‘m</h3>
+      <p>💸 1 oy = ~28 300 so‘m • 40 000 so‘m foyda</p>
+    </div>
+
+    <div class="tariff" onclick="selectTariff(12)">
+      <span class="badge">👑 MAX FOYDA</span>
+      <h3>12 oy — 360 000 so‘m</h3>
+      <p>🚀 30% gacha arzon</p>
+    </div>
+
+    <div class="cta">
+      <button id="payBtn">➡️ To‘lovga o‘tish</button>
+    </div>
+
+  </div>
+
+  <div class="trust">
+    ✔️ Telegram qoidalariga mos • ✔️ Qo‘lda tekshiriladi • ✔️ Istalgan payt to‘xtatish mumkin
+  </div>
+
+</div>
+
+<script>
+const tg = window.Telegram.WebApp;
+tg.ready();
+
+let selectedMonths = 6;
+
+function selectTariff(months) {
+  selectedMonths = months;
+  document.querySelectorAll(".tariff").forEach(t => t.classList.remove("active"));
+  event.currentTarget.classList.add("active");
+}
+
+document.getElementById("payBtn").onclick = () => {
+  // admin botga yo‘naltiramiz
+  tg.openTelegramLink("https://t.me/Haydovchiadminbot");
+};
+</script>
+
+</body>
+</html>
