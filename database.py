@@ -924,9 +924,10 @@ def clear_user_flow(user_id: int):
 def update_campaign_field(campaign_id, field, value):
     FIELD_MAP = {
         "text": "text",
-        "interval": "send_interval",
-        "duration": "send_duration",
+        "interval": "interval_minutes",
+        "duration": "duration_minutes",
     }
+
 
     column = FIELD_MAP.get(field)
     if not column:
