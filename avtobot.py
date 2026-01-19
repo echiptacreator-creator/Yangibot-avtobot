@@ -960,6 +960,8 @@ async def handle_numbers(message: Message):
 FLOODWAIT_PAUSE_THRESHOLD = 600  # 10 daqiqa
 
 async def send_to_group(client, campaign, group_id):
+    # 🔄 YUBORISHDAN OLDIN RISKNI YUMSHATISH
+    decay_account_risk(user_id)
     user_id = campaign["user_id"]
 
     # 🔒 0️⃣ YUBORISHDAN OLDIN QAT’IY TEKSHIRUV
@@ -992,6 +994,10 @@ async def send_to_group(client, campaign, group_id):
         # ✅ MUVAFFAQIYAT
         increment_sent_count(campaign["id"])
         increment_daily_usage(user_id, 1)
+        
+        # 🔥 YUBORISHDAN KEYIN MIKRO RISK
+        increase_risk(user_id, 1)
+        
         reset_campaign_error(campaign["id"])
         return True
 
@@ -1011,7 +1017,9 @@ async def send_to_group(client, campaign, group_id):
         await asyncio.sleep(e.seconds)
         return False
 
-    except Exception:
+    except Exception as e:
+        print("SEND ERROR:", e)
+
         increment_campaign_error(campaign["id"])
 
         # ❌ 3 marta ketma-ket xato → pause
@@ -1099,17 +1107,16 @@ async def run_campaign_safe(client, campaign):
         # =====================
         # 🎲 RANDOM SKIP (18%)
         # =====================
-        if random.random() < 0.18:
+        skip_chance = 0.1 + (risk / 200)
+
+        if random.random() < skip_chance:
             await asyncio.sleep(random.randint(120, 600))
             continue
 
         # =====================
         # ⏱ RANDOM INTERVAL
         # =====================
-        delay = random.randint(
-            int(campaign["interval"] * 60 * 0.7),
-            int(campaign["interval"] * 60 * 1.8)
-        )
+        delay = random_interval(campaign["interval"] * 60)
         await asyncio.sleep(delay)
 
         try:
@@ -1754,6 +1761,13 @@ async def main():
 
     await restore_campaigns()
     await dp.start_polling(bot)
+
+def get_next_group(campaign):
+    groups = campaign.get("groups", [])
+    if not groups:
+        raise Exception("Guruhlar yo‘q")
+
+    return random.choice(groups)
 
 @dp.message()
 async def catch_all(message: Message):
