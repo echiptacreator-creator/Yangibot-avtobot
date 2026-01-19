@@ -1106,20 +1106,16 @@ async def render_campaign(campaign_id: int):
 # =====================
 # KOMPANIYALARIM
 # =====================
-from database import get_user_campaigns
-
 @dp.message(F.text == "📋 Mening kampaniyalarim")
 async def my_campaigns(message: Message):
     user_id = message.from_user.id
-
     campaigns = get_user_campaigns(user_id)
 
     if not campaigns:
-        await message.answer(
-            "📭 Sizda hali kampaniyalar yo‘q.",
-            reply_markup=main_menu()
-        )
+        await message.answer("📭 Sizda hali kampaniyalar yo‘q.")
         return
+
+    kb = InlineKeyboardMarkup(inline_keyboard=[])
 
     for c in campaigns:
         status_icon = {
@@ -1129,23 +1125,45 @@ async def my_campaigns(message: Message):
             "stopped": "🛑"
         }.get(c["status"], "❔")
 
-        text = (
-            f"{status_icon} *Kampaniya #{c['id']}*\n\n"
-            f"📍 Guruhlar: {len(c['groups'])}\n"
-            f"📊 Yuborildi: {c['sent_count']}\n"
-            f"⏱ Interval: {c['interval']} daqiqa\n"
-            f"⏳ Davomiylik: {c['duration']} daqiqa\n"
-            f"📌 Status: {c['status']}"
-        )
+        preview = (c["text"] or "")[:30]
+        if len(c["text"] or "") > 30:
+            preview += "..."
 
-        kb = campaign_control_keyboard(c["id"], c["status"])
+        kb.inline_keyboard.append([
+            InlineKeyboardButton(
+                text=f"{status_icon} #{c['id']} | {preview}",
+                callback_data=f"open_campaign:{c['id']}"
+            )
+        ])
 
-        await message.answer(
-            text,
-            reply_markup=kb,
-            parse_mode="Markdown"
-        )
-   
+    await message.answer(
+        "📋 *Mening kampaniyalarim*\n\nKampaniyani tanlang:",
+        reply_markup=kb,
+        parse_mode="Markdown"
+    )
+
+@dp.callback_query(F.data.startswith("open_campaign:"))
+async def open_campaign(cb: CallbackQuery):
+    campaign_id = int(cb.data.split(":")[1])
+    campaign = get_campaign(campaign_id)
+
+    if not campaign:
+        await cb.answer("Kampaniya topilmadi", show_alert=True)
+        return
+
+    text = build_campaign_status_text(campaign_id)
+
+    await cb.message.answer(
+        text,
+        reply_markup=campaign_control_keyboard(
+            campaign_id,
+            campaign["status"]
+        ),
+        parse_mode="Markdown"
+    )
+
+    await cb.answer()
+
 # =====================
 # STATISTIKA
 # =====================
