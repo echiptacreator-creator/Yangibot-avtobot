@@ -754,13 +754,14 @@ async def handle_numbers(message: Message):
             message_id=status_msg.message_id,
             text=build_campaign_status_text(campaign_id),
             reply_markup=campaign_control_keyboard(campaign_id, "active")
-
-            await message.answer(
-                "✅ Kampaniya ishga tushdi.\n"
-                "Quyidagi menyu orqali boshqa amallarni bajarishingiz mumkin 👇",
-                reply_markup=main_menu()
-            )
         )
+        
+        await message.answer(
+            "✅ Kampaniya ishga tushdi.\n"
+            "Quyidagi menyu orqali boshqa amallarni bajarishingiz mumkin 👇",
+            reply_markup=main_menu()
+        )
+
     
         # 4️⃣ ISHGA TUSHIRAMIZ
         asyncio.create_task(run_campaign(campaign_id))
