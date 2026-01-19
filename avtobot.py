@@ -1291,7 +1291,7 @@ async def open_premium_miniapp(message):
             InlineKeyboardButton(
                 text="💳 Premium tariflarni ko‘rish",
                 web_app=WebAppInfo(
-                    url="https://yangibot-avtobot-production.up.railway.app/miniapp.html"
+                    url="https://yangibot-avtobot-production.up.railway.app/static/miniapp.html"
                 )
             )
         ]
