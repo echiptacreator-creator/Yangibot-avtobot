@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <title>Guruhlar</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system;
+      background: var(--tg-theme-bg-color);
+      color: var(--tg-theme-text-color);
+    }
+    .wrap { padding: 20px; }
+    h1 { margin-bottom: 6px; }
+    .sub { opacity:.7; margin-bottom: 16px; }
+
+    .group {
+      background: var(--tg-theme-secondary-bg-color);
+      padding: 12px;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      border-radius: 14px;
+      border: none;
+      background: #2f80ff;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      margin-top: 16px;
+    }
+
+    .back {
+      text-align: center;
+      margin-top: 14px;
+      color: #2f80ff;
+    }
+  </style>
+</head>
+
+<body>
+<div class="wrap">
+  <h1>Guruhlar</h1>
+  <div class="sub">Faqat tanlangan guruhlar saqlanadi</div>
+
+  <div id="groups">Yuklanmoqda...</div>
+
+  <button onclick="save()">Tanlanganlarni saqlash</button>
+  <div class="back" onclick="Telegram.WebApp.close()">Yopish</div>
+</div>
+
+<script>
+const tg = Telegram.WebApp;
+tg.ready();
+const userId = tg.initDataUnsafe.user.id;
+let data=[];
+
+async function load(){
+  const r = await fetch(`/api/sync-groups?user_id=${userId}`);
+  data = await r.json();
+  const box=document.getElementById("groups");
+  box.innerHTML="";
+
+  data.forEach((g,i)=>{
+    const d=document.createElement("div");
+    d.className="group";
+    d.innerHTML=`<input type="checkbox" data-i="${i}"><span>${g.title}</span>`;
+    box.appendChild(d);
+  });
+}
+
+async function save(){
+  const sel=[...document.querySelectorAll("input:checked")]
+    .map(x=>data[x.dataset.i]);
+
+  if(!sel.length){
+    tg.showPopup({message:"Hech narsa tanlanmadi"});
+    return;
+  }
+
+  await fetch("/api/user-groups/bulk-add",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ user_id:userId, groups:sel })
+  });
+
+  tg.showPopup({message:"✅ Saqlandi"});
+}
+
+load();
+</script>
+</body>
+</html>
