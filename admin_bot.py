@@ -23,8 +23,10 @@ router = Router()
 # CONFIG
 # =====================
 
-ADMIN_ID = 515902673
-ADMIN_BOT_TOKEN = "8502710270:AAHgqYrfZQQtE9-aTQtHAz7w-ZkHpZfj-Kg"
+
+ADMIN_BOT_TOKEN = os.getenv("ADMIN_BOT_TOKEN")
+ADMIN_ID = int(os.getenv("ADMIN_ID"))
+
 logging.basicConfig(level=logging.INFO)
 
 bot = Bot(ADMIN_BOT_TOKEN)
