@@ -416,25 +416,18 @@ async def fetch_only_groups(client):
 @dp.message(F.text == "📥 Guruhlarni yuklash")
 async def load_groups_handler(message: Message):
     user_id = message.from_user.id
-
     await message.answer("⏳ Guruhlar yuklanmoqda...")
 
     client = get_telethon_client(user_id)
-
     groups = []
 
     async for dialog in client.iter_dialogs():
         entity = dialog.entity
 
-        # ❌ shaxsiy chatlar, botlar chiqmasin
         if not isinstance(entity, (Chat, Channel)):
             continue
-
-        # ❌ kanallar chiqmasin
         if isinstance(entity, Channel) and entity.broadcast:
             continue
-
-        # ❌ botlar
         if getattr(entity, "bot", False):
             continue
 
@@ -448,12 +441,12 @@ async def load_groups_handler(message: Message):
         await message.answer("❌ Hech qanday guruh topilmadi")
         return
 
-    save_temp_groups(user_id, groups)   # telegram_groups_temp ga
-    save_user_groups(...)               # user_groups ga (tanlangandan keyin)
+    # 🔥 MUHIM QATOR
+    save_temp_groups(user_id, groups)
 
     await message.answer(
         f"✅ {len(groups)} ta guruh yuklandi.\n\n"
-        "Endi Mini App orqali ularni tanlashingiz mumkin 👇",
+        "Endi miniapp orqali tanlang 👇",
         reply_markup=InlineKeyboardMarkup(
             inline_keyboard=[[
                 InlineKeyboardButton(
