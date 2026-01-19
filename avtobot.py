@@ -733,21 +733,6 @@ async def handle_enter_text_onl(message: Message):
 
     # 🔐 RISKKA MOS INTERVALNI OLDINDAN KO‘RSATAMIZ
     risk = get_account_risk(user_id)
-
-    if risk < 20:
-        min_i, max_i = 10, 30
-        level = "🟢 Juda xavfsiz"
-    elif risk < 40:
-        min_i, max_i = 12, 25
-        level = "🟡 Xavfsiz"
-    elif risk < 60:
-        min_i, max_i = 15, 20
-        level = "🟠 Ehtiyotkor"
-    else:
-        min_i, max_i = 20, 30
-        level = "🔴 Yuqori xavf"
-
-    risk = get_account_risk(user_id)
     intervals, level = get_interval_options_by_risk(risk)
     
     await message.answer(
@@ -871,10 +856,6 @@ async def handle_numbers(message: Message):
         # ✅ INTERVAL SAQLANADI
         data["interval"] = interval
         save_user_flow(user_id, "enter_duration", data)
-
-        min_d = interval * 10
-        safe_d = interval * 15
-        max_d = interval * 30
 
         await message.answer(
             "⏳ *Kampaniya davomiyligini tanlang*\n\n"
@@ -1746,11 +1727,6 @@ async def send_limit_message(chat_id: int, used: int, limit: int):
         reply_markup=kb,
         parse_mode="Markdown"
     )
-
-    if elapsed > 600:  # 10 daqiqa tinch bo‘lsa
-        account_risk["score"] = max(0, account_risk["score"] - 10)
-        account_risk["last_reset"] = now
-
 
 # =====================
 # RUN
