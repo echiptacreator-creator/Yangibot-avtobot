@@ -1291,7 +1291,6 @@ def save_temp_groups(user_id: int, groups: list[dict]):
     conn = get_db()
     cur = conn.cursor()
 
-    # eski temp guruhlarni tozalaymiz
     cur.execute(
         "DELETE FROM telegram_groups_temp WHERE user_id = %s",
         (user_id,)
@@ -1305,7 +1304,7 @@ def save_temp_groups(user_id: int, groups: list[dict]):
             """,
             (
                 user_id,
-                g["id"],
+                g["group_id"],   # 🔥 SHU YER MUHIM
                 g.get("title"),
                 g.get("username")
             )
