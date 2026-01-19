@@ -422,7 +422,13 @@ async def load_groups_handler(message: Message):
     groups = []
 
     async for dialog in client.iter_dialogs():
-        entity = dialog.entity
+        ...
+        groups.append({...})
+    
+    print("TOPILGAN GURUHLAR SONI:", len(groups))
+    
+    save_temp_groups(user_id, groups)
+    print("TEMP GROUPS DB GA SAQLANDI:", user_id)
 
         if not isinstance(entity, (Chat, Channel)):
             continue
