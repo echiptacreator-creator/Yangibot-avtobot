@@ -490,7 +490,7 @@ async def pick_group(cb: CallbackQuery):
     await cb.answer(f"➕ {groups[str(group_id)]['name']} qo‘shildi")
 
 
-@dp.message(F.text)
+@dp.message(F.text & F.from_user.id.in_(editing_campaign))
 async def handle_edit_input(message):
     user_id = message.from_user.id
 
