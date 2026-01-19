@@ -438,6 +438,36 @@ async def show_group_page(message: Message, user_id: int, edit: bool = False):
             reply_markup=keyboard
         )
 
+@dp.message(F.text.in_(["📍 Bitta guruhga", "📍 Ko‘p guruhlarga"]))
+async def choose_send_mode(message: Message, state: FSMContext):
+    user_id = message.from_user.id
+    mode = "single" if "Bitta" in message.text else "multi"
+
+    await state.update_data(send_mode=mode)
+    save_user_flow(user_id, "choose_group", {"mode": mode})
+
+    groups = get_user_groups(user_id)
+
+    if not groups:
+        await message.answer(
+            "📭 Guruhlar ro‘yxati bo‘sh.\n\n"
+            "🔄 Avval akkauntingizdagi guruhlarni MiniApp orqali yuklang.",
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=[[
+                    InlineKeyboardButton(
+                        text="🔄 Guruhlarni yuklash",
+                        web_app=WebAppInfo(
+                            url="https://yangibot-avtobot-production.up.railway.app/miniapp.html"
+                        )
+                    )
+                ]]
+            )
+        )
+        return
+
+    await show_groups_from_db(message, groups)
+
+
 
 @dp.callback_query(F.data == "grp_done")
 async def finish_group_selection(cb: CallbackQuery):
