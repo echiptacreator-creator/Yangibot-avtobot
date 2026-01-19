@@ -45,15 +45,16 @@
       display: none;
     }
 
-    /* ===== PRICING ===== */
-
-    .plan {
+    .card {
       background: var(--secondary);
       border-radius: 16px;
       padding: 16px;
       margin-bottom: 14px;
-      border: 2px solid transparent;
+    }
+
+    .plan {
       cursor: pointer;
+      border: 2px solid transparent;
     }
 
     .plan.active {
@@ -76,7 +77,7 @@
       margin-top: 6px;
     }
 
-    .cta {
+    .btn {
       width: 100%;
       padding: 14px;
       font-size: 16px;
@@ -86,23 +87,22 @@
       background: var(--accent);
       color: #fff;
       cursor: pointer;
-      margin-top: 16px;
+      margin-top: 14px;
     }
 
-    .note {
-      font-size: 12px;
-      opacity: 0.6;
-      margin-top: 10px;
-      text-align: center;
+    .btn.secondary {
+      background: transparent;
+      color: var(--accent);
     }
-
-    /* ===== GROUPS ===== */
 
     .group {
       background: var(--secondary);
       padding: 12px;
       border-radius: 12px;
       margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
     .back {
@@ -112,251 +112,189 @@
       cursor: pointer;
       font-size: 14px;
     }
-    .groups-status {
-  padding: 24px;
-  text-align: center;
-  font-size: 14px;
-  opacity: 0.7;
-}
-
-.groups-list {
-  margin-top: 10px;
-}
-
-.group-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: var(--secondary);
-  padding: 14px;
-  border-radius: 14px;
-  margin-bottom: 10px;
-  cursor: pointer;
-}
-
-.group-item input {
-  transform: scale(1.2);
-}
-
-.group-title {
-  font-size: 15px;
-  font-weight: 500;
-}
-
   </style>
 </head>
 
 <body>
 <div class="container">
 
-  <!-- ===== PRICING PAGE ===== -->
+  <!-- ===== PRICING ===== -->
   <div id="pricing-page">
     <h1>Premium obuna</h1>
     <div class="subtitle">Avtomatik e’lon joylash xizmati</div>
 
-    <div class="plan" onclick="selectTariff(this,1,35000)">
+    <div class="card plan" onclick="selectTariff(this,1,35000)">
       <b>1 oy</b>
       <div class="price">35 000 so‘m</div>
     </div>
 
-    <div class="plan active" onclick="selectTariff(this,6,170000)">
-      <span class="badge">Eng mashhur</span>
+    <div class="card plan active" onclick="selectTariff(this,6,170000)">
+      <span class="badge">Eng mashhur</span><br>
       <b>6 oy</b>
       <div class="price">170 000 so‘m</div>
     </div>
 
-    <div class="plan" onclick="selectTariff(this,12,360000)">
+    <div class="card plan" onclick="selectTariff(this,12,360000)">
       <b>12 oy</b>
       <div class="price">360 000 so‘m</div>
     </div>
 
-    <button class="cta" onclick="goToPayment()">To‘lovga o‘tish</button>
-    <div class="note">Xavfsiz • Qo‘lda tekshiriladi</div>
+    <button class="btn" onclick="goToPayment()">To‘lovga o‘tish</button>
   </div>
 
-  <!-- ===== PAYMENT PAGE ===== -->
+  <!-- ===== PAYMENT ===== -->
   <div id="payment-page" class="hidden">
     <h1>To‘lov qilish</h1>
     <div class="subtitle">Karta raqamiga to‘lov qilib, chekni yuboring</div>
 
-    <div class="plan">
-      8600 1234 1234 1234
-    </div>
+    <div class="card">8600 1234 1234 1234</div>
 
-    <button class="cta" onclick="copyCard()">Karta nusxalash</button>
-    <button class="cta" onclick="sendReceipt()">Chekni yuborish</button>
+    <button class="btn" onclick="copyCard()">Karta nusxalash</button>
+    <button class="btn" onclick="sendReceipt()">Chekni yuborish</button>
 
     <div class="back" onclick="goBack()">← Tariflarga qaytish</div>
   </div>
 
-  <!-- ===== GROUPS PAGE ===== -->
-<div id="groups-page" class="hidden">
-  <h1>Guruhlar</h1>
-  <div class="subtitle">
-    Akkauntingizdagi guruhlarni tanlang
+  <!-- ===== GROUPS ===== -->
+  <div id="groups-page" class="hidden">
+    <h1>Mening guruhlarim</h1>
+    <div class="subtitle">Doimiy ishlatiladigan guruhlar</div>
+
+    <div id="my-groups">Yuklanmoqda...</div>
+
+    <button class="btn secondary" onclick="openAdd()">➕ Yangi guruh qo‘shish</button>
+    <div class="back" onclick="closeMiniApp()">Yopish</div>
   </div>
 
-  <!-- STATUS -->
-  <div id="groups-status" class="groups-status">
-    Guruhlar yuklanmoqda…
+  <!-- ===== ADD GROUPS ===== -->
+  <div id="add-page" class="hidden">
+    <h1>Yangi guruh qo‘shish</h1>
+    <div class="subtitle">Telegram akkauntingizdagi guruhlar</div>
+
+    <div id="tg-groups">Yuklanmoqda...</div>
+
+    <div class="back" onclick="backToGroups()">← Orqaga</div>
   </div>
 
-  <!-- LIST -->
-  <div id="groups-list" class="groups-list"></div>
-
-  <!-- ACTION -->
-  <button id="groups-save" class="cta hidden" onclick="saveGroups()">
-    Tanlangan guruhlarni saqlash
-  </button>
-
-  <div class="back" onclick="closeMiniApp()">Yopish</div>
 </div>
 
-
 <script>
-  const tg = Telegram.WebApp;
-  tg.ready();
+const tg = Telegram.WebApp;
+tg.ready();
+const userId = tg.initDataUnsafe.user.id;
 
-  const params = new URLSearchParams(window.location.search);
-  const mode = params.get("mode") || "pricing";
+const params = new URLSearchParams(location.search);
+const mode = params.get("mode") || "pricing";
 
-  const pricingPage = document.getElementById("pricing-page");
-  const paymentPage = document.getElementById("payment-page");
-  const groupsPage  = document.getElementById("groups-page");
+const pricingPage = document.getElementById("pricing-page");
+const paymentPage = document.getElementById("payment-page");
+const groupsPage  = document.getElementById("groups-page");
+const addPage     = document.getElementById("add-page");
 
-  let selected = { months: 6, price: 170000 };
+let selected = { months: 6, price: 170000 };
 
-  function show(page) {
-    pricingPage.classList.add("hidden");
-    paymentPage.classList.add("hidden");
-    groupsPage.classList.add("hidden");
-    page.classList.remove("hidden");
-  }
-
-  if (mode === "groups") {
-    show(groupsPage);
-    loadGroups();
-  } else {
-    show(pricingPage);
-  }
-
-  function selectTariff(el, m, p) {
-    document.querySelectorAll(".plan").forEach(x => x.classList.remove("active"));
-    el.classList.add("active");
-    selected = { months: m, price: p };
-  }
-
-  function goToPayment() {
-    show(paymentPage);
-  }
-
-  function goBack() {
-    show(pricingPage);
-  }
-
-  function copyCard() {
-    navigator.clipboard.writeText("8600123412341234");
-    tg.showPopup({ message: "Karta nusxalandi" });
-  }
-
-  async function sendReceipt() {
-    const user = tg.initDataUnsafe.user;
-
-    await fetch("/api/payment/init", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user_id: user.id,
-        months: selected.months,
-        amount: selected.price,
-        tariff: selected.months + " oy"
-      })
-    });
-
-    tg.openTelegramLink("https://t.me/taxiadminrobot");
-  }
-
-  async function loadGroups() {
-  const status = document.getElementById("groups-status");
-  const list   = document.getElementById("groups-list");
-  const saveBtn = document.getElementById("groups-save");
-
-  status.innerText = "Guruhlar yuklanmoqda…";
-  list.innerHTML = "";
-  saveBtn.classList.add("hidden");
-
-  try {
-    const res = await fetch("/api/get-user-groups");
-
-    if (!res.ok) {
-      throw new Error("Server xatosi");
-    }
-
-    const data = await res.json();
-
-    if (!data || data.length === 0) {
-      status.innerHTML = `
-        <b>Guruhlar topilmadi</b><br><br>
-        Siz hali guruhlarga qo‘shilmagansiz
-        yoki bot ularni ko‘ra olmayapti.
-      `;
-      return;
-    }
-
-    status.innerText = "Guruhlarni tanlang:";
-    list.innerHTML = "";
-
-    data.forEach(g => {
-      const item = document.createElement("div");
-      item.className = "group-item";
-      item.innerHTML = `
-        <input type="checkbox" value="${g.id}">
-        <div class="group-title">${g.title || "Nomsiz guruh"}</div>
-      `;
-
-      // bosilganda checkbox ham belgilansin
-      item.onclick = () => {
-        const cb = item.querySelector("input");
-        cb.checked = !cb.checked;
-      };
-
-      list.appendChild(item);
-    });
-
-    saveBtn.classList.remove("hidden");
-
-  } catch (e) {
-    status.innerHTML = `
-      <b>Xatolik yuz berdi</b><br><br>
-      Guruhlarni yuklab bo‘lmadi.
-      Iltimos, keyinroq urinib ko‘ring.
-    `;
-  }
+function show(page) {
+  [pricingPage, paymentPage, groupsPage, addPage].forEach(p => p.classList.add("hidden"));
+  page.classList.remove("hidden");
 }
 
-  async function saveGroups() {
-  const checked = [
-    ...document.querySelectorAll(".group-item input:checked")
-  ].map(cb => cb.value);
+if (mode === "groups") {
+  show(groupsPage);
+  loadMyGroups();
+} else {
+  show(pricingPage);
+}
 
-  if (!checked.length) {
-    tg.showPopup({ message: "Hech qanday guruh tanlanmadi" });
+function selectTariff(el, m, p) {
+  document.querySelectorAll(".plan").forEach(x => x.classList.remove("active"));
+  el.classList.add("active");
+  selected = { months: m, price: p };
+}
+
+function goToPayment(){ show(paymentPage); }
+function goBack(){ show(pricingPage); }
+
+function copyCard(){
+  navigator.clipboard.writeText("8600123412341234");
+  tg.showPopup({ message: "Karta nusxalandi" });
+}
+
+async function sendReceipt(){
+  await fetch("/api/payment/init", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({
+      user_id:userId,
+      months:selected.months,
+      amount:selected.price,
+      tariff:selected.months+" oy"
+    })
+  });
+  tg.openTelegramLink("https://t.me/taxiadminrobot");
+}
+
+/* ===== GROUPS ===== */
+
+async function loadMyGroups(){
+  const res = await fetch(`/api/user-groups?user_id=${userId}`);
+  const data = await res.json();
+  const box = document.getElementById("my-groups");
+  box.innerHTML = "";
+
+  if (!data.length){
+    box.innerHTML = "❌ Hali guruh yo‘q";
     return;
   }
 
-  await fetch("/api/save-groups", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      user_id: tg.initDataUnsafe.user.id,
-      groups: checked
-    })
+  data.forEach(g=>{
+    const div=document.createElement("div");
+    div.className="group";
+    div.innerHTML=`<div>${g.title}</div>`;
+    box.appendChild(div);
   });
-
-  tg.showPopup({ message: "Guruhlar saqlandi ✅" });
-  tg.close();
 }
 
+async function openAdd(){
+  show(addPage);
+  const res = await fetch(`/api/telegram-groups?user_id=${userId}`);
+  const data = await res.json();
+  const box = document.getElementById("tg-groups");
+  box.innerHTML="";
+
+  data.forEach(g=>{
+    const div=document.createElement("div");
+    div.className="group";
+
+    const btn=document.createElement("button");
+    btn.className="btn";
+    btn.innerText="Qo‘shish";
+    btn.onclick=async()=>{
+      await fetch("/api/user-groups/add",{
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify({
+          user_id:userId,
+          group_id:g.group_id,
+          title:g.title,
+          username:g.username
+        })
+      });
+      tg.showPopup({ message:"✅ Guruh qo‘shildi" });
+      backToGroups();
+    };
+
+    div.innerHTML=`<div>${g.title}</div>`;
+    div.appendChild(btn);
+    box.appendChild(div);
+  });
+}
+
+function backToGroups(){
+  show(groupsPage);
+  loadMyGroups();
+}
+
+function closeMiniApp(){ tg.close(); }
 </script>
 
 </body>
