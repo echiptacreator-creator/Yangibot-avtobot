@@ -556,9 +556,9 @@ from aiogram.fsm.state import StatesGroup, State
 
 class EditCampaign(StatesGroup):
     waiting_value = State()
-
-save_user_flow(user_id, "choose_group", data)
-await show_group_page(cb.message, user_id)
+    
+    save_user_flow(user_id, "choose_group", data)
+    await show_group_page(cb.message, user_id)
 
 
 # =====================
