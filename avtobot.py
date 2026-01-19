@@ -271,7 +271,7 @@ async def logout(message: Message):
 from database import save_user_flow, clear_user_flow
 
 @dp.message(F.text == "➕ Xabar yuborish")
-async def send_message_start(message, state):
+async def send_message_start(message: Message, state: FSMContext):
     await state.clear()
     user_id = message.from_user.id
 
