@@ -525,12 +525,13 @@ async def pick_group(cb: CallbackQuery):
         await cb.answer("❌ Guruh topilmadi", show_alert=True)
         return
 
+    # 🟢 SINGLE MODE
     if mode == "single":
         save_user_flow(
             user_id,
             "enter_text",
             {
-                "mode": mode,
+                "mode": "single",
                 "selected_ids": [group_id]
             }
         )
@@ -540,9 +541,9 @@ async def pick_group(cb: CallbackQuery):
             "✍️ Endi xabar matnini kiriting:"
         )
         await cb.answer()
-        return
+        return   # ⬅️ bu yerda return TO‘G‘RI
 
-    # multi
+    # 🟡 MULTI MODE
     if group_id in selected:
         selected.remove(group_id)
         await cb.answer("➖ Guruh olib tashlandi")
@@ -550,15 +551,11 @@ async def pick_group(cb: CallbackQuery):
         selected.append(group_id)
         await cb.answer("➕ Guruh qo‘shildi")
 
-
-
-from aiogram.fsm.state import StatesGroup, State
-
-class EditCampaign(StatesGroup):
-    waiting_value = State()
-    
+    data["selected_ids"] = selected
     save_user_flow(user_id, "choose_group", data)
+
     await show_group_page(cb.message, user_id)
+
 
 
 # =====================
