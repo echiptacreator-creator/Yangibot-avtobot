@@ -34,6 +34,8 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
 from database import update_campaign_field
+from database import update_campaign_text
+
 
 # =====================
 # STATE (XABAR YUBORISH)
