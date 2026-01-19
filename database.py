@@ -1063,3 +1063,17 @@ def update_campaign_text(campaign_id: int, text: str):
     conn.commit()
     conn.close()
 
+from datetime import date
+
+def get_today_usage(user_id: int) -> int:
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT sent_count
+        FROM daily_usage
+        WHERE user_id = %s AND usage_date = CURRENT_DATE
+    """, (user_id,))
+    row = cur.fetchone()
+    conn.close()
+    return row[0] if row else 0
+
