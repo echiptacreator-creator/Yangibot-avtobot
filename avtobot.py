@@ -422,13 +422,7 @@ async def load_groups_handler(message: Message):
     groups = []
 
     async for dialog in client.iter_dialogs():
-        ...
-        groups.append({...})
-    
-    print("TOPILGAN GURUHLAR SONI:", len(groups))
-    
-    save_temp_groups(user_id, groups)
-    print("TEMP GROUPS DB GA SAQLANDI:", user_id)
+        entity = dialog.entity
 
         if not isinstance(entity, (Chat, Channel)):
             continue
@@ -464,6 +458,11 @@ async def load_groups_handler(message: Message):
             ]]
         )
     )
+
+    print("TOPILGAN GURUHLAR SONI:", len(groups))
+
+    save_temp_groups(user_id, groups)
+    print("TEMP GROUPS DB GA SAQLANDI:", user_id)
 
 @dp.message(F.text.in_(["📍 Bitta guruhga", "📍 Ko‘p guruhlarga"]))
 async def choose_send_mode(message: Message):
