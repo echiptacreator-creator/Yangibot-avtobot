@@ -354,31 +354,35 @@ async def cancel_send(message: Message):
 # =====================
 
 @dp.message(F.text.in_(["📍 Bitta guruhga", "📍 Ko‘p guruhlarga"]))
-async def choose_send_mode(message: Message):
+async def choose_send_mode(message: Message, state: FSMContext):
     user_id = message.from_user.id
 
-    flow = get_user_flow(user_id)
-    if not flow or flow["step"] != "choose_mode":
+    await state.update_data(send_mode=message.text)
+
+    loading_msg = await message.answer("📂 Guruhlar yuklanmoqda...")
+
+    groups = await get_user_groups(user_id)
+
+    await bot.delete_message(
+        chat_id=message.chat.id,
+        message_id=loading_msg.message_id
+    )
+
+    if not groups:
+        await message.answer(
+            "❌ Sizda hali guruhlar yo‘q.",
+            reply_markup=main_menu()
+        )
+        await state.clear()
         return
 
-    mode = "single" if "Bitta" in message.text else "multi"
-
-    # DB da yangilaymiz
-    save_user_flow(
-        user_id=user_id,
-        step="choose_group",
-        data={
-            "mode": mode
-        }
-    )
+    await state.set_state(CampaignStates.choose_group)
 
     await message.answer(
-        "📂 Guruhlar yuklanmoqda...",
-        "ℹ️ Guruh tanlash tugagach asosiy menyu qaytadi."
+        "📍 Guruhni tanlang:",
+        reply_markup=build_groups_keyboard(groups)
     )
 
-    # keyingi bosqichni chaqiramiz
-    await start_group_selection(message)
 
 async def get_client(user_id: int):
     session_str = get_session(user_id)
