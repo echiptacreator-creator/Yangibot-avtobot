@@ -384,7 +384,7 @@ async def choose_send_mode(message: Message, state: FSMContext):
 
     loading_msg = await message.answer("📂 Guruhlar yuklanmoqda...")
 
-    groups = await get_user_groups(user_id)
+    groups = get_user_groups(user_id)
 
     await bot.delete_message(
         chat_id=message.chat.id,
