@@ -20,6 +20,7 @@ from database import (
     get_all_subs,
     activate_subscription
 )
+from database import get_last_pending_payment, activate_premium
 
 # =====================
 # CONFIG
@@ -82,6 +83,14 @@ async def receive_receipt(message: Message):
         return
 
     user_id = message.from_user.id
+    payment = get_last_pending_payment(user_id)
+    
+    if not payment:
+        await message.answer("❌ Bu foydalanuvchi uchun kutilayotgan to‘lov topilmadi.")
+        return
+    
+    payment_id, user_id, months, amount = payment
+
 
     if not is_logged_in_user(user_id):
         await message.answer("❌ Avval login qiling.")
