@@ -215,28 +215,25 @@ async def admin_notification_worker():
 # /START
 # =====================
 
-def interval_keyboard(min_i: int, max_i: int):
-    mid = (min_i + max_i) // 2
-
+def duration_keyboard(min_d: int, safe_d: int, max_d: int):
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text=f"{min_i} daq",
-                    callback_data=f"pick_interval:{min_i}"
+                    text=f"{min_d} daq (🟢)",
+                    callback_data=f"pick_duration:{min_d}"
                 ),
                 InlineKeyboardButton(
-                    text=f"{mid} daq",
-                    callback_data=f"pick_interval:{mid}"
+                    text=f"{safe_d} daq (🟡)",
+                    callback_data=f"pick_duration:{safe_d}"
                 ),
                 InlineKeyboardButton(
-                    text=f"{max_i} daq",
-                    callback_data=f"pick_interval:{max_i}"
-                )
+                    text=f"{max_d} daq (🔴)",
+                    callback_data=f"pick_duration:{max_d}"
+                ),
             ]
         ]
     )
-
 @dp.message(EditCampaign.waiting_value)
 async def edit_value_handler(message: Message, state: FSMContext):
     data = await state.get_data()
@@ -598,8 +595,15 @@ async def pick_group(cb: CallbackQuery):
     group_id = int(cb.data.split(":")[1])
 
     flow = get_user_flow(user_id)
+    if not flow:
+        await cb.answer()
+        return
+
     data = flow["data"]
 
+    # =====================
+    # 📍 SINGLE MODE
+    # =====================
     if data["mode"] == "single":
         data["selected_ids"] = [group_id]
         save_user_flow(user_id, "enter_text", data)
@@ -608,20 +612,22 @@ async def pick_group(cb: CallbackQuery):
         await cb.answer()
         return
 
-        # MULTI MODE
-        selected = data["selected_ids"]
-    
-        if group_id in selected:
-            selected.remove(group_id)
-        else:
-            selected.append(group_id)
-    
-        data["selected_ids"] = selected
-        save_user_flow(user_id, "choose_groups", data)
-    
-        # 🔥 MUHIM: UI NI QAYTA CHIZAMIZ
-        await show_group_picker(cb.message, user_id, edit=True)
-        await cb.answer()
+    # =====================
+    # 📍 MULTI MODE
+    # =====================
+    selected = data.get("selected_ids", [])
+
+    if group_id in selected:
+        selected.remove(group_id)
+    else:
+        selected.append(group_id)
+
+    data["selected_ids"] = selected
+    save_user_flow(user_id, "choose_groups", data)
+
+    # 🔄 UI ni qayta chizamiz (ptichka chiqishi uchun)
+    await show_group_picker(cb.message, user_id, edit=True)
+    await cb.answer("✔️ Tanlandi")
 
 
 @dp.callback_query(F.data == "groups_done")
@@ -753,46 +759,10 @@ async def pick_interval(cb: CallbackQuery):
         and flow["step"] == "enter_text"
     ))
 )
-async def handle_enter_text_media(message: Message, state: FSMContext):
-    # 🔒 Agar FSM edit ishlayotgan bo‘lsa — chiqamiz
-    if await state.get_state():
-        return
 
-    user_id = message.from_user.id
-    flow = get_user_flow(user_id)
 
-    if not flow or flow["step"] != "enter_text":
-        return
 
-    data = flow["data"]
 
-    # 🖼 MEDIA
-    if message.photo:
-        data["media_type"] = "photo"
-        data["media_file_id"] = message.photo[-1].file_id
-        data["text"] = message.caption or ""
-
-    elif message.video:
-        data["media_type"] = "video"
-        data["media_file_id"] = message.video.file_id
-        data["text"] = message.caption or ""
-
-    # ✍️ TEXT
-    else:
-        data["text"] = message.text
-
-    save_user_flow(
-        user_id=user_id,
-        step="enter_interval",
-        data=data
-    )
-
-    await message.answer(
-        "⏱ Xabar yuborish oralig‘ini kiriting (daqiqada).\nMasalan: `10`",
-        parse_mode="Markdown"
-    )
-
-    
 @dp.message(F.text.regexp(r"^\d+$"))
 async def handle_numbers(message: Message):
     user_id = message.from_user.id
@@ -840,13 +810,14 @@ async def handle_numbers(message: Message):
         safe_d = interval * 15
         max_d = interval * 30
 
-        await message.answer(
-            "⏳ *Kampaniya davomiyligini tanlang (daqiqada)*\n\n"
+        await cb.message.edit_text(
+            "⏳ *Kampaniya davomiyligini tanlang*\n\n"
             f"🟢 Xavfsiz: {min_d} – {safe_d}\n"
             f"🟡 O‘rtacha: {safe_d} – {max_d}\n"
-            f"🔴 Xavfli: {max_d}+ \n\n"
-            "⚠️ Tavsiyadan oshmang",
-            parse_mode="Markdown"
+            f"🔴 Xavfli: {max_d}+\n\n"
+            "👇 Variant tanlang yoki raqam yozing:",
+            parse_mode="Markdown",
+            reply_markup=duration_keyboard(min_d, safe_d, max_d)
         )
         return
 
@@ -1375,44 +1346,6 @@ async def edit_duration(cb: CallbackQuery, state: FSMContext):
 
     await cb.message.edit_text("⏳ Yangi davomiylikni daqiqada kiriting:")
     await cb.answer()
-
-
-@dp.message(EditCampaign.waiting_value)
-async def edit_value_handler(message: Message, state: FSMContext):
-    data = await state.get_data()
-
-    campaign_id = data["campaign_id"]
-    field = data["field"]
-    resume_after = data.get("resume_after", False)
-
-    value = message.text.strip()
-
-    if field == "text":
-        update_campaign_text(campaign_id, value)
-
-    elif field == "interval":
-        if not value.isdigit() or int(value) <= 0:
-            await message.answer("❌ Interval musbat raqam bo‘lishi kerak")
-            return
-        update_campaign_field(campaign_id, "interval_minutes", int(value))
-
-    elif field == "duration":
-        if not value.isdigit() or int(value) <= 0:
-            await message.answer("❌ Davomiylik musbat raqam bo‘lishi kerak")
-            return
-        update_campaign_field(campaign_id, "duration_minutes", int(value))
-
-    # 🔄 STATUSNI YANGILAYMIZ
-    await state.clear()
-
-    if resume_after:
-        update_campaign_status(campaign_id, "active")
-        asyncio.create_task(run_campaign(campaign_id))
-
-    await message.answer("✅ Yangilandi")
-    await render_campaign(campaign_id)
-
-
 
 
 @dp.callback_query(F.data.startswith("camp_restart:"))
