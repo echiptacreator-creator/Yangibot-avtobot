@@ -1041,3 +1041,13 @@ def get_all_campaigns():
         for row in rows
     ]
 
+def update_campaign_text(campaign_id: int, text: str):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE campaigns SET text = %s WHERE id = %s",
+        (text, campaign_id)
+    )
+    conn.commit()
+    conn.close()
+
