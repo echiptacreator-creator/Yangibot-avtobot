@@ -481,10 +481,10 @@ async def load_groups_handler(message: Message):
 
         # ✅ faqat guruhlar (private + supergroup)
         if dialog.is_group:
-            raw_id = dialog.entity.id
+        raw_id = dialog.entity.id
 
         if raw_id > 0:
-            group_id = -1000000000000 - raw_id
+            group_id = -1000000000000 + raw_id
         else:
             group_id = raw_id
         
