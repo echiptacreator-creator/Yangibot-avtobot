@@ -99,7 +99,7 @@ async def approve_payment_cb(callback: CallbackQuery):
     user_id = int(user_id)
     months = int(months)
 
-    await approve_payment(payment_id)
+    approve_payment(payment_id)
 
     await callback.message.edit_caption(
         callback.message.caption + "\n\n✅ Tasdiqlandi"
@@ -129,7 +129,7 @@ async def reject_payment_cb(callback: CallbackQuery):
     payment_id = int(payment_id)
     user_id = int(user_id)
 
-    await reject_payment(payment_id)
+    reject_payment(payment_id)
 
     await callback.message.edit_caption(
         callback.message.caption + "\n\n❌ Rad etildi"
