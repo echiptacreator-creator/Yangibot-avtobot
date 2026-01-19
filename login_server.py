@@ -231,13 +231,23 @@ from database import create_payment
 def init_payment():
     data = request.json
 
-    create_payment(
-        user_id=data["user_id"],
-        months=data["months"],
-        amount=data["amount"]
-    )
+    user_id = data["user_id"]
+    months = data["months"]
+    amount = data["amount"]
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        INSERT INTO payments (user_id, months, price, status)
+        VALUES (%s, %s, %s, 'pending')
+    """, (user_id, months, amount))
+
+    conn.commit()
+    conn.close()
 
     return jsonify({"status": "ok"})
+
 
 # =====================
 # RUN
