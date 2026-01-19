@@ -481,51 +481,55 @@ async def on_group_selected(call: CallbackQuery):
     )
     await call.answer()
 
-@dp.callback_query(F.data == "load_groups_and_continue")
-async def load_groups_and_continue(cb: CallbackQuery):
-    user_id = cb.from_user.id
-    await cb.message.answer("⏳ Guruhlar yuklanmoqda...")
+from telethon.errors import SessionRevokedError
 
-    client = await get_client(user_id)
-    groups = []
+@dp.message(F.text == "📥 Guruhlarni yuklash")
+async def load_groups_handler(message: Message):
+    user_id = message.from_user.id
+    await message.answer("⏳ Guruhlar yuklanmoqda...")
 
-    async for dialog in client.iter_dialogs():
-        if dialog.is_user:
-            continue
-        if getattr(dialog.entity, "bot", False):
-            continue
-        if dialog.is_group:
-            groups.append({
-                "id": dialog.entity.id,
-                "title": dialog.entity.title,
-                "username": getattr(dialog.entity, "username", None)
-            })
+    try:
+        client = await get_client(user_id)
 
-    if not groups:
-        await cb.message.answer("❌ Hech qanday guruh topilmadi")
-        return
+        groups = []
+        async for dialog in client.iter_dialogs():
+            if dialog.is_user:
+                continue
+            if getattr(dialog.entity, "bot", False):
+                continue
+            if dialog.is_group:
+                groups.append({
+                    "id": dialog.entity.id,
+                    "title": dialog.entity.title,
+                    "username": getattr(dialog.entity, "username", None)
+                })
 
-    # 🔥 MUHIM: AVTOMAT SAQLANADI
-    save_temp_groups(user_id, groups)
+        if not groups:
+            await message.answer("❌ Hech qanday guruh topilmadi")
+            return
 
-    await cb.message.answer(
-        f"✅ {len(groups)} ta guruh yuklandi.\n\n"
-        "Endi qaysilarini doimiy ishlatishni tanlang 👇",
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
+        save_temp_groups(user_id, groups)
+
+        await message.answer(
+            f"✅ {len(groups)} ta guruh yuklandi.\n\n"
+            "Endi miniapp orqali tanlang 👇",
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=[[
                     InlineKeyboardButton(
-                        text="📋 Guruhlarni tanlash (MiniApp)",
+                        text="📋 Guruhlarni tanlash",
                         web_app=WebAppInfo(
-                            url="https://yangibot-avtobot-production.up.railway.app/static/miniapp_groups.html"
+                            url="https://.../static/miniapp_groups.html"
                         )
                     )
-                ]
-            ]
+                ]]
+            )
         )
-    )
 
-    await cb.answer()
+    except SessionRevokedError:
+        await message.answer(
+            "❌ Telegram sessiya bekor bo‘lgan.\n\n"
+            "Iltimos, qayta login qiling 🔐"
+        )
 
 # =====================
 # PAFINATION CALLBACK
