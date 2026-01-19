@@ -261,49 +261,6 @@ def init_payment():
 
     return jsonify({"status": "ok"})
 
-@app.route("/api/save-groups", methods=["POST"])
-def save_groups():
-    data = request.json
-    user_id = data["user_id"]
-    groups = data["groups"]
-
-    conn = get_db()
-    cur = conn.cursor()
-
-    for g in groups:
-        cur.execute("""
-            INSERT INTO user_groups (user_id, group_id, title, username)
-            VALUES (%s, %s, %s, %s)
-            ON CONFLICT (user_id, group_id) DO NOTHING
-        """, (
-            user_id,
-            g["id"],
-            g.get("title"),
-            g.get("username")
-        ))
-
-    conn.commit()
-    conn.close()
-
-    return jsonify({"status": "ok"})
-
-
-@app.route("/api/user-groups/bulk-add", methods=["POST"])
-def api_user_groups_bulk_add():
-    data = request.json
-    user_id = data.get("user_id")
-    groups = data.get("groups", [])
-    if not user_id or not groups:
-        return jsonify({"status": "empty"})
-
-    save_user_groups_bulk(user_id, groups)
-    return jsonify({"status": "ok"})
-
-@app.route("/api/temp-groups")
-def get_temp_groups():
-    user_id = request.args.get("user_id", type=int)
-    groups = get_temp_groups_from_db(user_id)
-    return jsonify(groups)
 
 # =====================
 # RUN
