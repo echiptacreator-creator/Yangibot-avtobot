@@ -214,12 +214,6 @@ def init_db():
         last_reset TIMESTAMP DEFAULT NOW()
     )
     """)
-
-    cur.execute("""
-        INSERT INTO user_groups (user_id, peer_id, title, username)
-        VALUES (%s, %s, %s, %s)
-        ON CONFLICT (user_id, peer_id) DO NOTHING
-    """, (...))
     
     conn.commit()
     cur.close()
