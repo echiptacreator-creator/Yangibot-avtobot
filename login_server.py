@@ -28,6 +28,29 @@ from telethon.errors import SessionRevokedError
 from database import get_db, get_temp_groups_from_db
 
 
+import requests
+import os
+
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+
+def notify_bot(user_id: int, text: str):
+    """
+    Login-serverdan botga xabar yuboradi
+    """
+    try:
+        requests.post(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+            json={
+                "chat_id": user_id,
+                "text": text,
+                "parse_mode": "Markdown"
+            },
+            timeout=5
+        )
+    except Exception as e:
+        print("BOT NOTIFY ERROR:", e)
+
+
 # =====================
 # CONFIG
 # =====================
@@ -276,16 +299,27 @@ def api_temp_groups():
 @app.route("/api/user-groups/bulk-add", methods=["POST"])
 def save_user_groups_bulk():
     data = request.json
+
     user_id = data.get("user_id")
     groups = data.get("groups", [])
 
     if not user_id or not groups:
-        return jsonify({"ok": False, "error": "no data"}), 400
+        return jsonify({"ok": False, "error": "No data"}), 400
 
+    # 1️⃣ DB ga saqlaymiz
     save_user_groups(user_id, groups)
 
-    return jsonify({"ok": True})
+    # 2️⃣ BOTGA XABAR YUBORAMIZ  🔥
+    notify_bot(
+        user_id,
+        f"✅ *{len(groups)} ta guruh*\n"
+        "xabar yuborish uchun qo‘shildi 📬"
+    )
 
+    return jsonify({
+        "ok": True,
+        "added": len(groups)
+    })
 # =====================
 # RUN
 # =====================
