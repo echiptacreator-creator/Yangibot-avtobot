@@ -76,6 +76,16 @@ class EditCampaign(StatesGroup):
 # HELPERS — ACCESS
 # =====================
 
+
+
+def to_peer_id(raw_id: int) -> int:
+    if raw_id < 0:
+        return raw_id
+    return int(f"-100{raw_id}")
+
+
+
+
 from database import get_login_session
 
 def is_logged_in(user_id):
