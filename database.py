@@ -1317,7 +1317,7 @@ def save_temp_groups(user_id: int, groups: list[dict]):
     for g in groups:
         cur.execute(
             """
-            INSERT INTO telegram_groups_temp (user_id, peer_id, title, username)
+            INSERT INTO telegram_groups_temp (user_id, group_id, title, username)
             VALUES (%s, %s, %s, %s)
             """,
             (
