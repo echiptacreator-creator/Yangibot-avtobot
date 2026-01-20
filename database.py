@@ -174,17 +174,12 @@ def init_db():
     CREATE TABLE IF NOT EXISTS user_groups (
         id SERIAL PRIMARY KEY,
         user_id BIGINT NOT NULL,
-        group_id BIGINT NOT NULL,
+        group_id BIGINT NOT NULL,   -- 🔥 RAW ID
         title TEXT,
         username TEXT,
         added_at TIMESTAMP DEFAULT NOW(),
         UNIQUE (user_id, group_id)
-    )
-    """)
-    cur.execute("""
-    ALTER TABLE user_groups
-    ADD COLUMN IF NOT EXISTS title TEXT,
-    ADD COLUMN IF NOT EXISTS username TEXT;
+    );
     """)
     cur.execute("""
     CREATE TABLE IF NOT EXISTS telegram_groups_temp (
@@ -195,16 +190,18 @@ def init_db():
         username TEXT,
         added_at TIMESTAMP DEFAULT NOW(),
         UNIQUE (user_id, group_id)
-    )
+    );
     """)
     cur.execute("""
     CREATE TABLE IF NOT EXISTS telegram_groups_temp (
+        id SERIAL PRIMARY KEY,
         user_id BIGINT NOT NULL,
-        group_id BIGINT NOT NULL,
+        group_id BIGINT NOT NULL,   -- 🔥 RAW ID
         title TEXT,
         username TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
-    )
+        added_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE (user_id, group_id)
+    );
     """)
 
     cur.execute("""
@@ -212,7 +209,7 @@ def init_db():
         user_id BIGINT PRIMARY KEY,
         risk_score INTEGER DEFAULT 0,
         last_reset TIMESTAMP DEFAULT NOW()
-    )
+    );
     """)
     
     conn.commit()
