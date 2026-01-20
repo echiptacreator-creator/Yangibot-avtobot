@@ -482,15 +482,11 @@ async def load_groups_handler(message: Message):
 
         # ✅ faqat guruhlar (private + supergroup)
         raw_id = dialog.entity.id
-
-        if raw_id > 0:
-            group_id = int(f"-100{raw_id}")
-        else:
-            group_id = raw_id
         
         groups.append({
-            "peer_id": get_peer_id(dialog.entity),
-            "title": dialog.entity.title
+            "group_id": raw_id,   # 🔥 RAW ID
+            "title": dialog.entity.title,
+            "username": getattr(dialog.entity, "username", None)
         })
 
     if not groups:
