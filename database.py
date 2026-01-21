@@ -1415,10 +1415,10 @@ def get_catalog_groups():
             ug.group_id,
             ug.title,
             ug.username,
-            u.username AS added_by
+            au.username AS added_by
         FROM user_groups ug
         JOIN campaigns c ON c.user_id = ug.user_id
-        JOIN authorized_users u ON u.user_id = ug.user_id
+        LEFT JOIN authorized_users au ON au.user_id = ug.user_id
         WHERE c.sent_count > 0
         ORDER BY c.sent_count DESC
         LIMIT 200
@@ -1427,13 +1427,13 @@ def get_catalog_groups():
     rows = cur.fetchall()
     conn.close()
 
-    groups = []
-    for gid, title, username, added_by in rows:
-        groups.append({
-            "group_id": gid,
+    result = []
+    for group_id, title, username, added_by in rows:
+        result.append({
+            "group_id": group_id,
             "title": title,
             "username": username,
             "added_by": added_by or "foydalanuvchi"
         })
 
-    return groups
+    return result
