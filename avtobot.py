@@ -426,15 +426,16 @@ async def pause_campaigns_after_restart():
             paused += 1
 
     print(f"⏸ {paused} ta kampaniya restart sababli pauzaga qo‘yildi")
-
 def main_menu():
     return ReplyKeyboardMarkup(
         keyboard=[
             [
                 KeyboardButton(
                     text="🤖 AI orqali post yaratish",
-                    web_app=WebAppInfo(url=https://yangibot-avtobot-production.up.railway.app/static/miniapp_ai.html")
-            
+                    web_app=WebAppInfo(
+                        url="https://yangibot-avtobot-production.up.railway.app/static/miniapp_ai.html"
+                    )
+                )
             ],
             [KeyboardButton(text="➕ Xabar yuborish")],
             [
@@ -456,6 +457,7 @@ def main_menu():
         ],
         resize_keyboard=True
     )
+
 
 ]
 
