@@ -18,17 +18,6 @@
 <button id="send">Yuborish</button>
 
 <script>
-  function buildPost(data) {
-    return `
-🚕 ${data.from} → ${data.to}
-
-👥 ${data.people}
-⏰ ${data.time}
-
-📞 ${data.phone}
-`;
-  }
-
   document.getElementById("send").onclick = () => {
     const data = {
       from: document.getElementById("from").value,
@@ -38,25 +27,8 @@
       phone: document.getElementById("phone").value
     };
 
-    const post = buildPost(data);
-
-const data = {
-  from: "Andijon",
-  to: "Toshkent",
-  people: "2 ta",
-  time: "23:00",
-  urgent: "Ha",
-  female: "Yo‘q",
-  car: "Jentra",
-  fuel: "Gaz",
-  package: "Bor",
-  phone: "+998901234567",
-  telegram: "@username"
-};
-
-Telegram.WebApp.sendData(JSON.stringify(data));
-Telegram.WebApp.close();
-
+    Telegram.WebApp.sendData(JSON.stringify(data));
+    Telegram.WebApp.close();
   };
 </script>
 
