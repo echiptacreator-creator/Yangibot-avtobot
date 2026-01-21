@@ -604,17 +604,17 @@ async def load_groups_handler(message: Message):
         )
     )
 
-# 📌 AVTOMATIK PIN (FAQAT GURUHDA)
-try:
-    if message.chat.type in ("group", "supergroup"):
-        await bot.pin_chat_message(
-            chat_id=message.chat.id,
-            message_id=msg.message_id,
-            disable_notification=True
-        )
-except:
-    pass
 
+    # 📌 FAQAT SHU YERDA BO‘LADI
+    try:
+        if message.chat.type in ("group", "supergroup"):
+            await bot.pin_chat_message(
+                chat_id=message.chat.id,
+                message_id=msg.message_id,
+                disable_notification=True
+            )
+    except Exception:
+        pass
 # =====================
 # PAFINATION CALLBACK
 # =====================
