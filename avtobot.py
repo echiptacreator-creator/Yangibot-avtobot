@@ -57,6 +57,9 @@ from database import save_user_groups
 from database import get_premium_status
 from database import get_premium_status, mark_premium_notified
 from database import mark_premium_notified
+from aiogram.types import Message
+from aiogram import F
+import json
 from risk import (
     get_account_risk,
     increase_risk,
@@ -2648,36 +2651,27 @@ async def generate_ai_posts(form_data: dict) -> list[str]:
 async def handle_webapp_data(message: Message):
     import json
 
-    f = json.loads(message.web_app_data.data)
-
-    posts = generate_ai_posts_from_form(f)
-
-    risk = get_account_risk(message.from_user.id)
-    limit = 5 if risk < 30 else 3 if risk < 60 else 2
-    posts = posts[:limit]
-
-    groups = get_user_groups(message.from_user.id)
-    group_ids = [g["group_id"] for g in groups]
+    data = json.loads(message.web_app_data.data)
 
     save_user_flow(
         user_id=message.from_user.id,
         step="enter_interval",
         data={
             "mode": "ai",
-            "texts": posts,
-            "selected_ids": group_ids
+            "ai_form": data,
+            "selected_ids": get_user_groups(message.from_user.id)
         }
     )
 
+    risk = get_account_risk(message.from_user.id)
     intervals, level = get_interval_options_by_risk(risk)
 
     await message.answer(
-        f"🤖 *AI postlar tayyor!* ({len(posts)} variant)\n\n"
-        "⏱ Endi intervalni tanlang:\n"
-        f"🔐 Holat: *{level}*",
-        parse_mode="Markdown",
+        "🤖 AI post tayyorlashga tayyor.\n\n"
+        "⏱ Endi intervalni tanlang:",
         reply_markup=interval_keyboard(intervals)
     )
+
 
 @dp.callback_query(F.data.startswith("ai_pick:"))
 async def ai_pick_variant(cb: CallbackQuery):
