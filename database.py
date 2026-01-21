@@ -1405,3 +1405,35 @@ def get_user_groups(user_id: int):
         })
 
     return groups
+
+def get_catalog_groups():
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT DISTINCT
+            ug.group_id,
+            ug.title,
+            ug.username,
+            u.username AS added_by
+        FROM user_groups ug
+        JOIN campaigns c ON c.user_id = ug.user_id
+        JOIN authorized_users u ON u.user_id = ug.user_id
+        WHERE c.sent_count > 0
+        ORDER BY c.sent_count DESC
+        LIMIT 200
+    """)
+
+    rows = cur.fetchall()
+    conn.close()
+
+    groups = []
+    for gid, title, username, added_by in rows:
+        groups.append({
+            "group_id": gid,
+            "title": title,
+            "username": username,
+            "added_by": added_by or "foydalanuvchi"
+        })
+
+    return groups
