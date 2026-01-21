@@ -211,6 +211,10 @@ def init_db():
         last_reset TIMESTAMP DEFAULT NOW()
     );
     """)
+    cur.execute("""
+    ALTER TABLE user_groups
+    ADD COLUMN IF NOT EXISTS peer_type TEXT;
+    """)
     
     conn.commit()
     cur.close()
@@ -294,6 +298,7 @@ def save_user_session(user_id, session_string):
             session_string = EXCLUDED.session_string,
             updated_at = NOW()
     """, (user_id, session_string))
+   
     conn.commit()
     conn.close()
 
@@ -1212,7 +1217,8 @@ def get_user_groups(user_id):
         {
             "group_id": r[0],
             "title": r[1],
-            "username": r[2]
+            "username": r[2],
+            "peer_type": r[3]
         } for r in rows
     ]
 
@@ -1248,13 +1254,14 @@ def save_user_groups(user_id, groups):
 
     for g in groups:
         cur.execute("""
-            INSERT INTO user_groups (user_id, group_id, title, username)
+            INSERT INTO user_groups (user_id, group_id, title, username, peer_type
             VALUES (%s, %s, %s, %s)
         """, (
-            user_id,
-            g["group_id"],
-            g["title"],
-            g.get("username")
+                user_id,
+                g["group_id"],
+                g["title"],
+                g.get("username"),
+                g.get("peer_type")
         ))
 
     conn.commit()
