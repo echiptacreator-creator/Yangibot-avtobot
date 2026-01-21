@@ -1018,16 +1018,21 @@ def increment_campaign_error(campaign_id: int):
     )
     conn.commit()
     conn.close()
-
+	
 def update_campaign_started(campaign_id: int):
     conn = get_db()
     cur = conn.cursor()
     cur.execute(
-        "UPDATE campaigns SET started_at = NOW() WHERE id = %s",
+        """
+        UPDATE campaigns
+        SET started_at = NOW()
+        WHERE id = %s
+        """,
         (campaign_id,)
     )
     conn.commit()
     conn.close()
+
 
 
 def update_campaign_finished(campaign_id: int):
