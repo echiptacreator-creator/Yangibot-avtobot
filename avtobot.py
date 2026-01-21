@@ -599,29 +599,34 @@ import json
 
 @dp.message(F.web_app_data)
 async def handle_webapp_data(message: Message):
-    try:
-        form_data = json.loads(message.web_app_data.data)
-    except Exception:
-        await message.answer("❌ MiniApp maʼlumotini o‘qib bo‘lmadi")
+    import json
+
+    data = json.loads(message.web_app_data.data)
+
+    if data.get("type") != "ai_form":
         return
 
-    # 1️⃣ 10 ta post yaratamiz
-    variants = generate_ai_variants(form_data, count=10)
+    payload = data["payload"]
 
-    # 2️⃣ BOT O‘ZI 5 TASINI TANLAYDI
-    import random
-    selected = random.sample(variants, 5)
+    # 🔥 AI ga yuboramiz
+    variants = await generate_ai_variants(payload)
 
-    # 3️⃣ USERGA KO‘RSATAMIZ
-    text = "🤖 *AI tayyorlagan postlar (avtomatik tanlandi):*\n\n"
+    # 🔥 bot o‘zi 5 tasini tanlaydi
+    chosen = random.sample(variants, 5)
 
-    for i, post in enumerate(selected, 1):
-        text += f"*{i}.*\n{post}\n\n"
+    text = "🤖 *AI tanlagan postlar:*\n\n"
+    for i, t in enumerate(chosen, 1):
+        text += f"*{i}.* {t}\n\n"
 
     await message.answer(text, parse_mode="Markdown")
 
-    # 4️⃣ KEYIN ODDIY FLOWGA O‘TAMIZ
-    # (guruh tanlash, interval va hokazo)
+    # 🔥 KEYINGI QADAMGA O‘TAMIZ
+    save_user_flow(
+        user_id=message.from_user.id,
+        step="enter_interval",
+        data={"text": chosen[0]}  # bittasini kampaniya uchun
+    )
+
 
 @dp.message(EditCampaign.waiting_value)
 async def edit_value_handler(message: Message, state: FSMContext):
