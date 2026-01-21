@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <title>Taxi Post</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+
+<h3>🚕 Taxi post yaratish</h3>
+
+<input id="from" placeholder="Qayerdan"><br><br>
+<input id="to" placeholder="Qayerga"><br><br>
+<input id="people" placeholder="Nechta odam"><br><br>
+<input id="time" placeholder="Qaysi vaqtga"><br><br>
+<input id="phone" placeholder="Telefon"><br><br>
+
+<button id="send">Yuborish</button>
+
+<script>
+  function buildPost(data) {
+    return `
+🚕 ${data.from} → ${data.to}
+
+👥 ${data.people}
+⏰ ${data.time}
+
+📞 ${data.phone}
+`;
+  }
+
+  document.getElementById("send").onclick = () => {
+    const data = {
+      from: document.getElementById("from").value,
+      to: document.getElementById("to").value,
+      people: document.getElementById("people").value,
+      time: document.getElementById("time").value,
+      phone: document.getElementById("phone").value
+    };
+
+    const post = buildPost(data);
+
+    Telegram.WebApp.sendData(post);
+    Telegram.WebApp.close();
+  };
+</script>
+
+</body>
+</html>
