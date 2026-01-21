@@ -287,9 +287,111 @@ async def admin_toggle_block(cb):
     # 🔄 qayta chizamiz
     await admin_user_detail(cb)
 
+from database import get_all_users
 
+@dp.message(Command("users"))
+async def admin_users(message: Message):
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    users = get_all_users()
+    if not users:
+        await message.answer("👥 Userlar yo‘q")
+        return
+
+    kb = InlineKeyboardMarkup(inline_keyboard=[])
+
+    for u in users[:20]:
+        status = "👑" if u["sub_status"] == "active" else "🆓"
+        name = u["username"] or u["user_id"]
+
+        kb.inline_keyboard.append([
+            InlineKeyboardButton(
+                text=f"{status} {name}",
+                callback_data=f"admin_user:{u['user_id']}"
+            )
+        ])
+
+    await message.answer(
+        "👥 *Foydalanuvchilar ro‘yxati*",
+        reply_markup=kb,
+        parse_mode="Markdown"
+    )
     
+from database import (
+    get_user_limits,
+    get_user_usage,
+    get_today_usage
+)
+from risk import get_account_risk
+from database import get_subscription
 
+@dp.callback_query(F.data.startswith("admin_user:"))
+async def admin_user_profile(cb: CallbackQuery):
+    if cb.from_user.id != ADMIN_ID:
+        return
+
+    user_id = int(cb.data.split(":")[1])
+
+    limits = get_user_limits(user_id)
+    usage = get_user_usage(user_id)
+    today = get_today_usage(user_id)
+    risk = get_account_risk(user_id)
+    sub = get_subscription(user_id)
+
+    sub_text = "🆓 Free"
+    if sub and sub["status"] == "active":
+        sub_text = f"👑 Premium\n⏳ {sub['paid_until']}"
+
+    text = (
+        "👤 *FOYDALANUVCHI PROFILI*\n\n"
+        f"🆔 ID: `{user_id}`\n"
+        f"{sub_text}\n\n"
+        f"📂 Kampaniyalar: {usage['total_campaigns']}\n"
+        f"🟢 Aktiv: {usage['active_campaigns']}\n"
+        f"📨 Bugun: {today}\n"
+        f"🔐 Risk: {risk}"
+    )
+
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="🔒 Block",
+                callback_data=f"admin_block:{user_id}"
+            ),
+            InlineKeyboardButton(
+                text="🔓 Unblock",
+                callback_data=f"admin_unblock:{user_id}"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="⬅️ Orqaga",
+                callback_data="admin_back"
+            )
+        ]
+    ])
+
+    await cb.message.edit_text(
+        text,
+        reply_markup=kb,
+        parse_mode="Markdown"
+    )
+    await cb.answer()
+    
+from database import set_user_blocked
+
+@dp.callback_query(F.data.startswith("admin_block:"))
+async def admin_block(cb: CallbackQuery):
+    user_id = int(cb.data.split(":")[1])
+    set_user_blocked(user_id, True)
+    await cb.answer("🔒 User bloklandi", show_alert=True)
+
+@dp.callback_query(F.data.startswith("admin_unblock:"))
+async def admin_unblock(cb: CallbackQuery):
+    user_id = int(cb.data.split(":")[1])
+    set_user_blocked(user_id, False)
+    await cb.answer("🔓 User blokdan chiqarildi", show_alert=True)
 
 
 # =========================
