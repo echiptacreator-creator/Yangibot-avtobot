@@ -1411,16 +1411,17 @@ def get_catalog_groups():
     cur = conn.cursor()
 
     cur.execute("""
-        SELECT DISTINCT
+        SELECT DISTINCT ON (ug.group_id)
             ug.group_id,
             ug.title,
             ug.username,
-            au.username AS added_by
+            au.username AS added_by,
+            c.sent_count
         FROM user_groups ug
         JOIN campaigns c ON c.user_id = ug.user_id
         LEFT JOIN authorized_users au ON au.user_id = ug.user_id
         WHERE c.sent_count > 0
-        ORDER BY c.sent_count DESC
+        ORDER BY ug.group_id, c.sent_count DESC
         LIMIT 200
     """)
 
@@ -1428,12 +1429,26 @@ def get_catalog_groups():
     conn.close()
 
     result = []
-    for group_id, title, username, added_by in rows:
+    for group_id, title, username, added_by, sent_count in rows:
         result.append({
             "group_id": group_id,
             "title": title,
             "username": username,
-            "added_by": added_by or "foydalanuvchi"
+            "added_by": added_by or "foydalanuvchi",
+            "sent_count": sent_count
         })
 
     return result
+def mark_premium_notified(user_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE subscriptions
+        SET premium_notified = TRUE
+        WHERE user_id = %s
+    """, (user_id,))
+
+    conn.commit()
+    conn.close()
+
