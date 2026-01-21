@@ -1732,6 +1732,46 @@ def build_campaign_status_text(campaign_id: int) -> str:
     return text
 
 
+@dp.callback_query(F.data.startswith("camp_resume:"))
+async def resume_campaign_handler(cb: CallbackQuery):
+    await cb.answer("▶ Davom ettirilmoqda")
+
+    campaign_id = int(cb.data.split(":")[1])
+    c = get_campaign(campaign_id)
+
+    if not c:
+        return
+
+    pause_reason = c.get("pause_reason")
+
+    # ⛔ CHEKLOVLAR
+    if pause_reason == "risk_high":
+        await cb.message.answer(
+            "🔐 Akkaunt xavfi hali yuqori.\nBiroz kutib qayta urinib ko‘ring."
+        )
+        return
+
+    if pause_reason == "daily_limit":
+        await cb.message.answer(
+            "📊 Kunlik limit tugagan.\nErtaga davom ettirishingiz mumkin."
+        )
+        return
+
+    if c["status"] != "paused":
+        return
+
+    # ✅ statusni aktiv qilamiz
+    update_campaign_status(campaign_id, "active")
+
+    # 🧹 eski task bo‘lsa to‘xtatamiz
+    stop_campaign_task(campaign_id)
+
+    # 🔁 UI yangilash
+    await render_campaign(campaign_id)
+
+    # ▶️ qayta ishga tushirish
+    task = asyncio.create_task(run_campaign(campaign_id))
+    running_campaigns[campaign_id] = task
 
 # =====================
 # BOSHQARISH
