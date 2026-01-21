@@ -1864,7 +1864,6 @@ async def main():
     #asyncio.create_task(daily_resume_worker())
 
     await restore_campaigns()
-    await dp.start_polling(bot)
 
 def get_next_group(campaign):
     groups = campaign.get("groups", [])
