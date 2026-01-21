@@ -2125,6 +2125,92 @@ async def help_back(cb: CallbackQuery):
     await cb.answer()
 
 
+@dp.message(F.text == "📚 Guruhlar katalogi")
+async def open_group_catalog(message: Message):
+    user_id = message.from_user.id
+
+    status, _, _ = get_premium_status(user_id)
+
+    if status != "active":
+        await message.answer(
+            "🔒 *Guruhlar katalogi faqat Premium foydalanuvchilar uchun*\n\n"
+            "📚 Bu yerda real va faol guruhlar mavjud.\n"
+            "🚀 Premium bilan to‘liq foydalaning.",
+            parse_mode="Markdown",
+            reply_markup=premium_cta_keyboard()
+        )
+        return
+
+    # agar premium bo‘lsa — katalogni ochamiz
+    await show_group_catalog(message, page=0)
+
+
+CATALOG_PAGE_SIZE = 20
+
+async def show_group_catalog(message: Message, page: int):
+    groups = get_catalog_groups()  # keyin yozamiz (DB)
+
+    if not groups:
+        await message.answer("📭 Katalog hozircha bo‘sh")
+        return
+
+    start = page * CATALOG_PAGE_SIZE
+    end = start + CATALOG_PAGE_SIZE
+    page_groups = groups[start:end]
+
+    kb = InlineKeyboardMarkup(inline_keyboard=[])
+
+    for g in page_groups:
+        if g["username"]:
+            text = f"👥 {g['title']}\n🔗 @{g['username']}"
+        else:
+            text = (
+                f"👥 {g['title']}\n"
+                f"🔒 Ochiq havola yo‘q\n"
+                f"👤 Qo‘shgan: @{g['added_by']}"
+            )
+
+        kb.inline_keyboard.append([
+            InlineKeyboardButton(text=text, callback_data="noop")
+        ])
+
+    # 🔁 Pagination
+    nav = []
+    if start > 0:
+        nav.append(
+            InlineKeyboardButton("⬅️ Oldingi", callback_data=f"cat_prev:{page-1}")
+        )
+    if end < len(groups):
+        nav.append(
+            InlineKeyboardButton("➡️ Keyingi", callback_data=f"cat_next:{page+1}")
+        )
+
+    if nav:
+        kb.inline_keyboard.append(nav)
+
+    await message.answer(
+        "📚 *Guruhlar katalogi*",
+        parse_mode="Markdown",
+        reply_markup=kb
+    )
+
+@dp.callback_query(F.data.startswith("cat_prev:"))
+async def cat_prev(cb: CallbackQuery):
+    page = int(cb.data.split(":")[1])
+    await cb.message.delete()
+    await show_group_catalog(cb.message, page)
+    await cb.answer()
+
+@dp.callback_query(F.data.startswith("cat_next:"))
+async def cat_next(cb: CallbackQuery):
+    page = int(cb.data.split(":")[1])
+    await cb.message.delete()
+    await show_group_catalog(cb.message, page)
+    await cb.answer()
+
+
+
+
 # =====================
 # RUN
 # =====================
