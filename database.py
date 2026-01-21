@@ -1262,24 +1262,33 @@ def remove_user_group(user_id, group_id):
     conn.commit()
     cur.close()
 
-def save_user_groups(user_id, groups):
+def save_user_groups(user_id: int, groups: list[dict]):
     conn = get_db()
     cur = conn.cursor()
 
     for g in groups:
         cur.execute("""
-            INSERT INTO user_groups (user_id, group_id, title, username, added_by)
-			VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (group_id) DO NOTHING
+            INSERT INTO user_groups (
+                user_id,
+                group_id,
+                title,
+                username,
+                peer_type
+            )
+            VALUES (%s, %s, %s, %s, %s)
+            ON CONFLICT (user_id, group_id)
+            DO NOTHING
         """, (
+            user_id,
             g["group_id"],
-            g["title"],
+            g.get("title"),
             g.get("username"),
-            user_id
+            g.get("peer_type")
         ))
 
     conn.commit()
     conn.close()
+
 
 
 
