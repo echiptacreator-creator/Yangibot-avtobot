@@ -20,7 +20,8 @@ from database import (
     create_campaign,
     update_campaign_status,
     increment_sent_count,
-    get_active_campaigns
+    get_active_campaigns,
+    get_campaign
 )
 from database import get_user_limits, get_user_usage
 from aiogram.types import ReplyKeyboardRemove
