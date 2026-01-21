@@ -48,6 +48,9 @@ from risk import increase_risk
 from database import delete_finished_campaign
 from aiogram.exceptions import TelegramBadRequest
 from telethon.errors import SessionRevokedError
+from database import get_catalog_groups
+from database import get_user_groups
+from database import save_user_groups
 from risk import (
     get_account_risk,
     increase_risk,
