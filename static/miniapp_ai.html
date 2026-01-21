@@ -1,48 +1,218 @@
 <!DOCTYPE html>
 <html lang="uz">
 <head>
-  <meta charset="UTF-8">
-  <title>AI Post</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Taxi Post</title>
 
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="miniapp_config.js"></script>
-  <link rel="stylesheet" href="miniapp_ai.css">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<style>
+:root {
+  --bg: #0f172a;
+  --card: #111827;
+  --muted: #94a3b8;
+  --accent: #22c55e;
+  --border: #1f2933;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: #fff;
+}
+
+.container {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.header {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.card {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+}
+
+.label {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+input, select, textarea {
+  width: 100%;
+  background: #020617;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  color: #fff;
+  font-size: 15px;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 70px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  padding: 8px 12px;
+  background: #020617;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.chip.active {
+  background: var(--accent);
+  color: #052e16;
+  border-color: var(--accent);
+}
+
+button {
+  width: 100%;
+  padding: 14px;
+  border-radius: 14px;
+  border: none;
+  background: var(--accent);
+  color: #052e16;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.footer {
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 10px;
+}
+</style>
 </head>
+
 <body>
+<div class="container">
 
-<div class="app">
+  <div class="header">🤖 AI taxi post yaratish</div>
 
-  <!-- PAGE 1 -->
-  <div id="page-form">
-    <header>
-      <h1>🤖 AI Post yaratish</h1>
-      <p>Maʼlumotlarni tanlang, AI post tayyorlaydi</p>
-    </header>
-
-    <form id="form"></form>
-
-    <button class="primary-btn" id="generate">
-      🚀 Postlarni yaratish
-    </button>
+  <div class="card">
+    <div class="label">📍 Yo‘nalish</div>
+    <div class="row">
+      <input id="from" placeholder="Qayerdan" />
+      <input id="to" placeholder="Qayerga" />
+    </div>
   </div>
 
-  <!-- PAGE 2 -->
-  <div id="page-preview" class="hidden">
-    <header>
-      <h1>📄 AI postlar</h1>
-      <p>Bot avtomatik tanlaydi</p>
-    </header>
-
-    <div id="preview-list"></div>
-
-    <button class="primary-btn" id="send">
-      ✅ Davom etish
-    </button>
+  <div class="card">
+    <div class="label">👥 Odamlar soni</div>
+    <input id="people" placeholder="Masalan: 2 ta" />
   </div>
+
+  <div class="card">
+    <div class="label">⏰ Ketish vaqti</div>
+    <input id="time" type="time" />
+  </div>
+
+  <div class="card">
+    <div class="label">⚡ Tezkorlik</div>
+    <div class="chips" data-key="urgent">
+      <div class="chip">Oddiy</div>
+      <div class="chip">Tezkor</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="label">🚗 Mashina (variant yoki yozish mumkin)</div>
+    <input id="car" placeholder="Masalan: Gentra / Cobalt / Spark" />
+  </div>
+
+  <div class="card">
+    <div class="label">⛽ Yoqilg‘i turi</div>
+    <div class="chips" data-key="fuel">
+      <div class="chip">Benzin</div>
+      <div class="chip">Gaz</div>
+      <div class="chip">Farqi yo‘q</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="label">📞 Aloqa</div>
+    <input id="phone" placeholder="+998..." />
+    <input id="telegram" placeholder="@username (ixtiyoriy)" style="margin-top:8px" />
+  </div>
+
+  <div class="card">
+    <div class="label">📝 Qo‘shimcha izoh (ixtiyoriy)</div>
+    <textarea id="comment" placeholder="Masalan: oldi o‘rindiq bo‘sh bo‘lsa yaxshi..."></textarea>
+  </div>
+
+  <button id="send">🤖 AI post yaratish</button>
+
+  <div class="footer">Bot postni o‘zi tanlaydi • Xavfsiz format</div>
 
 </div>
 
-<script src="miniapp_ai.js"></script>
+<script>
+const state = {};
+
+document.querySelectorAll(".chips").forEach(group => {
+  const key = group.dataset.key;
+  group.querySelectorAll(".chip").forEach(chip => {
+    chip.onclick = () => {
+      group.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
+      chip.classList.add("active");
+      state[key] = chip.innerText;
+    };
+  });
+});
+
+document.getElementById("send").onclick = () => {
+  const payload = {
+    from: from.value,
+    to: to.value,
+    people: people.value,
+    time: time.value,
+    urgent: state.urgent || null,
+    car: car.value,
+    fuel: state.fuel || null,
+    phone: phone.value,
+    telegram: telegram.value,
+    comment: comment.value
+  };
+
+  Telegram.WebApp.sendData(JSON.stringify({
+    action: "ai_post",
+    payload
+  }));
+
+  Telegram.WebApp.close();
+};
+</script>
 </body>
 </html>
