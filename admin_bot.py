@@ -33,6 +33,15 @@ dp = Dispatcher()
 router = Router()
 dp.include_router(router)
 
+def notify_admin(text: str):
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    requests.post(url, json={
+        "chat_id": ADMIN_CHAT_ID,
+        "text": text,
+        "parse_mode": "HTML"
+    })
+
+
 USERS_PAGE_SIZE = 10
 
 # =====================
