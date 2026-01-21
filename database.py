@@ -1577,7 +1577,7 @@ def get_all_users():
 
     return users
     
-    def set_user_blocked(user_id: int, blocked: bool):
+def set_user_blocked(user_id: int, blocked: bool):
     conn = get_db()
     cur = conn.cursor()
 
