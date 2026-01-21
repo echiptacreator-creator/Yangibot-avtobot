@@ -405,6 +405,15 @@ def payment_success():
         "paid_until": str(paid_until)
     })
 
+@app.route("/api/user-groups", methods=["GET"])
+def api_user_groups():
+    user_id = request.args.get("user_id", type=int)
+    if not user_id:
+        return jsonify([])
+
+    groups = get_user_groups(user_id)
+    return jsonify(groups)
+
 
 # =====================
 # RUN
