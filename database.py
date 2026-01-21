@@ -1268,8 +1268,8 @@ def save_user_groups(user_id, groups):
 
     for g in groups:
         cur.execute("""
-            INSERT INTO user_groups (group_id, title, username, added_by)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO user_groups (user_id, group_id, title, username, added_by)
+			VALUES (%s, %s, %s, %s, %s)
             ON CONFLICT (group_id) DO NOTHING
         """, (
             g["group_id"],
