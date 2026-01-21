@@ -318,31 +318,22 @@ async def pause_campaigns_after_restart():
 def main_menu():
     return ReplyKeyboardMarkup(
         keyboard=[
-            # 1️⃣ BIRINCHI QATOR — 1 TA ASOSIY TUGMA
             [KeyboardButton(text="➕ Xabar yuborish")],
-
-            # 2️⃣ QATOR — 2 TA
             [
                 KeyboardButton(text="📥 Guruhlarni yuklash"),
                 KeyboardButton(text="📋 Mening kampaniyalarim")
             ],
-
-            # 3️⃣ QATOR — 2 TA
             [
                 KeyboardButton(text="📊 Statistika"),
                 KeyboardButton(text="👤 Profil")
             ],
-
-            # 4️⃣ QATOR — 2 TA
             [
                 KeyboardButton(text="💳 Tariflar"),
                 KeyboardButton(text="📞 Yordam")
             ],
-
-            # 5️⃣ OXIRI — YAKKA
             [KeyboardButton(text="🚪 Chiqish")]
         ],
-        resize_keyboard=True
+        resize_keyboard=True   # ⬅️ MANA SHU JUDA MUHIM
     )
 
    
@@ -598,7 +589,7 @@ async def load_groups_handler(message: Message):
 
     save_temp_groups(user_id, groups)
 
-    await message.answer(
+    msg = await message.answer(
         f"✅ {len(groups)} ta guruh topildi.\n\n"
         "Endi qaysilarini saqlashni tanlang 👇",
         reply_markup=InlineKeyboardMarkup(
@@ -613,7 +604,7 @@ async def load_groups_handler(message: Message):
         )
     )
 
-# 📌 XABARNI AVTOMATIK PIN QILAMIZ
+# 📌 AVTOMATIK PIN
 try:
     await bot.pin_chat_message(
         chat_id=message.chat.id,
@@ -640,7 +631,6 @@ async def choose_send_mode(message: Message):
         )
         return
 
-    # FLOW saqlaymiz
     save_user_flow(
         user_id,
         step="choose_groups",
@@ -651,6 +641,13 @@ async def choose_send_mode(message: Message):
         }
     )
 
+    # 🔥 FAQAT SHU QATOR QO‘SHILADI
+    await message.answer(
+        "📋 Guruhlarni tanlang:",
+        reply_markup=ReplyKeyboardRemove()
+    )
+
+    # 🔁 INLINE GURUH TANLASH
     await show_group_picker(message, user_id)
 
 
@@ -757,6 +754,12 @@ async def pick_group(cb: CallbackQuery):
         data["selected_ids"] = [group_id]
         save_user_flow(user_id, "enter_text", data)
 
+            # 1️⃣ Guruh tanlash xabarini O‘CHIRAMIZ
+        try:
+            await cb.message.delete()
+        except:
+            pass
+        
         await cb.message.answer("✍️ Endi xabar matnini kiriting:")
         reply_markup=ReplyKeyboardRemove()
     )
@@ -1387,6 +1390,13 @@ async def resume_campaign(cb: CallbackQuery):
     update_campaign_status(campaign_id, "active")
 
     # ✅ 3. UI NI YANGILAYMIZ
+    # 1️⃣ Tahrirlash menyusini o‘chiramiz
+    try:
+        await cb.message.delete()
+    except:
+        pass
+    
+    # 2️⃣ Asosiy kampaniya kartasini qayta chizamiz
     await render_campaign(campaign_id)
 
     # ✅ 4. FONDA ISHGA TUSHIRAMIZ
