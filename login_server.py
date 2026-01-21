@@ -311,30 +311,6 @@ def api_temp_groups():
     groups = get_temp_groups_from_db(user_id)
     return jsonify(groups)
 
-@app.route("/api/user-groups/bulk-add", methods=["POST"])
-def save_user_groups_bulk():
-    data = request.json
-
-    user_id = data.get("user_id")
-    groups = data.get("groups", [])
-
-    if not user_id or not groups:
-        return jsonify({"ok": False, "error": "No data"}), 400
-
-    # 1️⃣ DB ga saqlaymiz
-    save_user_groups(user_id, groups)
-
-    # 2️⃣ BOTGA XABAR YUBORAMIZ  🔥
-    notify_admin_bot(
-        "📥 *Guruhlar qo‘shildi*\n\n"
-        f"👤 User ID: `{user_id}`\n"
-        f"📦 Guruhlar soni: *{len(groups)}*"
-    )
-
-    return jsonify({
-        "ok": True,
-        "added": len(groups)
-    })
 
 from datetime import date, timedelta
 from database import get_db
