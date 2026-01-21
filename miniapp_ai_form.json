@@ -1,0 +1,77 @@
+{
+  "title": "🚕 Taksist uchun post yaratish",
+  "fields": [
+    {
+      "id": "from",
+      "label": "Qayerdan ketiladi?",
+      "type": "text",
+      "required": true,
+      "placeholder": "Masalan: Andijon, Jalaquduq"
+    },
+    {
+      "id": "to",
+      "label": "Qayerga boriladi?",
+      "type": "text",
+      "required": true,
+      "placeholder": "Masalan: Toshkent"
+    },
+    {
+      "id": "people",
+      "label": "Nechta odam kerak?",
+      "type": "select",
+      "options": ["1 ta", "2 ta", "3 ta", "4 ta"],
+      "required": true
+    },
+    {
+      "id": "time",
+      "label": "Qaysi vaqtga yuriladi?",
+      "type": "text",
+      "required": true,
+      "placeholder": "Masalan: 08:00–09:00 yoki ertalab"
+    },
+    {
+      "id": "urgent",
+      "label": "Tezkor yuriladimi?",
+      "type": "select",
+      "options": ["Yo‘q", "Ha (tezkor)"]
+    },
+    {
+      "id": "female",
+      "label": "Ayol kishi bormi?",
+      "type": "select",
+      "options": ["Yo‘q", "Ha"]
+    },
+    {
+      "id": "car",
+      "label": "Mashina",
+      "type": "select",
+      "options": ["Gentra", "Cobalt", "Elantra", "Nexia", "Boshqa"]
+    },
+    {
+      "id": "fuel",
+      "label": "Yoqilg‘i turi",
+      "type": "select",
+      "options": ["Benzin", "Gaz", "Farqi yo‘q"]
+    },
+    {
+      "id": "package",
+      "label": "Pochta olinadimi?",
+      "type": "select",
+      "options": ["Yo‘q", "Ha", "Ha (zarur)"]
+    },
+    {
+      "id": "phone",
+      "label": "Telefon raqam",
+      "type": "text",
+      "required": true,
+      "placeholder": "+9989X XXXXXXX"
+    },
+    {
+      "id": "telegram",
+      "label": "Telegram manzil (ixtiyoriy)",
+      "type": "text",
+      "required": false,
+      "placeholder": "@username"
+    }
+  ]
+}
