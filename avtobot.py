@@ -1403,17 +1403,21 @@ async def run_campaign_safe(client, campaign):
     # ✅ MUDDAT TUGADI
     # =====================
     update_campaign_status(campaign["id"], "finished")
+    
+    # 👤 USERGA XABAR
     await notify_user(
         campaign["chat_id"],
         "✅ Kampaniya yakunlandi"
     )
-		await notify_admin(
-		    "✅ *Kampaniya yakunlandi*\n\n"
-		    f"👤 User: `{campaign['user_id']}`\n"
-		    f"🆔 Kampaniya: `{campaign['id']}`\n"
-		    f"📨 Yuborildi: {campaign['sent_count']}"
-		)
-
+    
+    # 👮 ADMIN GA XABAR
+    await notify_admin(
+        "✅ *Kampaniya yakunlandi*\n\n"
+        f"👤 User ID: `{campaign['user_id']}`\n"
+        f"🆔 Kampaniya ID: `{campaign['id']}`\n"
+        f"📨 Yuborildi: *{campaign['sent_count']} ta*"
+    )
+    
 
 
 # =====================
