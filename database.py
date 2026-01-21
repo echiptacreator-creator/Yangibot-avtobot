@@ -1247,6 +1247,7 @@ def save_user_groups(user_id, groups):
     conn = get_db()
     cur = conn.cursor()
 
+    # eski guruhlarni o‘chiramiz
     cur.execute(
         "DELETE FROM user_groups WHERE user_id = %s",
         (user_id,)
@@ -1254,14 +1255,21 @@ def save_user_groups(user_id, groups):
 
     for g in groups:
         cur.execute("""
-            INSERT INTO user_groups (user_id, group_id, title, username, peer_type
-            VALUES (%s, %s, %s, %s)
-        """, (
+            INSERT INTO user_groups (
                 user_id,
-                g["group_id"],
-                g["title"],
-                g.get("username"),
-                g.get("peer_type")
+                group_id,
+                title,
+                username,
+                peer_type
+            )
+            VALUES (%s, %s, %s, %s, %s)
+            ON CONFLICT (user_id, group_id) DO NOTHING
+        """, (
+            user_id,
+            g["group_id"],
+            g.get("title"),
+            g.get("username"),
+            g.get("peer_type", "channel")
         ))
 
     conn.commit()
@@ -1340,49 +1348,6 @@ def get_temp_groups_from_db(user_id):
         for r in rows
     ]
 
-def migrate_user_groups_to_group_id():
-    conn = get_db()
-    cur = conn.cursor()
-
-    try:
-        # 1️⃣ group_id ustunini qo‘shamiz (agar yo‘q bo‘lsa)
-        cur.execute("""
-            ALTER TABLE user_groups
-            ADD COLUMN IF NOT EXISTS group_id BIGINT;
-        """)
-
-        # 2️⃣ peer_id dagi qiymatlarni group_id ga ko‘chiramiz
-        cur.execute("""
-            UPDATE user_groups
-            SET group_id = peer_id
-            WHERE group_id IS NULL;
-        """)
-
-        # 3️⃣ peer_id ustunini o‘chiramiz (agar bo‘lsa)
-        cur.execute("""
-            DO $$
-            BEGIN
-                IF EXISTS (
-                    SELECT 1 FROM information_schema.columns
-                    WHERE table_name='user_groups'
-                    AND column_name='peer_id'
-                ) THEN
-                    ALTER TABLE user_groups DROP COLUMN peer_id;
-                END IF;
-            END
-            $$;
-        """)
-
-        conn.commit()
-        print("✅ user_groups → group_id migratsiya tugadi")
-
-    except Exception as e:
-        conn.rollback()
-        print("❌ MIGRATION ERROR:", e)
-
-    finally:
-        cur.close()
-        conn.close()
 
 def delete_finished_campaign(campaign_id: int, user_id: int) -> bool:
     conn = get_db()
