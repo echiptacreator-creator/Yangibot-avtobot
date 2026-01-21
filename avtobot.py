@@ -488,21 +488,28 @@ async def handle_webapp_data(message: Message):
         await message.answer("❌ Miniapp ma’lumotini o‘qib bo‘lmadi")
 
 
-@dp.message(F.web_app_data)
-async def handle_ai_miniapp(message: Message):
-    raw = message.web_app_data.data
+from aiogram.types import Message
+import json
 
+@dp.message(F.web_app_data)
+async def handle_webapp_data(message: Message):
     try:
-        data = json.loads(raw)
-    except Exception:
-        await message.answer("❌ Maʼlumotni o‘qib bo‘lmadi")
+        data = json.loads(message.web_app_data.data)
+    except Exception as e:
+        await message.answer("❌ MiniApp maʼlumotini o‘qib bo‘lmadi")
         return
 
-    # vaqtincha tekshiruv
-    await message.answer(
-        "✅ MiniApp maʼlumot keldi:\n\n"
-        f"{data}"
+    # 🔍 TEST UCHUN — KELGANINI KO‘RSATAMIZ
+    text = (
+        "✅ *MiniApp’dan maʼlumot keldi!*\n\n"
+        f"🚕 {data.get('from')} → {data.get('to')}\n"
+        f"👥 {data.get('people')}\n"
+        f"⏰ {data.get('time')}\n"
+        f"📞 {data.get('phone')}"
     )
+
+    await message.answer(text, parse_mode="Markdown")
+
 
 
 @dp.message(EditCampaign.waiting_value)
