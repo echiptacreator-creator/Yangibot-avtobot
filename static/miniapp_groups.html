@@ -194,17 +194,26 @@ async function loadGroups(){
   }
 }
 
-function toggle(id,el){
-  const card=el.closest(".group");
+function normalizeGroupId(id){
+  id = Number(id);
+  if (id < 0) return id;
+  return -id;
+}
+
+function toggle(id, el){
+  const card = el.closest(".group");
+  const gid = normalizeGroupId(id);
+
   if(el.checked){
-    selected.add(id);
+    selected.add(gid);
     card.classList.add("selected");
   }else{
-    selected.delete(id);
+    selected.delete(gid);
     card.classList.remove("selected");
   }
-  document.getElementById("count").innerText=selected.size;
+  document.getElementById("count").innerText = selected.size;
 }
+
 
 function filterGroups(q){
   q=q.toLowerCase();
@@ -219,7 +228,13 @@ async function save(){
     return;
   }
 
-  const payload = groups.filter(g => selected.has(g.group_id));
+  const payload = groups
+    .filter(g => selected.has(normalizeGroupId(g.group_id)))
+    .map(g => ({
+      ...g,
+      group_id: normalizeGroupId(g.group_id)
+    }));
+
   const btn = document.querySelector("button");
 
   btn.disabled = true;
