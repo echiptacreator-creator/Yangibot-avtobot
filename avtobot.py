@@ -69,6 +69,40 @@ running_campaigns: dict[int, asyncio.Task] = {}
 # =====================
 # STATE (XABAR YUBORISH)
 # =====================
+AI_FORM_STEPS = [
+    "from",
+    "to",
+    "people",
+    "urgent",
+    "time",
+    "female",
+    "front_seat",
+    "car",
+    "fuel",
+    "package",
+    "phone",
+    "telegram"
+]
+
+AI_FORM_LABELS = {
+    "from": "📍 Qayerdan ketiladi?",
+    "to": "📍 Qayerga boriladi?",
+    "people": "👥 Nechta odam kerak?",
+    "urgent": "⚡ Tezkor ketiladimi? (ha/yo‘q)",
+    "time": "⏰ Qaysi vaqtga ketiladi?",
+    "female": "👩 Ayol kishi bormi? (ha/yo‘q)",
+    "front_seat": "💺 Oldi o‘rindiq bo‘shmi? (ha/yo‘q)",
+    "car": "🚗 Qanaqa mashina?",
+    "fuel": "⛽ Benzinmi yoki gaz?",
+    "package": "📦 Pochta olinadimi? (ha/yo‘q)",
+    "phone": "📞 Telefon raqamni yozing",
+    "telegram": "💬 Telegram manzil (@username)"
+}
+
+# =====================
+# STATE (XABAR YUBORISH)
+# =====================
+
 PAGE_SIZE = 20  # bir sahifada nechta guruh chiqadi
 # =====================
 # CONFIG
@@ -2395,6 +2429,61 @@ async def choose_ai_mode(message: Message):
     await show_group_picker(message, user_id)
 
 
+
+@dp.message(
+    F.from_user.func(lambda u: (
+        (flow := get_user_flow(u.id)) is not None
+        and flow["step"] == "ai_form"
+    ))
+)
+async def handle_ai_form(message: Message):
+    user_id = message.from_user.id
+    flow = get_user_flow(user_id)
+    data = flow["data"]
+
+    step_index = data.get("ai_step", 0)
+    current_key = AI_FORM_STEPS[step_index]
+
+    # javobni saqlaymiz
+    data["ai_form"][current_key] = message.text.strip()
+
+    step_index += 1
+
+    # hali savollar bor
+    if step_index < len(AI_FORM_STEPS):
+        data["ai_step"] = step_index
+        save_user_flow(user_id, "ai_form", data)
+
+        next_key = AI_FORM_STEPS[step_index]
+        await message.answer(AI_FORM_LABELS[next_key])
+        return
+
+    # ✅ HAMMASI TUGADI — AI TEXT YIG‘AMIZ
+    f = data["ai_form"]
+
+    text = (
+        f"🚕 {f['from']} → {f['to']}\n"
+        f"👥 {f['people']} kishi\n"
+        f"⏰ {f['time']}\n"
+        f"⚡ Tezkor: {f['urgent']}\n"
+        f"👩 Ayol: {f['female']}\n"
+        f"💺 Oldi o‘rindiq: {f['front_seat']}\n"
+        f"🚗 Mashina: {f['car']} ({f['fuel']})\n"
+        f"📦 Pochta: {f['package']}\n"
+        f"📞 {f['phone']}\n"
+        f"💬 {f['telegram']}"
+    )
+
+    # text ni saqlaymiz (bot uchun oddiy text)
+    data["text"] = text
+
+    # endi oddiy interval bosqichiga o‘tamiz
+    save_user_flow(user_id, "enter_interval", data)
+
+    await message.answer(
+        "✅ Ma’lumotlar tayyor.\n\n"
+        "⏱ Endi intervalni tanlang:"
+    )
 
 
 
