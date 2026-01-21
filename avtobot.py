@@ -1031,96 +1031,74 @@ def normalize_chat_id(group_id: int) -> int:
 
 FLOODWAIT_PAUSE_THRESHOLD = 600  # 10 daqiqa
 
-async def send_to_group(client, campaign, group_id):
+async def send_to_group(client, campaign, group):
     user_id = campaign["user_id"]
+    group_id = group["group_id"]
+    peer_type = group.get("peer_type", "channel")
 
-    # 🔐 Riskni sekin pasaytirish
     decay_account_risk(user_id)
-
-    # 🔍 Joriy riskni olamiz
     risk = get_account_risk(user_id)
 
-    # 👑 Premium holatini tekshiramiz
-    is_premium = get_premium_status(user_id)[0] == "active"
-
-    # ✍️ Matnni variation bilan tayyorlaymiz
     text = apply_variation(campaign["text"], risk)
-    
-    # 🔒 0️⃣ YUBORISHDAN OLDIN QAT’IY TEKSHIRUV
+
     ok, reason = can_user_run_campaign(user_id)
     if not ok:
         update_campaign_status(campaign["id"], "paused")
-    
+
         usage = get_today_usage(user_id)
         limits = get_user_limits(user_id)
-    
+
         await send_limit_message(
             chat_id=campaign["chat_id"],
             used=usage,
             limit=limits["daily_limit"]
         )
-    
         return False
 
     try:
-        # 📤 XABAR YUBORISH
-        peer_id = normalize_chat_id(group_id)
-        
+        # 🎯 PEER ANIQLASH
+        if peer_type == "channel":
+            peer = normalize_chat_id(group_id)
+        else:
+            peer = await client.get_input_entity(group_id)
+
+        # 📤 YUBORISH
         if campaign["media_type"] in ("photo", "video"):
             await client.send_file(
-                peer_id,
+                peer,
                 campaign["media_file_id"],
-                caption=campaign["text"]
+                caption=text
             )
-
         else:
-            peer_id = normalize_chat_id(group_id)
-            entity = await client.get_entity(peer_id)
-            await client.send_message(entity, campaign["text"])
+            await client.send_message(peer, text)
 
-
-        # ✅ MUVAFFAQIYAT
         increment_sent_count(campaign["id"])
         increment_daily_usage(user_id, 1)
-        
-        # 🔥 YUBORISHDAN KEYIN MIKRO RISK
         increase_risk(user_id, 1)
-        
         reset_campaign_error(campaign["id"])
         return True
 
     except FloodWaitError as e:
         if e.seconds >= FLOODWAIT_PAUSE_THRESHOLD:
             update_campaign_status(campaign["id"], "paused")
-
             await notify_user(
                 campaign["chat_id"],
-                "⏸ Kampaniya avtomatik pauzaga qo‘yildi\n\n"
-                f"Sabab: Telegram FloodWait ({e.seconds} soniya)\n"
-                "⏳ Birozdan so‘ng Resume qilishingiz mumkin."
+                "⏸ Kampaniya pauzaga qo‘yildi\n"
+                f"Sabab: FloodWait ({e.seconds}s)"
             )
-            return False
-
-        # 🟡 kichik floodwait — faqat shu guruh
-        await asyncio.sleep(e.seconds)
         return False
 
     except Exception as e:
         print("SEND ERROR:", e)
-
         increment_campaign_error(campaign["id"])
 
-        # ❌ 3 marta ketma-ket xato → pause
         if campaign.get("error_count", 0) + 1 >= 3:
             update_campaign_status(campaign["id"], "paused")
-
             await notify_user(
                 campaign["chat_id"],
-                "⏸ Kampaniya pauzaga qo‘yildi\n\n"
-                "Sabab: ketma-ket xatolar.\n"
-                "🔧 Telegram akkaunt yoki guruhlarni tekshiring."
+                "⏸ Kampaniya pauzaga qo‘yildi\n"
+                "Sabab: ketma-ket xatolar"
             )
-
         return False
 
 # =====================
@@ -1231,7 +1209,7 @@ async def run_campaign_safe(client, campaign):
                 await asyncio.sleep(random.uniform(1.5, 4.0))
 
             # 📤 YUBORISH
-            ok = await send_to_group(client, campaign, group_id)
+            ok = await send_to_group(client, campaign, group)
 
             if ok:
                 sent_count += 1
