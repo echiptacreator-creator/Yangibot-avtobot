@@ -21,7 +21,8 @@ from database import (
     update_campaign_status,
     increment_sent_count,
     get_active_campaigns,
-    get_campaign
+    get_campaign,
+    update_campaign_started
 )
 from database import get_user_limits, get_user_usage
 from aiogram.types import ReplyKeyboardRemove
