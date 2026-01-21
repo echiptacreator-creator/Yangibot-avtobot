@@ -1148,8 +1148,6 @@ async def handle_numbers(message: Message):
             reply_markup=main_menu()
         )
         
-        asyncio.create_task(run_campaign(campaign_id))
-
     # =====================
 # YUBORISHGA TAYYOR
 # =====================
@@ -1431,7 +1429,7 @@ async def run_campaign_safe(client, campaign):
         f"📨 Yuborildi: *{campaign['sent_count']} ta*"
     )
     
-
+    await render_campaign(campaign["id"])
 
 # =====================
 # STATUSNI YANGILASH
