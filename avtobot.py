@@ -2031,7 +2031,7 @@ async def daily_resume_worker():
 
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 
-PREMIUM_MINIAPP_URL = "https://yangibot-avtobot-production.up.railway.app/static/miniapp.html"
+PREMIUM_MINIAPP_URL = "https://yangibot-avtobot-production.up.railway.app/static/miniapp_pricing.html"
 
 async def send_limit_message(chat_id: int, used: int, limit: int):
     kb = InlineKeyboardMarkup(inline_keyboard=[
