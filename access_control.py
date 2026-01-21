@@ -7,8 +7,9 @@ from database import (
     get_today_usage,
     get_db,
 )
-
-
+from database import get_premium_status
+from database import get_premium_status, mark_premium_notified
+from database import mark_premium_notified
 def get_subscription_status(user_id: int) -> str:
     """
     return: active | expired | blocked | none
