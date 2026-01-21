@@ -1189,7 +1189,10 @@ async def send_to_group(client, campaign, group):
 
     ok, reason = can_user_run_campaign(user_id)
     if not ok:
-        update_campaign_status(campaign["id"], "paused")
+        pause_campaign_with_reason(
+            campaign["id"],
+            "technical_errors"
+        )
 
         usage = get_today_usage(user_id)
         limits = get_user_limits(user_id)
@@ -1224,7 +1227,11 @@ async def send_to_group(client, campaign, group):
 
     except FloodWaitError as e:
         if e.seconds >= FLOODWAIT_PAUSE_THRESHOLD:
-            update_campaign_status(campaign["id"], "paused")
+            pause_campaign_with_reason(
+                campaign["id"],
+                "...sabab..."
+            )
+
             await notify_user(
                 campaign["chat_id"],
                 "⏸ Kampaniya pauzaga qo‘yildi\n"
@@ -1239,7 +1246,10 @@ async def send_to_group(client, campaign, group):
         updated = get_campaign(campaign["id"])
         if updated.get("error_count", 0) >= 3:
 
-            update_campaign_status(campaign["id"], "paused")
+            pause_campaign(
+                campaign["id"],
+                "technical_errors"
+            )
             await notify_user(
                 campaign["chat_id"],
                 "⏸ Kampaniya pauzaga qo‘yildi\n"
@@ -1294,9 +1304,10 @@ async def run_campaign(campaign_id: int):
 
     finally:
         if client:
-            await client.disconnect()
-        except:
-            pass
+            try:
+                await client.disconnect()
+            except Exception:
+                pass
 
 
 async def run_campaign_safe(client, campaign):
@@ -1333,7 +1344,10 @@ async def run_campaign_safe(client, campaign):
             return
 
         if risk >= 60:
-            update_campaign_status(campaign["id"], "paused")
+            pause_campaign_with_reason(
+                campaign["id"],
+                "...sabab..."
+            )
             await notify_user(
                 campaign["chat_id"],
                 "⏸ Kampaniya pauzaga qo‘yildi\n"
@@ -1384,7 +1398,10 @@ async def run_campaign_safe(client, campaign):
         # =====================
         except FloodWaitError as e:
             increase_risk(user_id, 40)
-            update_campaign_status(campaign["id"], "paused")
+            pause_campaign_with_reason(
+                campaign["id"],
+                f"floodwait:{e.seconds}"
+            )
 
             await notify_user(
                 campaign["chat_id"],
@@ -1406,7 +1423,10 @@ async def run_campaign_safe(client, campaign):
 
             updated = get_campaign(campaign["id"])
             if updated.get("error_count", 0) >= 3:
-                update_campaign_status(campaign["id"], "paused")
+                pause_campaign_with_reason(
+                    campaign["id"],
+                    "technical_errors"
+                )
 
                 await notify_user(
                     campaign["chat_id"],
@@ -1436,7 +1456,16 @@ async def run_campaign_safe(client, campaign):
         f"🆔 Kampaniya ID: `{campaign['id']}`\n"
         f"📨 Yuborildi: *{campaign['sent_count']} ta*"
     )
-    
+
+from database import update_campaign_pause_reason
+
+def pause_campaign_with_reason(campaign_id: int, reason: str):
+    update_campaign_status(campaign_id, "paused")
+    update_campaign_pause_reason(campaign_id, reason)
+    stop_campaign_task(campaign_id)
+
+
+
 
 def stop_campaign_task(campaign_id: int):
     task = running_campaigns.get(campaign_id)
@@ -1448,8 +1477,10 @@ def stop_campaign_task(campaign_id: int):
 def pause_campaigns_on_restart():
     campaigns = get_active_campaigns()
     for c in campaigns:
-        update_campaign_status(c["id"], "paused")
-        stop_campaign_task(c["id"])   # 🔥 QO‘SHILDI
+        pause_campaign_with_reason(
+            c["id"],
+            "server_restart"
+        )
 
 
 # =====================
@@ -1460,7 +1491,7 @@ def build_campaign_status_text(campaign_id: int) -> str:
 
     preview = c["text"][:100] + ("..." if len(c["text"]) > 100 else "")
 
-    return (
+    text = (
         "🚀 *Kampaniya holati*\n\n"
         f"🆔 ID: `{c['id']}`\n"
         f"💬 Xabar:\n_{preview}_\n\n"
@@ -1471,22 +1502,43 @@ def build_campaign_status_text(campaign_id: int) -> str:
         f"⏳ Davomiylik: {c['duration']} daqiqa"
     )
 
+    if c["status"] == "paused":
+        reason = c.get("pause_reason")
+
+        reason_map = {
+            "risk_high": "🔐 Akkaunt xavfi yuqori",
+            "daily_limit": "📊 Kunlik limit tugadi",
+            "technical_errors": "⚙️ Texnik xatolar",
+            "server_restart": "🔄 Server qayta ishga tushdi",
+            "manual_pause": "✋ Foydalanuvchi pauza qildi",
+        }
+
+        if reason and reason.startswith("floodwait"):
+            seconds = int(reason.split(":")[1])
+            reason_text = f"⏳ FloodWait ({seconds//60} daqiqa)"
+        else:
+            reason_text = reason_map.get(reason, "⏸ Nomaʼlum sabab")
+
+        text += f"\n\n⛔ *Pauza sababi:* {reason_text}"
+
+    return text
+
+
 
 # =====================
 # BOSHQARISH
 # =====================
 
 @dp.callback_query(F.data.startswith("camp_pause:"))
-async def pause_campaign(cb: CallbackQuery):
+async def pause_campaign_handler(cb: CallbackQuery):
     campaign_id = int(cb.data.split(":")[1])
-    update_campaign_status(campaign_id, "paused")
-    stop_campaign_task(campaign_id)
-
+    pause_campaign_with_reason(campaign_id, "manual_pause")
 
     await cb.message.edit_reply_markup(
         reply_markup=campaign_control_keyboard(campaign_id, "paused")
     )
     await cb.answer("⏸ Pauzaga qo‘yildi")
+
 
 
 from access_control import can_user_run_campaign
@@ -1507,6 +1559,21 @@ async def resume_campaign(cb: CallbackQuery):
     if not ok:
         await cb.message.answer(reason)
         return
+
+    if c["pause_reason"] == "risk_high":
+        await cb.message.answer(
+            "🔐 Akkaunt xavfi hali yuqori.\n"
+            "Iltimos, biroz kutib keyin davom ettiring."
+        )
+        return
+    
+    if c["pause_reason"] == "daily_limit":
+        await cb.message.answer(
+            "📊 Kunlik limit tugagan.\n"
+            "Ertaga qayta urinib ko‘ring."
+        )
+        return
+
 
     if c["status"] != "paused":
         return
@@ -1657,8 +1724,10 @@ async def edit_text(cb: CallbackQuery, state: FSMContext):
     resume_after = c["status"] == "active"
 
     if resume_after:
-        update_campaign_status(campaign_id, "paused")
-        stop_campaign_task(campaign_id)
+        pause_campaign_with_reason(
+            campaign_id,
+            "manual_edit"
+        )
 
 
     await state.set_state(EditCampaign.waiting_value)
@@ -1680,8 +1749,10 @@ async def edit_interval(cb: CallbackQuery, state: FSMContext):
     resume_after = c["status"] == "active"
 
     if resume_after:
-        update_campaign_status(campaign_id, "paused")
-        stop_campaign_task(campaign_id)
+        pause_campaign_with_reason(
+            campaign_id,
+            "manual_edit"
+        )
 
 
     await state.set_state(EditCampaign.waiting_value)
@@ -1704,8 +1775,10 @@ async def edit_duration(cb: CallbackQuery, state: FSMContext):
 
     # 🔒 Agar kampaniya active bo‘lsa — pauzaga qo‘yamiz
     if resume_after:
-        update_campaign_status(campaign_id, "paused")
-        stop_campaign_task(campaign_id)
+        pause_campaign_with_reason(
+            campaign_id,
+            "manual_edit"
+        )
 
 
     # FSM ga o‘tamiz
