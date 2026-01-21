@@ -1873,9 +1873,19 @@ async def main():
 def get_next_group(campaign):
     groups = campaign.get("groups", [])
     if not groups:
-        raise Exception("Guruhlar yo‘q")
+        raise Exception("Guruhlar mavjud emas")
 
-    return random.choice(groups)
+    group = random.choice(groups)
+
+    # 🔴 AGAR GROUP INT BO‘LSA — DICT GA AYLANTIRAMIZ
+    if isinstance(group, int):
+        return {
+            "group_id": group
+        }
+
+    # 🔴 AGAR ALLAQACHON DICT BO‘LSA
+    return group
+
 
 @dp.message()
 async def catch_all(message: Message):
