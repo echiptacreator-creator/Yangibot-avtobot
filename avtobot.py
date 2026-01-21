@@ -750,21 +750,25 @@ async def pick_group(cb: CallbackQuery):
     # =====================
     # 📍 SINGLE MODE
     # =====================
-    if data["mode"] == "single":
-        data["selected_ids"] = [group_id]
-        save_user_flow(user_id, "enter_text", data)
+if data["mode"] == "single":
+    data["selected_ids"] = [group_id]
+    save_user_flow(user_id, "enter_text", data)
 
-            # 1️⃣ Guruh tanlash xabarini O‘CHIRAMIZ
-        try:
-            await cb.message.delete()
-        except:
-            pass
-        
-        await cb.message.answer("✍️ Endi xabar matnini kiriting:")
+    # 🧹 Guruh tanlash xabarini o‘chiramiz
+    try:
+        await cb.message.delete()
+    except:
+        pass
+
+    # ⌨️ Pastdagi reply menuni olib tashlab, matn so‘raymiz
+    await cb.message.answer(
+        "👉 Endi xabar matnini kiriting:",
         reply_markup=ReplyKeyboardRemove()
     )
-        await cb.answer()
-        return
+
+    await cb.answer()
+    return
+
 
     # =====================
     # 📍 MULTI MODE
