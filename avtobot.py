@@ -179,6 +179,18 @@ async def notify_user(chat_id: int, text: str):
     except Exception:
         pass
 
+ADMIN_ID = int(os.getenv("ADMIN_ID"))
+
+async def notify_admin(text: str):
+    try:
+        await bot.send_message(
+            ADMIN_ID,
+            text,
+            parse_mode="Markdown"
+        )
+    except Exception as e:
+        print("ADMIN NOTIFY ERROR:", e)
+
 def random_interval(base_seconds: int) -> int:
     """
     Foydalanuvchi tanlagan interval atrofida random vaqt beradi
@@ -1230,6 +1242,17 @@ async def restore_campaigns():
 
     print(f"🔒 {paused} ta kampaniya restart sababli pauzaga qo‘yildi")
 
+async def notify_admin_campaign_start(campaign):
+    await bot.send_message(
+        ADMIN_ID,
+        "🚀 *Yangi kampaniya boshlandi*\n\n"
+        f"👤 User: `{campaign['user_id']}`\n"
+        f"📍 Guruhlar: {len(campaign['groups'])}\n"
+        f"⏱ Interval: {campaign['interval']} daqiqa\n"
+        f"⏳ Davomiylik: {campaign['duration']} daqiqa",
+        parse_mode="Markdown"
+    )
+
 async def run_campaign(campaign_id: int):
     campaign = get_campaign(campaign_id)
     if not campaign:
@@ -1384,6 +1407,12 @@ async def run_campaign_safe(client, campaign):
         campaign["chat_id"],
         "✅ Kampaniya yakunlandi"
     )
+	await notify_admin(
+	    "✅ *Kampaniya yakunlandi*\n\n"
+	    f"👤 User: `{campaign['user_id']}`\n"
+	    f"🆔 Kampaniya: `{campaign['id']}`\n"
+	    f"📨 Yuborildi: {campaign['sent_count']}"
+	)
 
 
 
