@@ -127,6 +127,57 @@ class EditCampaign(StatesGroup):
 # HELPERS — ACCESS
 # =====================
 
+import openai
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+async def generate_ai_variants(data: dict, risk: int, count: int = 7):
+    style = (
+        "oddiy va xavfsiz"
+        if risk < 20 else
+        "o‘rtacha ehtiyotkor"
+        if risk < 50 else
+        "juda ehtiyotkor va qisqa"
+    )
+
+    prompt = f"""
+Siz O‘zbekistondagi taksistlar uchun Telegram post yozuvchi assistentsiz.
+
+Ma’lumotlar:
+Qayerdan: {data['from']}
+Qayerga: {data['to']}
+Odam: {data['people']}
+Vaqt: {data['time']}
+Mashina: {data['car']}
+Yoqilg‘i: {data['fuel']}
+Telefon: {data['phone']}
+
+Talablar:
+- {count} xil variant yoz
+- Telegram uchun mos bo‘lsin
+- Spamga o‘xshamasin
+- Uslub: {style}
+- Emoji kam, lekin joyida
+- Har bir variant alohida bo‘lsin
+"""
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.8
+    )
+
+    text = response.choices[0].message.content
+
+    # variantlarni bo‘lib olamiz
+    variants = [
+        v.strip()
+        for v in text.split("\n\n")
+        if len(v.strip()) > 20
+    ]
+
+    return variants[:count]
+
+
 def generate_ai_posts_from_form(f: dict) -> list[str]:
     return [
         (
@@ -536,15 +587,16 @@ async def handle_webapp_data(message: Message):
     emoji_level = "🟢" if risk < 20 else "🟡" if risk < 50 else "🔴"
     urgency = "⚡ TEZKOR" if data.get("urgent") == "Ha" else ""
 
-    variants = [
-        f"""🚕 {emoji_level} TAKSI
-{data['from']} ➡️ {data['to']}
-👥 {data['people']}
-⏰ {data['time']}
-🚗 {data['car']} ({data['fuel']})
-📞 {data['phone']}
-{urgency}
-""",
+    # 🔐 foydalanuvchi riskini olamiz
+    risk = get_account_risk(user_id)
+    
+    # 🤖 AI dan 7 ta variant so‘raymiz
+    variants = await generate_ai_variants(
+        data=data,   # miniappdan kelgan form
+        risk=risk,   # akkaunt xavfi
+        count=7      # nechta variant kerak
+    )
+
 
         f"""📍 Yo‘nalish:
 {data['from']} → {data['to']}
