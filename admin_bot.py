@@ -265,7 +265,7 @@ async def admin_user_detail(cb):
     )
     await cb.answer()
     
-    @dp.callback_query(F.data.startswith("admin_toggle_block:"))
+@dp.callback_query(F.data.startswith("admin_toggle_block:"))
 async def admin_toggle_block(cb):
     if cb.from_user.id != ADMIN_ID:
         return
