@@ -127,6 +127,37 @@ class EditCampaign(StatesGroup):
 # HELPERS — ACCESS
 # =====================
 
+def generate_ai_posts_from_form(f: dict) -> list[str]:
+    posts = []
+
+    posts.append(
+        f"🚕 {f['from']} → {f['to']}\n\n"
+        f"👥 {f['people']} kishi\n"
+        f"⏰ {f['time']}\n"
+        f"🚗 {f['car']} ({f['fuel']})\n"
+        f"📞 {f['phone']}"
+    )
+
+    posts.append(
+        f"Assalomu alaykum.\n\n"
+        f"{f['from']}dan {f['to']}ga yuramiz.\n"
+        f"{f['time']} ga.\n"
+        f"{f['people']} kishi bor.\n"
+        f"📞 {f['phone']}"
+    )
+
+    posts.append(
+        f"Bugungi yo‘nalish:\n"
+        f"{f['from']} → {f['to']}\n\n"
+        f"⏰ {f['time']}\n"
+        f"🚗 {f['car']} ({f['fuel']})\n"
+        f"📞 {f['phone']}"
+    )
+
+    return posts
+
+
+
 import random
 
 PREFIXES = [
@@ -1260,7 +1291,8 @@ async def send_to_group(client, campaign, group):
 
     risk = decay_account_risk(user_id)
 
-    text = apply_variation(campaign["text"], risk)
+    texts = campaign.get("texts") or [campaign["text"]]
+    text = apply_variation(random.choice(texts), risk)
 
     ok, reason = can_user_run_campaign(user_id)
     if not ok:
@@ -2518,6 +2550,45 @@ async def handle_ai_form(message: Message):
         "⏱ Endi intervalni tanlang:"
     )
 
+async def generate_ai_posts(form_data: dict) -> list[str]:
+    prompt = build_prompt_from_form(form_data)
+
+    # hozircha FAKE (test uchun)
+    return [
+        f"🚕 {form_data['from']} → {form_data['to']} | {form_data['time']}",
+        f"Assalomu alaykum. {form_data['from']}dan {form_data['to']}ga yuramiz",
+        f"Bugun yo‘nalish: {form_data['from']} → {form_data['to']}"
+    ]
+
+@dp.message(F.web_app_data)
+async def handle_webapp_data(message: Message):
+    import json
+
+    data = json.loads(message.web_app_data.data)
+
+    # 🔥 AI postlar yasaymiz
+    posts = generate_ai_posts_from_form(data)
+
+    # 🔥 USER FLOW ga saqlaymiz
+    save_user_flow(
+        user_id=message.from_user.id,
+        step="enter_interval",
+        data={
+            "mode": "ai",
+            "texts": posts,
+            "selected_ids": get_user_groups(message.from_user.id)
+        }
+    )
+
+    await message.answer(
+        "🤖 AI postlar tayyor.\n\n"
+        "⏱ Endi intervalni tanlang:",
+        reply_markup=interval_keyboard(
+            get_interval_options_by_risk(
+                get_account_risk(message.from_user.id)
+            )[0]
+        )
+    )
 
 
 
