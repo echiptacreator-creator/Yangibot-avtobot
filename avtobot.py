@@ -525,49 +525,96 @@ import json
 
 @dp.message(F.web_app_data)
 async def handle_webapp_data(message: Message):
-    import random, json
+    import json, random
 
     data = json.loads(message.web_app_data.data)
+    user_id = message.from_user.id
+
+    risk = get_account_risk(user_id)
+
+    # 🔥 Riskga qarab sozlash
+    emoji_level = "🟢" if risk < 20 else "🟡" if risk < 50 else "🔴"
+    urgency = "⚡ TEZKOR" if data.get("urgent") == "Ha" else ""
 
     variants = [
-        f"""
-🚕 {data['from']} → {data['to']}
+        f"""🚕 {emoji_level} TAKSI
+{data['from']} ➡️ {data['to']}
 👥 {data['people']}
 ⏰ {data['time']}
 🚗 {data['car']} ({data['fuel']})
 📞 {data['phone']}
+{urgency}
 """,
-        f"""
-📍 Yo‘nalish: {data['from']} — {data['to']}
-👫 Odam: {data['people']}
-⚡ Tezkor: {data['urgent']}
-🚘 {data['car']}
-📞 Aloqa: {data['phone']}
-""",
-        f"""
-🚖 TAKSI BOR
-{data['from']} ➡️ {data['to']}
+
+        f"""📍 Yo‘nalish:
+{data['from']} → {data['to']}
+
+👫 {data['people']} kishi
 🕒 {data['time']}
+🚘 {data['car']}
+📞 {data['phone']}
+""",
+
+        f"""🚖 TAKSI BOR
+{data['from']} — {data['to']}
+⏱ {data['time']}
 👥 {data['people']}
 📞 {data['phone']}
-"""
+""",
+
+        f"""Assalomu alaykum.
+{data['from']} dan {data['to']} ga yo‘lga chiqamiz.
+{data['people']} ta joy bor.
+☎️ {data['phone']}
+""",
+
+        f"""🚕 {data['from']} ➜ {data['to']}
+⏰ {data['time']}
+👥 {data['people']}
+🚗 {data['car']}
+📞 {data['phone']}
+""",
+
+        f"""📣 TAKSI XIZMATI
+Yo‘nalish: {data['from']} – {data['to']}
+Odam: {data['people']}
+Vaqt: {data['time']}
+Aloqa: {data['phone']}
+""",
+
+        f"""🚘 Yo‘lga chiqamiz
+📍 {data['from']} ➜ {data['to']}
+👥 {data['people']}
+⏰ {data['time']}
+📞 {data['phone']}
+""",
     ]
 
-    final_text = random.choice(variants)
-
+    # 🔀 saqlab qo‘yamiz
     save_user_flow(
-        message.from_user.id,
-        step="enter_interval",
+        user_id=user_id,
+        step="ai_choose_variant",
         data={
-            "mode": "ai",
-            "text": final_text,
-            "selected_ids": get_user_groups(message.from_user.id)
+            "variants": variants,
+            "selected_ids": get_user_groups(user_id),
+            "mode": "ai"
         }
     )
 
+    # 🧠 userga tanlashni ko‘rsatamiz
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=f"{i+1}-variant", callback_data=f"ai_pick:{i}")]
+        for i in range(len(variants))
+    ] + [[
+        InlineKeyboardButton(text="🎲 Tasodifiy tanlash", callback_data="ai_pick:random")
+    ]])
+
     await message.answer(
-        "✅ AI post tayyor!\n\n⏱ Endi intervalni tanlang:"
+        "🤖 AI bir nechta post tayyorladi.\n\n"
+        "👇 Qaysi birini ishlatamiz?",
+        reply_markup=kb
     )
+
 
 
 
