@@ -1200,7 +1200,7 @@ def get_user_groups(user_id):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
-        SELECT peer_id, title, username
+        SELECT group_id, title, username
         FROM user_groups
         WHERE user_id = %s
         ORDER BY id DESC
@@ -1210,17 +1210,21 @@ def get_user_groups(user_id):
 
     return [
         {
-            "peer_id": r[0],
+            "group_id": r[0],
             "title": r[1],
             "username": r[2]
         } for r in rows
     ]
 
+
 def save_user_groups(user_id, groups):
     conn = get_db()
     cur = conn.cursor()
 
-    cur.execute("DELETE FROM user_groups WHERE user_id = %s", (user_id,))
+    cur.execute(
+        "DELETE FROM user_groups WHERE user_id = %s",
+        (user_id,)
+    )
 
     for g in groups:
         cur.execute("""
@@ -1228,13 +1232,14 @@ def save_user_groups(user_id, groups):
             VALUES (%s, %s, %s, %s)
         """, (
             user_id,
-            g["group_id"],
+            g["group_id"],   # 🔥 -100 bilan kelgan RAW ID
             g["title"],
             g.get("username")
         ))
 
     conn.commit()
     conn.close()
+
 
 def add_user_group(user_id, group_id, title, username):
     conn = get_db()
