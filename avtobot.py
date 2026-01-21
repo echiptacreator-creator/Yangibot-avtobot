@@ -1060,19 +1060,14 @@ async def handle_numbers(message: Message):
             text=build_campaign_status_text(campaign_id),
             reply_markup=campaign_control_keyboard(campaign_id, "active")
         )
-
+        
         await message.answer(
             "✅ Kampaniya ishga tushdi",
             reply_markup=main_menu()
         )
-
+        
         asyncio.create_task(run_campaign(campaign_id))
 
-            # 🔥 2️⃣ ASOSIY MENYUGA QAYTARAMIZ
-        await cb.message.answer(
-            "🏠 Asosiy menyu",
-            reply_markup=main_menu()
-        )
     # =====================
 # YUBORISHGA TAYYOR
 # =====================
