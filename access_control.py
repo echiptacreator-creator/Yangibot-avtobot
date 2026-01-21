@@ -84,3 +84,18 @@ def activate_premium(user_id: int, months: int):
     """
     execute(query, (premium_until, user_id))
 
+def can_user_run_campaign(user_id: int):
+    status, _, _ = get_premium_status(user_id)
+
+    usage = get_user_usage(user_id)
+    limits = get_user_limits(user_id)
+
+    # 🆓 FREE TARIF
+    if status != "active":
+        if usage["active_campaigns"] >= 1:
+            return False, "❌ Free tarifda faqat 1 ta kampaniya ruxsat etiladi"
+
+        if get_today_usage(user_id) >= 10:
+            return False, "❌ Free tarifda kuniga 10 ta xabar ruxsat etiladi"
+
+    return True, None
