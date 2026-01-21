@@ -27,8 +27,7 @@ from database import (
 from telethon.tl.types import Chat, Channel
 from telethon.errors import SessionRevokedError
 from database import get_db, get_temp_groups_from_db
-
-
+from admin_bot import notify_admin
 import requests
 import os
 
@@ -414,12 +413,14 @@ def api_groups_add():
     user_id = data["user_id"]
     group_ids = data["group_ids"]
 
+    added_titles = []
+
     conn = get_db()
     cur = conn.cursor()
 
     for gid in group_ids:
         cur.execute("""
-            SELECT title, username, peer_type
+            SELECT title
             FROM telegram_groups_temp
             WHERE user_id = %s AND group_id = %s
         """, (user_id, gid))
@@ -428,10 +429,24 @@ def api_groups_add():
         if not row:
             continue
 
-        title, username, peer_type = row
-        add_user_group(user_id, gid, title, username, peer_type)
+        title = row[0]
+        added_titles.append(title)
+
+        add_user_group(user_id, gid, title)
 
     conn.close()
+
+    # 🔔 ADMIN XABARNOMA
+    if added_titles:
+        text = (
+            "➕ <b>Yangi guruhlar qo‘shildi</b>\n\n"
+            f"👤 User ID: <code>{user_id}</code>\n"
+            f"📦 Guruhlar soni: <b>{len(added_titles)}</b>\n\n"
+            "📋 <b>Ro‘yxat:</b>\n" +
+            "\n".join(f"• {t}" for t in added_titles)
+        )
+        notify_admin(text)
+
     return jsonify({"status": "ok"})
 
 
