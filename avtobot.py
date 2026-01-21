@@ -202,6 +202,15 @@ async def notify_user(chat_id: int, text: str):
 
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
+async def notify_admin(text: str):
+    try:
+        await bot.send_message(
+            ADMIN_ID,
+            text,
+            parse_mode="Markdown"
+        )
+    except Exception as e:
+        print("ADMIN NOTIFY ERROR:", e)
 
 def random_interval(base_seconds: int) -> int:
     """
@@ -459,7 +468,7 @@ async def edit_value_handler(message: Message, state: FSMContext):
     if resume_after:
         update_campaign_status(campaign_id, "active")
         update_campaign_started(campaign_id)
-        
+        asyncio.create_task(run_campaign(campaign_id))
 
     await message.answer("✅ Yangilandi")
     await render_campaign(campaign_id)
@@ -1030,7 +1039,7 @@ async def pick_duration(cb: CallbackQuery):
         reply_markup=campaign_control_keyboard(campaign_id, "active")
     )
 
-    
+    asyncio.create_task(run_campaign(campaign_id))
     await cb.answer("🚀 Kampaniya boshlandi")
 
 
@@ -1125,14 +1134,13 @@ async def handle_numbers(message: Message):
         campaign_id = create_campaign(
             user_id=user_id,
             text=data.get("text", ""),
-            groups=[
-                {"group_id": gid}
-                for gid in data["selected_ids"]
-            ],
+            groups=data["selected_ids"],
             interval=data["interval"],
             duration=data["duration"],
-            chat_id=cb.message.chat.id,
-            status_message_id=status_msg.message_id
+            chat_id=message.chat.id,
+            status_message_id=status_msg.message_id,
+            media_type=data.get("media_type"),
+            media_file_id=data.get("media_file_id")
         )
 
         clear_user_flow(user_id)
@@ -1149,6 +1157,8 @@ async def handle_numbers(message: Message):
             reply_markup=main_menu()
         )
         
+        asyncio.create_task(run_campaign(campaign_id))
+
     # =====================
 # YUBORISHGA TAYYOR
 # =====================
@@ -1307,7 +1317,6 @@ async def run_campaign_safe(client, campaign):
         if not current:
             return
         
-        current = get_campaign(campaign["id"])
         if current["status"] != "active":
             return
 
@@ -1370,10 +1379,7 @@ async def run_campaign_safe(client, campaign):
             # =====================
             # ⏸ HAR 3–5 TA XABARDAN KEYIN DAM
             # =====================
-            current = get_campaign(campaign["id"])
-            sent = current["sent_count"]
-            
-            if sent % random.randint(3, 5) == 0:
+            if sent_count % random.randint(3, 5) == 0:
                 await asyncio.sleep(random.randint(600, 2400))
 
         # =====================
@@ -1427,14 +1433,14 @@ async def run_campaign_safe(client, campaign):
     )
     
     # 👮 ADMIN GA XABAR
-    notify_admin_via_adminbot(
+    await notify_admin(
         "✅ *Kampaniya yakunlandi*\n\n"
         f"👤 User ID: `{campaign['user_id']}`\n"
         f"🆔 Kampaniya ID: `{campaign['id']}`\n"
         f"📨 Yuborildi: *{campaign['sent_count']} ta*"
     )
     
-    await render_campaign(campaign["id"])
+
 
 # =====================
 # STATUSNI YANGILASH
@@ -1509,6 +1515,8 @@ async def resume_campaign(cb: CallbackQuery):
     await render_campaign(campaign_id)
 
     # ✅ 4. FONDA ISHGA TUSHIRAMIZ
+    asyncio.create_task(run_campaign(campaign_id))
+
 @dp.callback_query(F.data.startswith("camp_stop:"))
 async def stop_campaign(cb: CallbackQuery):
     campaign_id = int(cb.data.split(":")[1])
@@ -2294,6 +2302,7 @@ async def main():
     # 🔥 RESTARTDAN KEYIN AKTIV KAMPANIYALARNI PAUZA QILAMIZ
     pause_campaigns_on_restart()
     # ▶️ BOTNI ISHGA TUSHIRAMIZ
+
     await dp.start_polling(bot)
     
     asyncio.create_task(subscription_watcher())
@@ -2324,3 +2333,4 @@ async def catch_all(message: Message):
 
 if __name__ == "__main__":
     asyncio.run(main())
+    
