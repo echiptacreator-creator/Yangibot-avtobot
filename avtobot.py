@@ -525,22 +525,49 @@ import json
 
 @dp.message(F.web_app_data)
 async def handle_webapp_data(message: Message):
-    try:
-        data = json.loads(message.web_app_data.data)
-    except Exception as e:
-        await message.answer("❌ MiniApp maʼlumotini o‘qib bo‘lmadi")
-        return
+    import random, json
 
-    # 🔍 TEST UCHUN — KELGANINI KO‘RSATAMIZ
-    text = (
-        "✅ *MiniApp’dan maʼlumot keldi!*\n\n"
-        f"🚕 {data.get('from')} → {data.get('to')}\n"
-        f"👥 {data.get('people')}\n"
-        f"⏰ {data.get('time')}\n"
-        f"📞 {data.get('phone')}"
+    data = json.loads(message.web_app_data.data)
+
+    variants = [
+        f"""
+🚕 {data['from']} → {data['to']}
+👥 {data['people']}
+⏰ {data['time']}
+🚗 {data['car']} ({data['fuel']})
+📞 {data['phone']}
+""",
+        f"""
+📍 Yo‘nalish: {data['from']} — {data['to']}
+👫 Odam: {data['people']}
+⚡ Tezkor: {data['urgent']}
+🚘 {data['car']}
+📞 Aloqa: {data['phone']}
+""",
+        f"""
+🚖 TAKSI BOR
+{data['from']} ➡️ {data['to']}
+🕒 {data['time']}
+👥 {data['people']}
+📞 {data['phone']}
+"""
+    ]
+
+    final_text = random.choice(variants)
+
+    save_user_flow(
+        message.from_user.id,
+        step="enter_interval",
+        data={
+            "mode": "ai",
+            "text": final_text,
+            "selected_ids": get_user_groups(message.from_user.id)
+        }
     )
 
-    await message.answer(text, parse_mode="Markdown")
+    await message.answer(
+        "✅ AI post tayyor!\n\n⏱ Endi intervalni tanlang:"
+    )
 
 
 
