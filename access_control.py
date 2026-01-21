@@ -36,15 +36,16 @@ def get_subscription_status(user_id: int) -> str:
 
     return "expired"
 
-
 def can_user_run_campaign(user_id: int) -> tuple[bool, str]:
     # 1️⃣ LOGIN
     if not get_login_session(user_id):
         return False, "❌ Avval Telegram login qiling"
 
     # 2️⃣ SUBSCRIPTION STATUS
-    status, _, _ = get_premium_status(user_id)
-    if status == "blocked":
+    is_premium, paid_until, _ = get_premium_status(user_id)
+
+    # 🔒 Agar alohida bloklash bo‘lsa
+    if is_premium == "blocked":  # agar keyin block status qo‘shilsa
         return False, "⛔ Hisobingiz bloklangan"
 
     # 3️⃣ UMUMIY LIMITLAR (DB)
@@ -57,14 +58,13 @@ def can_user_run_campaign(user_id: int) -> tuple[bool, str]:
     # =========================
     # 🆓 FREE TARIF QOIDALARI
     # =========================
-    if status != "active":
+    if not is_premium:
         if usage["active_campaigns"] >= 1:
             return False, "❌ Free tarifda faqat 1 ta kampaniya ruxsat etiladi"
 
         if get_today_usage(user_id) >= 10:
             return False, "❌ Free tarifda kuniga 10 ta xabar ruxsat etiladi"
 
-        # ✅ free bo‘lsa shu yerda to‘xtaymiz
         return True, ""
 
     # =========================
