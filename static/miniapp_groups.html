@@ -29,9 +29,9 @@ body {
 }
 
 .container {
-  max-width: 420px;
+  max-width: 720px;
   margin: auto;
-  padding: 18px;
+  padding: 16px 16px 96px;
 }
 
 .header {
@@ -47,12 +47,24 @@ body {
   color: var(--hint);
 }
 
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
 .card {
   background: var(--card);
   border-radius: var(--radius);
   padding: 14px;
-  margin-bottom: 16px;
   box-shadow: 0 10px 28px rgba(0,0,0,.08);
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.card h3 {
+  margin-top: 0;
+  font-size: 15px;
 }
 
 .group {
@@ -77,6 +89,24 @@ body {
   font-weight: 500;
 }
 
+.empty {
+  text-align: center;
+  font-size: 13px;
+  color: var(--hint);
+  padding: 12px 0;
+}
+
+/* PINNED ACTION BAR */
+.action-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 12px 16px;
+  background: var(--card);
+  box-shadow: 0 -10px 28px rgba(0,0,0,.15);
+}
+
 .btn {
   width: 100%;
   padding: 14px;
@@ -84,20 +114,13 @@ body {
   border: none;
   background: var(--primary);
   color: var(--primary-text);
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   cursor: pointer;
 }
 .btn:disabled {
   opacity: .5;
   cursor: not-allowed;
-}
-
-.empty {
-  text-align: center;
-  font-size: 13px;
-  color: var(--hint);
-  padding: 12px 0;
 }
 </style>
 </head>
@@ -107,25 +130,31 @@ body {
 
   <div class="header">
     <h1>📌 Guruhlar</h1>
-    <p><span id="count">0</span> ta guruh saqlangan</p>
+    <p><span id="count">0</span> ta guruh qo‘shilgan</p>
   </div>
 
-  <!-- SAQLANGAN -->
-  <div class="card">
-    <b>🟢 Qo‘shilgan guruhlar</b>
-    <div id="savedBox" class="empty">Yuklanmoqda...</div>
+  <div class="grid">
+
+    <!-- SAVED -->
+    <div class="card">
+      <h3>🟢 Qo‘shilgan</h3>
+      <div id="savedBox" class="empty">Yuklanmoqda...</div>
+    </div>
+
+    <!-- NEW -->
+    <div class="card">
+      <h3>➕ Qo‘shilmagan</h3>
+      <div id="newBox" class="empty">Yuklanmoqda...</div>
+    </div>
+
   </div>
+</div>
 
-  <!-- YANGI -->
-  <div class="card">
-    <b>➕ Qo‘shilmagan guruhlar</b>
-    <div id="newBox" class="empty">Yuklanmoqda...</div>
-
-    <button id="addBtn" class="btn" disabled>
-      ➕ Tanlanganlarni qo‘shish
-    </button>
-  </div>
-
+<!-- PINNED BUTTON -->
+<div class="action-bar">
+  <button id="addBtn" class="btn" disabled>
+    ➕ Tanlanganlarni qo‘shish
+  </button>
 </div>
 
 <script>
@@ -138,20 +167,21 @@ let saved = [];
 let available = [];
 let selected = new Set();
 
+/* LOAD */
 async function loadGroups() {
   const res = await fetch(`/api/groups?user_id=${userId}`);
   const data = await res.json();
 
   saved = data.saved || [];
   available = data.available || [];
-
-  document.getElementById("count").textContent = saved.length;
   selected.clear();
 
+  document.getElementById("count").textContent = saved.length;
   renderSaved();
   renderNew();
 }
 
+/* RENDER SAVED */
 function renderSaved() {
   const box = document.getElementById("savedBox");
   box.innerHTML = "";
@@ -165,10 +195,7 @@ function renderSaved() {
     const div = document.createElement("div");
     div.className = "group saved";
 
-    const t = document.createElement("span");
-    t.className = "group-title";
-    t.textContent = g.title;
-    div.appendChild(t);
+    div.innerHTML = `<span class="group-title">${g.title}</span>`;
 
     div.onclick = () => {
       if (confirm("Bu guruhni o‘chirasizmi?")) {
@@ -180,13 +207,14 @@ function renderSaved() {
   });
 }
 
+/* RENDER NEW */
 function renderNew() {
   const box = document.getElementById("newBox");
   box.innerHTML = "";
 
   if (!available.length) {
     box.innerHTML = "<div class='empty'>Qo‘shilmagan guruh yo‘q</div>";
-    document.getElementById("addBtn").disabled = true;
+    updateBtn();
     return;
   }
 
@@ -198,56 +226,77 @@ function renderNew() {
     cb.type = "checkbox";
     cb.checked = selected.has(g.group_id);
     cb.onchange = () => toggle(g.group_id);
+
     div.appendChild(cb);
-
-    const t = document.createElement("span");
-    t.className = "group-title";
-    t.textContent = g.title;
-    div.appendChild(t);
-
+    div.innerHTML += `<span class="group-title">${g.title}</span>`;
     box.appendChild(div);
   });
 
-  document.getElementById("addBtn").disabled = selected.size === 0;
+  updateBtn();
 }
 
+/* TOGGLE */
 function toggle(id) {
   selected.has(id) ? selected.delete(id) : selected.add(id);
+  updateBtn();
+}
+
+/* PINNED BUTTON STATE */
+function updateBtn() {
   document.getElementById("addBtn").disabled = selected.size === 0;
 }
 
+/* ADD WITH OPTIMISTIC UI */
 async function addSelected() {
   if (!selected.size) return;
 
+  const toAdd = available.filter(g => selected.has(g.group_id));
+
+  // 🔥 OPTIMISTIC UI
+  available = available.filter(g => !selected.has(g.group_id));
+  saved = [...toAdd, ...saved];
+  selected.clear();
+
+  renderSaved();
+  renderNew();
+  updateBtn();
+
+  // Backend
   await fetch("/api/groups/add", {
     method: "POST",
     headers: {"Content-Type":"application/json"},
     body: JSON.stringify({
       user_id: userId,
-      group_ids: Array.from(selected)
+      group_ids: toAdd.map(g => g.group_id)
     })
   });
 
+  document.getElementById("count").textContent = saved.length;
   tg.showPopup({ message: "✅ Guruhlar qo‘shildi" });
-  loadGroups();
 }
 
+/* REMOVE */
 async function removeGroup(id) {
+  const g = saved.find(x => x.group_id === id);
+  saved = saved.filter(x => x.group_id !== id);
+  available.unshift(g);
+
+  renderSaved();
+  renderNew();
+
   await fetch("/api/groups/remove", {
     method: "POST",
     headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({
-      user_id: userId,
-      group_id: id
-    })
+    body: JSON.stringify({ user_id:userId, group_id:id })
   });
 
+  document.getElementById("count").textContent = saved.length;
   tg.showPopup({ message: "🗑 Guruh o‘chirildi" });
-  loadGroups();
 }
 
 document.getElementById("addBtn").onclick = addSelected;
 
+/* START */
 loadGroups();
 </script>
 </body>
