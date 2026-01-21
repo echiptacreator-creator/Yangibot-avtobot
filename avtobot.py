@@ -597,35 +597,25 @@ from aiogram.types import WebAppData
 from aiogram.types import Message
 import json
 
+from aiogram.types import Message
+import json
+
 @dp.message(F.web_app_data)
 async def handle_webapp_data(message: Message):
-    import json
-
-    data = json.loads(message.web_app_data.data)
-
-    if data.get("type") != "ai_form":
+    try:
+        raw = message.web_app_data.data
+        data = json.loads(raw)
+    except Exception as e:
+        await message.answer("❌ MiniApp maʼlumotini o‘qib bo‘lmadi")
         return
 
-    payload = data["payload"]
-
-    # 🔥 AI ga yuboramiz
-    variants = await generate_ai_variants(payload)
-
-    # 🔥 bot o‘zi 5 tasini tanlaydi
-    chosen = random.sample(variants, 5)
-
-    text = "🤖 *AI tanlagan postlar:*\n\n"
-    for i, t in enumerate(chosen, 1):
-        text += f"*{i}.* {t}\n\n"
-
-    await message.answer(text, parse_mode="Markdown")
-
-    # 🔥 KEYINGI QADAMGA O‘TAMIZ
-    save_user_flow(
-        user_id=message.from_user.id,
-        step="enter_interval",
-        data={"text": chosen[0]}  # bittasini kampaniya uchun
+    # 🔍 TEKSHIRUV (ENG MUHIM)
+    await message.answer(
+        "✅ MiniApp’dan maʼlumot keldi!\n\n"
+        f"📦 Action: {data.get('action')}\n"
+        f"📄 Data:\n{json.dumps(data.get('payload'), indent=2)}"
     )
+
 
 
 @dp.message(EditCampaign.waiting_value)
