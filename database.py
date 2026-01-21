@@ -216,6 +216,12 @@ def init_db():
     ADD COLUMN IF NOT EXISTS peer_type TEXT;
     """)
     
+    cur.execute("""
+	ALTER TABLE users
+	ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN DEFAULT FALSE,
+	ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW(),
+	ADD COLUMN IF NOT EXISTS last_login TIMESTAMP
+	""")
     
     conn.commit()
     cur.close()
@@ -1438,3 +1444,109 @@ def mark_premium_notified(user_id: int):
     conn.commit()
     conn.close()
 
+def is_user_blocked(user_id: int) -> bool:
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT is_blocked FROM users WHERE user_id = %s",
+        (user_id,)
+    )
+    row = cur.fetchone()
+    conn.close()
+
+    if not row:
+        return False
+
+    return bool(row[0])
+
+def get_users_for_admin(limit=20, offset=0):
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT
+            u.user_id,
+            u.username,
+            u.phone,
+            u.is_blocked,
+            u.created_at,
+            u.last_login,
+            s.status,
+            s.paid_until,
+            COALESCE((
+                SELECT COUNT(*) FROM campaigns c
+                WHERE c.user_id = u.user_id
+            ), 0) AS total_campaigns
+        FROM users u
+        LEFT JOIN subscriptions s ON s.user_id = u.user_id
+        ORDER BY u.created_at DESC
+        LIMIT %s OFFSET %s
+    """, (limit, offset))
+
+    rows = cur.fetchall()
+    conn.close()
+
+    users = []
+    for r in rows:
+        users.append({
+            "user_id": r[0],
+            "username": r[1],
+            "phone": r[2],
+            "is_blocked": r[3],
+            "created_at": r[4],
+            "last_login": r[5],
+            "sub_status": r[6],
+            "paid_until": r[7],
+            "total_campaigns": r[8]
+        })
+
+    return users
+
+def get_user_admin_detail(user_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT
+            u.user_id,
+            u.username,
+            u.phone,
+            u.is_blocked,
+            u.created_at,
+            u.last_login,
+            s.status,
+            s.paid_until
+        FROM users u
+        LEFT JOIN subscriptions s ON s.user_id = u.user_id
+        WHERE u.user_id = %s
+    """, (user_id,))
+
+    row = cur.fetchone()
+    conn.close()
+
+    if not row:
+        return None
+
+    return {
+        "user_id": row[0],
+        "username": row[1],
+        "phone": row[2],
+        "is_blocked": row[3],
+        "created_at": row[4],
+        "last_login": row[5],
+        "sub_status": row[6],
+        "paid_until": row[7]
+    }
+    
+    
+def set_user_block(user_id: int, blocked: bool):
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute(
+        "UPDATE users SET is_blocked = %s WHERE user_id = %s",
+        (blocked, user_id)
+    )
+
+    conn.commit()
+    conn.close()
