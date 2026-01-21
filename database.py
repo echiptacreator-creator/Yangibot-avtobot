@@ -1393,22 +1393,22 @@ def get_user_groups(user_id: int):
 
     return groups
 
-def get_catalog_groups():
+def get_catalog_groups(limit=50):
     conn = get_db()
     cur = conn.cursor()
 
     cur.execute("""
-        SELECT DISTINCT
+        SELECT
             g.group_id,
             g.title,
             g.username,
-            u.username AS added_by_username
+            g.added_by,
+            COUNT(*) as times_used
         FROM user_groups g
-        LEFT JOIN authorized_users u ON u.user_id = g.added_by
-        WHERE g.is_public = TRUE
-        ORDER BY g.group_id DESC
-        LIMIT 100
-    """)
+        GROUP BY g.group_id, g.title, g.username, g.added_by
+        ORDER BY times_used DESC
+        LIMIT %s
+    """, (limit,))
 
     rows = cur.fetchall()
     conn.close()
@@ -1418,10 +1418,12 @@ def get_catalog_groups():
             "group_id": r[0],
             "title": r[1],
             "username": r[2],
-            "added_by": r[3]   # 🔥 ENDI USERNAME BOR
+            "added_by": r[3],
+            "times_used": r[4]
         }
         for r in rows
     ]
+
 
 def mark_premium_notified(user_id: int):
     conn = get_db()
