@@ -67,6 +67,7 @@ def init_db():
             id SERIAL PRIMARY KEY,
             user_id BIGINT NOT NULL,
             text TEXT NOT NULL,
+			texts JSONB,
             groups JSONB NOT NULL,
             interval_minutes INTEGER NOT NULL,
             duration_minutes INTEGER NOT NULL,
@@ -331,49 +332,37 @@ import json
 import time
 
 def create_campaign(
-    user_id: int,
-    text: str,
-    groups: list,
-    interval: int,
-    duration: int,
-    chat_id: int,
-    status_message_id: int | None,
-    media_type: str | None = None,
-    media_file_id: str | None = None,
-    status: str = "active"   # ✅ QO‘SHILDI
+    user_id,
+    text,
+    groups,
+    interval,
+    duration,
+    chat_id,
+    status_message_id,
+    texts=None,
+    media_type=None,
+    media_file_id=None
 ):
-    """
-    Avtobotdan kelgan kampaniyani DB ga yozadi
-    va yangi campaign ID qaytaradi.
-    """
     conn = get_db()
     cur = conn.cursor()
 
     cur.execute("""
         INSERT INTO campaigns (
-            user_id,
-            text,
-            groups,
-            interval_minutes,
-            duration_minutes,
-            start_time,
-            sent_count,
-            status,
-            chat_id,
-            status_message_id,
-            media_type,
-            media_file_id
+            user_id, text, texts, groups,
+            interval, duration,
+            chat_id, status_message_id,
+            media_type, media_file_id,
+            status
         )
-        VALUES (%s, %s, %s, %s, %s, %s, 0, %s, %s, %s, %s, %s)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'active')
         RETURNING id
     """, (
         user_id,
         text,
+        json.dumps(texts) if texts else None,
         json.dumps(groups),
         interval,
         duration,
-        int(time.time()),
-        "active",
         chat_id,
         status_message_id,
         media_type,
@@ -383,7 +372,6 @@ def create_campaign(
     campaign_id = cur.fetchone()[0]
     conn.commit()
     conn.close()
-
     return campaign_id
 
 import json
