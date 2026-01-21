@@ -2552,31 +2552,20 @@ async def group_no_link(cb: CallbackQuery):
 
 @dp.message(F.text == "🤖 AI orqali yuborish")
 async def choose_ai_mode(message: Message):
-    user_id = message.from_user.id
-
-    save_user_flow(
-        user_id=user_id,
-        step="choose_groups",
-        data={
-            "mode": "ai",
-            "groups": get_user_groups(user_id),
-            "selected_ids": []
-        }
-    )
-
     await message.answer(
-        "🤖 AI yordamida post yaratamiz.\nDavom etish uchun bosing 👇",
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=[
+        "🤖 AI post yaratish uchun formani to‘ldiring 👇",
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[
                 [
-                    InlineKeyboardButton(
+                    KeyboardButton(
                         text="🤖 AI post yaratish",
                         web_app=WebAppInfo(
                             url="https://yangibot-avtobot-production.up.railway.app/static/miniapp_ai.html"
                         )
                     )
                 ]
-            ]
+            ],
+            resize_keyboard=True
         )
     )
 
