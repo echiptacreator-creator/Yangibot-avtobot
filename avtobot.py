@@ -61,6 +61,8 @@ from risk import (
 )
 from database import is_user_blocked
 
+running_campaigns: dict[int, asyncio.Task] = {}
+
 
 # =====================
 # STATE (XABAR YUBORISH)
@@ -468,7 +470,9 @@ async def edit_value_handler(message: Message, state: FSMContext):
     if resume_after:
         update_campaign_status(campaign_id, "active")
         update_campaign_started(campaign_id)
-        asyncio.create_task(run_campaign(campaign_id))
+        task = asyncio.create_task(run_campaign(campaign_id))
+        running_campaigns[campaign_id] = task
+
 
     await message.answer("✅ Yangilandi")
     await render_campaign(campaign_id)
@@ -665,10 +669,15 @@ async def load_groups_handler(message: Message):
             })
 
     except SessionRevokedError:
-        await message.answer(
-            "🔐 Telegram sessiyangiz bekor qilingan.\n\n"
+        update_campaign_status(campaign_id, "paused")
+        stop_campaign_task(campaign_id)
+    
+        await notify_user(
+            chat_id,
+            "🔐 Telegram login chiqib ketgan.\n"
             "Iltimos, qayta login qiling."
         )
+        return
         await client.disconnect()
         return
 
@@ -1039,7 +1048,9 @@ async def pick_duration(cb: CallbackQuery):
         reply_markup=campaign_control_keyboard(campaign_id, "active")
     )
 
-    asyncio.create_task(run_campaign(campaign_id))
+    task = asyncio.create_task(run_campaign(campaign_id))
+    running_campaigns[campaign_id] = task
+
     await cb.answer("🚀 Kampaniya boshlandi")
 
 
@@ -1157,7 +1168,9 @@ async def handle_numbers(message: Message):
             reply_markup=main_menu()
         )
         
-        asyncio.create_task(run_campaign(campaign_id))
+        task = asyncio.create_task(run_campaign(campaign_id))
+        running_campaigns[campaign_id] = task
+
 
     # =====================
 # YUBORISHGA TAYYOR
@@ -1441,6 +1454,19 @@ async def run_campaign_safe(client, campaign):
     )
     
 
+def stop_campaign_task(campaign_id: int):
+    task = running_campaigns.get(campaign_id)
+
+    if task:
+        task.cancel()
+        running_campaigns.pop(campaign_id, None)
+
+def pause_campaigns_on_restart():
+    campaigns = get_active_campaigns()
+    for c in campaigns:
+        update_campaign_status(c["id"], "paused")
+        stop_campaign_task(c["id"])   # 🔥 QO‘SHILDI
+
 
 # =====================
 # STATUSNI YANGILASH
@@ -1470,6 +1496,8 @@ def build_campaign_status_text(campaign_id: int) -> str:
 async def pause_campaign(cb: CallbackQuery):
     campaign_id = int(cb.data.split(":")[1])
     update_campaign_status(campaign_id, "paused")
+    stop_campaign_task(campaign_id)
+
 
     await cb.message.edit_reply_markup(
         reply_markup=campaign_control_keyboard(campaign_id, "paused")
@@ -1502,7 +1530,9 @@ async def resume_campaign(cb: CallbackQuery):
     # ✅ 2. STATUSNI O‘ZGARTIRAMIZ
     update_campaign_status(campaign_id, "active")
     update_campaign_started(campaign_id)
-    asyncio.create_task(run_campaign(campaign_id))
+    task = asyncio.create_task(run_campaign(campaign_id))
+    running_campaigns[campaign_id] = task
+
 
     # ✅ 3. UI NI YANGILAYMIZ
     # 1️⃣ Tahrirlash menyusini o‘chiramiz
@@ -1515,7 +1545,9 @@ async def resume_campaign(cb: CallbackQuery):
     await render_campaign(campaign_id)
 
     # ✅ 4. FONDA ISHGA TUSHIRAMIZ
-    asyncio.create_task(run_campaign(campaign_id))
+    task = asyncio.create_task(run_campaign(campaign_id))
+    running_campaigns[campaign_id] = task
+
 
 @dp.callback_query(F.data.startswith("camp_stop:"))
 async def stop_campaign(cb: CallbackQuery):
@@ -1644,6 +1676,8 @@ async def edit_text(cb: CallbackQuery, state: FSMContext):
 
     if resume_after:
         update_campaign_status(campaign_id, "paused")
+        stop_campaign_task(campaign_id)
+
 
     await state.set_state(EditCampaign.waiting_value)
     await state.update_data(
@@ -1665,6 +1699,8 @@ async def edit_interval(cb: CallbackQuery, state: FSMContext):
 
     if resume_after:
         update_campaign_status(campaign_id, "paused")
+        stop_campaign_task(campaign_id)
+
 
     await state.set_state(EditCampaign.waiting_value)
     await state.update_data(
@@ -1687,6 +1723,8 @@ async def edit_duration(cb: CallbackQuery, state: FSMContext):
     # 🔒 Agar kampaniya active bo‘lsa — pauzaga qo‘yamiz
     if resume_after:
         update_campaign_status(campaign_id, "paused")
+        stop_campaign_task(campaign_id)
+
 
     # FSM ga o‘tamiz
     await state.set_state(EditCampaign.waiting_value)
@@ -1706,6 +1744,8 @@ async def restart_campaign(cb: CallbackQuery):
 
     reset_campaign_stats(campaign_id)
     update_campaign_status(campaign_id, "paused")
+    stop_campaign_task(campaign_id)
+
 
     await render_campaign(campaign_id)
     await cb.answer("🔁 Kampaniya qayta tayyorlandi. Davom ettirishni bosing.")
