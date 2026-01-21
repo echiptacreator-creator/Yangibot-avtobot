@@ -1105,7 +1105,6 @@ async def groups_done(cb: CallbackQuery):
 # =====================
 # MATN KIRITISH
 # =====================
-
 @dp.message(
     F.from_user.func(lambda u: (
         (flow := get_user_flow(u.id)) is not None
@@ -1116,21 +1115,24 @@ async def handle_enter_text_onl(message: Message):
     user_id = message.from_user.id
     flow = get_user_flow(user_id)
 
+    if not flow:
+        return
+
     data = flow["data"]
+
+    # ✍️ matnni saqlaymiz
     if data.get("mode") == "ai":
         data["text"] = f"(AI) {message.text}"
     else:
         data["text"] = message.text
 
+    # 👉 KEYINGI BOSQICHGA O‘TAMIZ
+    save_user_flow(user_id, "enter_interval", data)
 
-        if not flow or flow["step"] != "enter_interval":
-        return
-
-
-    # 🔐 RISKKA MOS INTERVALNI OLDINDAN KO‘RSATAMIZ
+    # 🔐 riskga mos interval
     risk = get_account_risk(user_id)
     intervals, level = get_interval_options_by_risk(risk)
-    
+
     await message.answer(
         "⏱ *Xabar yuborish intervalini tanlang*\n\n"
         f"🔐 Akkaunt holati: *{level}*\n\n"
@@ -1138,6 +1140,7 @@ async def handle_enter_text_onl(message: Message):
         parse_mode="Markdown",
         reply_markup=interval_keyboard(intervals)
     )
+
 
 @dp.callback_query(F.data.startswith("pick_interval:"))
 async def pick_interval(cb: CallbackQuery):
