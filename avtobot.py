@@ -1360,6 +1360,8 @@ def normalize_chat_id(group_id: int) -> int:
 
 FLOODWAIT_PAUSE_THRESHOLD = 600  # 10 daqiqa
 
+import random
+
 async def send_to_group(client, campaign, group):
     user_id = campaign["user_id"]
     group_id = group["group_id"]
@@ -1368,10 +1370,11 @@ async def send_to_group(client, campaign, group):
     risk = decay_account_risk(user_id)
 
     texts = campaign.get("texts") or [campaign["text"]]
-    if campaign.get("texts"):
-        base_text = random.choice(campaign["texts"])
+        
+    if campaign["mode"] == "ai":
+        text = random.choice(campaign["texts"])
     else:
-        base_text = campaign["text"]
+        text = campaign["text"]
     
     text = apply_variation(base_text, risk)
 
