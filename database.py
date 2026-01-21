@@ -1193,32 +1193,47 @@ def decay_account_risk(user_id: int):
 
     return score
 
-def get_premium_status(user_id: int):
-    """
-    Vaqtincha default premium status.
-    """
-    return False, 0, False
+from datetime import date
 
-def get_user_groups(user_id):
+def get_premium_status(user_id: int):
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("""
-        SELECT group_id, title, username, peer_type
-        FROM user_groups
-        WHERE user_id = %s
-        ORDER BY id DESC
-    """, (user_id,))
-    rows = cur.fetchall()
-    cur.close()
 
-    return [
-        {
-            "group_id": r[0],
-            "title": r[1],
-            "username": r[2],
-            "peer_type": r[3]
-        } for r in rows
-    ]
+    cur.execute("""
+        SELECT status, paid_until, last_notify
+        FROM subscriptions
+        WHERE user_id = %s
+    """, (user_id,))
+
+    row = cur.fetchone()
+    conn.close()
+
+    if not row:
+        return "free", 0, False
+
+    status, paid_until, last_notify = row
+
+    # ❌ Agar active bo‘lsa-yu, muddati o‘tgan bo‘lsa
+    if status == "active" and paid_until and paid_until < date.today():
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE subscriptions
+            SET status = 'expired'
+            WHERE user_id = %s
+        """, (user_id,))
+        conn.commit()
+        conn.close()
+        return "expired", 0, False
+
+    # ✅ Premium faol
+    if status == "active" and paid_until:
+        days_left = (paid_until - date.today()).days
+        return "active", days_left, bool(last_notify)
+
+    # ⚠️ Tugagan
+    return "expired", 0, False
+
 
 def add_user_group(user_id, group_id, title, username):
     conn = get_db()
