@@ -218,7 +218,7 @@ def init_db():
     
     cur.execute("""
     ALTER TABLE user_groups
-    ADD COLUMN added_by BIGINT;
+    ADD COLUMN IF NOT EXISTS added_by BIGINT;
     """)
     
     conn.commit()
