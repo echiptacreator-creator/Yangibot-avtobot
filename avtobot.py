@@ -47,7 +47,7 @@ from telethon.utils import get_peer_id
 from risk import increase_risk
 from database import delete_finished_campaign
 from aiogram.exceptions import TelegramBadRequest
-from database import migrate_user_groups_to_group_id
+from telethon.errors import SessionRevokedError
 from risk import (
     get_account_risk,
     increase_risk,
@@ -540,18 +540,20 @@ async def load_groups_handler(message: Message):
 
     groups = []
 
-    async for dialog in client.iter_dialogs():
-        # ❌ shaxsiy chatlar
-        if dialog.is_user:
-            continue
+    try:
+        async for dialog in client.iter_dialogs():
+            if dialog.is_user:
+                continue
+            # qolgan koding shu yerda davom etadi
+    
+    except SessionRevokedError:
+        await message.answer(
+            "🔐 Telegram sessiyangiz bekor qilingan.\n\n"
+            "Iltimos, qayta login qiling va yana urinib ko‘ring."
+        )
+        await client.disconnect()
+        return
 
-        # ❌ botlar
-        if getattr(dialog.entity, "bot", False):
-            continue
-
-        # ❌ kanallar
-        if dialog.is_channel and dialog.entity.broadcast:
-            continue
 
         # ✅ faqat guruhlar (private + supergroup)
         raw_id = dialog.entity.id
@@ -1860,7 +1862,6 @@ async def main():
     # 🔥 RESTARTDAN KEYIN AKTIV KAMPANIYALARNI PAUZA QILAMIZ
     await pause_campaigns_after_restart()
     # ▶️ BOTNI ISHGA TUSHIRAMIZ
-    migrate_user_groups_to_group_id()
     await restore_campaigns()
     await dp.start_polling(bot)
     
