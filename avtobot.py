@@ -45,7 +45,6 @@ from telethon.tl.types import Chat, Channel
 from database import save_temp_groups
 from telethon.utils import get_peer_id
 from risk import increase_risk
-from database import migrate_user_groups_table
 from database import migrate_user_groups_to_group_id
 from risk import (
     get_account_risk,
@@ -94,7 +93,7 @@ SUFFIXES = [
     "Aloqaga chiqing.",
     "Batafsil kelishamiz.",
     "Hozir mavjud.",
-    "Qulay narxda.",
+    "Shoshililar.",
 ]
 
 def apply_variation(text: str, risk: int) -> str:
