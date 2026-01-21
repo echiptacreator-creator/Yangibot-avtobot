@@ -1067,6 +1067,12 @@ async def handle_numbers(message: Message):
         )
 
         asyncio.create_task(run_campaign(campaign_id))
+
+            # 🔥 2️⃣ ASOSIY MENYUGA QAYTARAMIZ
+        await cb.message.answer(
+            "🏠 Asosiy menyu",
+            reply_markup=main_menu()
+        )
     # =====================
 # YUBORISHGA TAYYOR
 # =====================
@@ -1080,12 +1086,6 @@ def normalize_chat_id(group_id: int) -> int:
 
     # musbat bo‘lsa → supergroup deb qabul qilamiz
     return int("-100" + gid)
-
-        # 🔥 2️⃣ ASOSIY MENYUGA QAYTARAMIZ
-    await cb.message.answer(
-        "🏠 Asosiy menyu",
-        reply_markup=main_menu()
-    )
 
 FLOODWAIT_PAUSE_THRESHOLD = 600  # 10 daqiqa
 
