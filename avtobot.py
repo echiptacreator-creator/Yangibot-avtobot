@@ -1068,12 +1068,9 @@ async def send_to_group(client, campaign, group):
         return False
 
     try:
-        # 🎯 PEER ANIQLASH
-        if peer_type == "channel":
-            peer = normalize_chat_id(group_id)
-        else:
-            peer = await client.get_input_entity(group_id)
-
+        # 🎯 PEER ANIQLASH (HAR DOIM ISHONCHLI)
+        peer = await client.get_input_entity(group_id)
+    
         # 📤 YUBORISH
         if campaign["media_type"] in ("photo", "video"):
             await client.send_file(
@@ -1083,12 +1080,13 @@ async def send_to_group(client, campaign, group):
             )
         else:
             await client.send_message(peer, text)
-
+    
         increment_sent_count(campaign["id"])
         increment_daily_usage(user_id, 1)
         increase_risk(user_id, 1)
         reset_campaign_error(campaign["id"])
         return True
+
 
     except FloodWaitError as e:
         if e.seconds >= FLOODWAIT_PAUSE_THRESHOLD:
