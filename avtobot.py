@@ -293,6 +293,34 @@ TARIFFS = {
 
 PAYMENT_CARD = "8600 **** **** ****"
 
+def profile_premium_keyboard(is_premium: bool):
+    if is_premium:
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="👑 Premium faol",
+                        callback_data="noop"
+                    )
+                ]
+            ]
+        )
+    else:
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="💳 Premiumga o‘tish",
+                        web_app=WebAppInfo(
+                            url="https://yangibot-avtobot-production.up.railway.app/static/miniapp_pricing.html"
+                        )
+                    )
+                ]
+            ]
+        )
+
+
+
 def help_keyboard():
     return InlineKeyboardMarkup(
         inline_keyboard=[
@@ -1799,8 +1827,9 @@ async def show_profile(message: Message):
     await message.answer(
         text,
         parse_mode="Markdown",
-        reply_markup=main_menu()
+        reply_markup=profile_premium_keyboard(status == "active")
     )
+
 
 
 # =====================
