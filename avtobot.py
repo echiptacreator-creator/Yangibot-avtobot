@@ -1760,21 +1760,39 @@ async def show_profile(message: Message):
         interval_hint = "30+ daqiqa"
 
     text = (
-        "👤 *PROFIL*\n\n"
-        f"🆔 ID: `{user_id}`\n"
-        f"{sub_text}\n\n"
-        "📊 *FAOLIYAT*\n"
-        "━━━━━━━━━━━━━━\n"
-        f"📂 Jami kampaniyalar: {usage['total_campaigns']} / {limits.get('max_campaigns', '-')}\n"
-        f"🟢 Faol kampaniyalar: {usage['active_campaigns']} / {limits.get('max_active', '-')}\n"
-        f"📨 Bugun yuborildi: {used_today} / {limits.get('daily_limit', '-')}\n\n"
-        "🔐 *XAVFSIZLIK*\n"
-        "━━━━━━━━━━━━━━\n"
-        f"🛡 Risk darajasi: {risk_text}\n"
-        f"⚡ Tavsiya etilgan interval: {interval_hint}\n\n"
-        "ℹ️ *MASLAHAT*\n"
-        "━━━━━━━━━━━━━━\n"
-        "Sekin yuboring — akkaunt uzoq yashaydi 🚀"
+    "👤 *FOYDALANUVCHI PROFILI*\n"
+    "━━━━━━━━━━━━━━━━━━\n\n"
+    f"🆔 *ID:* `{user_id}`\n"
+    f"{sub_text}\n\n"
+
+    "📊 *FAOLIYAT HOLATI*\n"
+    "━━━━━━━━━━━━━━━━━━\n"
+    f"📨 *Bugun yuborildi:* {used_today} / {limits.get('daily_limit', '∞')}\n"
+    f"📂 *Jami kampaniyalar:* {usage['total_campaigns']} / {limits.get('max_campaigns', '∞')}\n"
+    f"🟢 *Faol kampaniyalar:* {usage['active_campaigns']} / {limits.get('max_active', '∞')}\n\n"
+
+    "🔐 *XAVFSIZLIK & TAVSIYA*\n"
+    "━━━━━━━━━━━━━━━━━━\n"
+    f"🛡 *Risk darajasi:* {risk_text}\n"
+    f"⚡ *Tavsiya etilgan interval:* {interval_hint}\n\n"
+)
+
+# 🎯 TARIFGA QARAB OXIRI
+if status == "active":
+    text += (
+        "👑 *Premium foydalanuvchi afzalliklari:*\n"
+        "• Cheklanmagan xabar yuborish\n"
+        "• Ko‘p kampaniya bir vaqtda\n"
+        "• Minimal bloklanish xavfi\n\n"
+        "🚀 Siz maksimal rejimda ishlayapsiz"
+    )
+else:
+    text += (
+        "🆓 *Free tarif cheklovlari:*\n"
+        "• Kuniga 10 ta xabar\n"
+        "• Faqat 1 ta kampaniya\n"
+        "• Yuqori riskda tez to‘xtaydi\n\n"
+        "💳 *Premium* bilan cheklovlarni olib tashlang"
     )
 
     await message.answer(
