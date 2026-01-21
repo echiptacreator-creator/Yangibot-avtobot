@@ -1857,7 +1857,6 @@ async def main():
     # 🔥 RESTARTDAN KEYIN AKTIV KAMPANIYALARNI PAUZA QILAMIZ
     await pause_campaigns_after_restart()
     # ▶️ BOTNI ISHGA TUSHIRAMIZ
-    await dp.start_polling(bot)
     migrate_user_groups_table()
     await restore_campaigns()
     await dp.start_polling(bot)
