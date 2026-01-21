@@ -1123,7 +1123,9 @@ async def handle_enter_text_onl(message: Message):
         data["text"] = message.text
 
 
-    save_user_flow(user_id, "enter_interval", data)
+    if not flow or flow["step"] != "enter_interval":
+    return
+
 
     # 🔐 RISKKA MOS INTERVALNI OLDINDAN KO‘RSATAMIZ
     risk = get_account_risk(user_id)
@@ -1139,31 +1141,31 @@ async def handle_enter_text_onl(message: Message):
 
 @dp.callback_query(F.data.startswith("pick_interval:"))
 async def pick_interval(cb: CallbackQuery):
+    await cb.answer()  # ✅ ENG AVVAL
+
     user_id = cb.from_user.id
     interval = int(cb.data.split(":")[1])
 
     flow = get_user_flow(user_id)
     if not flow or flow["step"] != "enter_interval":
-        await cb.answer()
         return
 
     data = flow["data"]
     data["interval"] = interval
     save_user_flow(user_id, "enter_duration", data)
-    
+
     min_d, safe_d, max_d = calculate_duration_limits(interval)
-    
+
     await cb.message.edit_text(
         "⏳ *Kampaniya davomiyligini tanlang (daqiqada)*\n\n"
         f"🟢 Xavfsiz: {min_d} – {safe_d}\n"
         f"🟡 O‘rtacha: {safe_d} – {max_d}\n"
         f"🔴 Xavfli: {max_d}+\n\n"
-        "👇 Tugmalardan birini tanlang yoki raqam yozing:",
+        "👇 Tugmalardan birini tanlang:",
         parse_mode="Markdown",
         reply_markup=duration_keyboard(min_d, safe_d, max_d)
     )
 
-    await cb.answer("⏱ Interval tanlandi")
     
 @dp.callback_query(F.data.startswith("pick_duration:"))
 async def pick_duration(cb: CallbackQuery):
@@ -2683,7 +2685,9 @@ async def handle_ai_form(message: Message):
     ]
 
     # endi oddiy interval bosqichiga o‘tamiz
-    save_user_flow(user_id, "enter_interval", data)
+    if not flow or flow["step"] != "enter_interval":
+    return
+
 
     await message.answer(
         "✅ Ma’lumotlar tayyor.\n\n"
@@ -2700,26 +2704,36 @@ async def generate_ai_posts(form_data: dict) -> list[str]:
         f"Bugun yo‘nalish: {form_data['from']} → {form_data['to']}"
     ]
 
-
 @dp.message(F.web_app_data)
 async def handle_webapp_data(message: Message):
     import json
 
-    try:
-        form_data = json.loads(message.web_app_data.data)
-    except Exception:
-        await message.answer("❌ AI form ma’lumotini o‘qib bo‘lmadi")
-        return
+    form_data = json.loads(message.web_app_data.data)
 
-    
+    # 🔥 AI postlar tayyorlaymiz
+    texts = generate_ai_variants(form_data, count=5)
+
+    save_user_flow(
+        user_id=message.from_user.id,
+        step="enter_interval",
+        data={
+            "mode": "ai",
+            "texts": texts,
+            "selected_ids": get_user_groups(message.from_user.id)
+        }
+    )
+
     risk = get_account_risk(message.from_user.id)
     intervals, level = get_interval_options_by_risk(risk)
 
     await message.answer(
-        "🤖 AI post tayyorlashga tayyor.\n\n"
+        "🤖 AI postlar tayyor!\n\n"
+        f"🔐 Holat: *{level}*\n"
         "⏱ Endi intervalni tanlang:",
+        parse_mode="Markdown",
         reply_markup=interval_keyboard(intervals)
     )
+
 
 
 @dp.callback_query(F.data.startswith("ai_pick:"))
