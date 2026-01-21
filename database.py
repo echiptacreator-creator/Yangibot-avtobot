@@ -1550,3 +1550,35 @@ def set_user_block(user_id: int, blocked: bool):
 
     conn.commit()
     conn.close()
+    
+    
+def get_all_users():
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT 
+            u.user_id,
+            u.username,
+            s.status,
+            s.paid_until,
+            u.created_at
+        FROM authorized_users u
+        LEFT JOIN subscriptions s ON s.user_id = u.user_id
+        ORDER BY u.created_at DESC
+    """)
+
+    rows = cur.fetchall()
+    conn.close()
+
+    users = []
+    for r in rows:
+        users.append({
+            "user_id": r[0],
+            "username": r[1],
+            "sub_status": r[2] or "free",
+            "paid_until": r[3],
+            "created_at": r[4]
+        })
+
+    return users
