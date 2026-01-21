@@ -751,25 +751,25 @@ async def pick_group(cb: CallbackQuery):
     # =====================
     # 📍 SINGLE MODE
     # =====================
-if data["mode"] == "single":
-    data["selected_ids"] = [group_id]
-    save_user_flow(user_id, "enter_text", data)
-
-    # 🧹 Inline guruh tanlash xabarini o‘chiramiz
-    try:
-        await cb.message.delete()
-    except:
-        pass
-
-    # ⌨️ YANGI xabar yuboramiz (o‘chirilgan message emas!)
-    await cb.bot.send_message(
-        chat_id=cb.from_user.id,
-        text="👉 Endi xabar matnini kiriting:",
-        reply_markup=ReplyKeyboardRemove()
-    )
-
-    await cb.answer()
-    return
+    if data["mode"] == "single":
+        data["selected_ids"] = [group_id]
+        save_user_flow(user_id, "enter_text", data)
+    
+        # 🧹 Inline guruh tanlash xabarini o‘chiramiz
+        try:
+            await cb.message.delete()
+        except:
+            pass
+    
+        # ⌨️ YANGI xabar yuboramiz (o‘chirilgan message emas!)
+        await cb.bot.send_message(
+            chat_id=cb.from_user.id,
+            text="👉 Endi xabar matnini kiriting:",
+            reply_markup=ReplyKeyboardRemove()
+        )
+    
+        await cb.answer()
+        return
 
 
     # =====================
