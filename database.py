@@ -1216,32 +1216,6 @@ def get_user_groups(user_id):
         } for r in rows
     ]
 
-
-def save_user_groups(user_id, groups):
-    conn = get_db()
-    cur = conn.cursor()
-
-    cur.execute(
-        "DELETE FROM user_groups WHERE user_id = %s",
-        (user_id,)
-    )
-
-    for g in groups:
-        cur.execute("""
-            INSERT INTO user_groups (user_id, group_id, title, username)
-            VALUES (%s, %s, %s, %s)
-        """, (
-            user_id,
-            g["group_id"],   # 🔥 MiniApp’dan kelgan group_id
-            g["title"],
-            g.get("username")
-        ))
-
-
-    conn.commit()
-    conn.close()
-
-
 def add_user_group(user_id, group_id, title, username):
     conn = get_db()
     cur = conn.cursor()
@@ -1267,7 +1241,6 @@ def save_user_groups(user_id, groups):
     conn = get_db()
     cur = conn.cursor()
 
-    # eski guruhlarni tozalaymiz
     cur.execute(
         "DELETE FROM user_groups WHERE user_id = %s",
         (user_id,)
@@ -1275,7 +1248,7 @@ def save_user_groups(user_id, groups):
 
     for g in groups:
         cur.execute("""
-            INSERT INTO user_groups (user_id, peer_id, title, username)
+            INSERT INTO user_groups (user_id, group_id, title, username)
             VALUES (%s, %s, %s, %s)
         """, (
             user_id,
@@ -1285,7 +1258,9 @@ def save_user_groups(user_id, groups):
         ))
 
     conn.commit()
+    cur.close()
     conn.close()
+
 
 
 def get_temp_groups_from_db(user_id: int):
