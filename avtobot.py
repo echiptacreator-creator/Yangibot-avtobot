@@ -114,6 +114,7 @@ ADMIN_ID = int(os.getenv("ADMIN_ID"))
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 DATABASE_URL = os.getenv("DATABASE_URL")
 LOGIN_WEBAPP_URL = os.getenv("LOGIN_WEBAPP_URL")
+MINIAPP_URL =https://yangibot-avtobot-production.up.railway.app/miniapp_ai.html"
 
 bot = Bot(BOT_TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
@@ -427,10 +428,15 @@ async def pause_campaigns_after_restart():
 
     print(f"⏸ {paused} ta kampaniya restart sababli pauzaga qo‘yildi")
 
-
 def main_menu():
     return ReplyKeyboardMarkup(
         keyboard=[
+            [
+                KeyboardButton(
+                    text="🤖 AI orqali post yaratish",
+                    web_app=WebAppInfo(url=MINIAPP_URL)
+                )
+            ],
             [KeyboardButton(text="➕ Xabar yuborish")],
             [
                 KeyboardButton(text="📥 Guruhlarni yuklash"),
@@ -443,15 +449,15 @@ def main_menu():
             [
                 KeyboardButton(text="📊 Statistika"),
                 KeyboardButton(text="📚 Guruhlar katalogi")
-                            ],
-            [   KeyboardButton(text="📞 Yordam"),
-                KeyboardButton(text="🚪 Chiqish")]
+            ],
+            [
+                KeyboardButton(text="📞 Yordam"),
+                KeyboardButton(text="🚪 Chiqish")
+            ]
         ],
-        resize_keyboard=True   # ⬅️ MANA SHU JUDA MUHIM
+        resize_keyboard=True
     )
 
-[
-    KeyboardButton(text="📚 Guruhlar katalogi")
 ]
 
    
