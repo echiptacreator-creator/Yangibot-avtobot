@@ -1357,31 +1357,32 @@ def get_temp_groups_from_db(user_id):
         for r in rows
     ]
 
-def migrate_user_groups_table():
+def migrate_user_groups_to_group_id():
     conn = get_db()
     cur = conn.cursor()
 
     try:
-        # 1. group_id ustunini qo‘shamiz
+        # 1️⃣ group_id ustunini qo‘shamiz (agar yo‘q bo‘lsa)
         cur.execute("""
             ALTER TABLE user_groups
             ADD COLUMN IF NOT EXISTS group_id BIGINT;
         """)
 
-        # 2. eski peer_id dan ko‘chiramiz
+        # 2️⃣ peer_id dagi qiymatlarni group_id ga ko‘chiramiz
         cur.execute("""
             UPDATE user_groups
             SET group_id = peer_id
             WHERE group_id IS NULL;
         """)
 
-        # 3. peer_id ustunini o‘chiramiz (agar bo‘lsa)
+        # 3️⃣ peer_id ustunini o‘chiramiz (agar bo‘lsa)
         cur.execute("""
             DO $$
             BEGIN
                 IF EXISTS (
                     SELECT 1 FROM information_schema.columns
-                    WHERE table_name='user_groups' AND column_name='peer_id'
+                    WHERE table_name='user_groups'
+                    AND column_name='peer_id'
                 ) THEN
                     ALTER TABLE user_groups DROP COLUMN peer_id;
                 END IF;
@@ -1390,11 +1391,11 @@ def migrate_user_groups_table():
         """)
 
         conn.commit()
-        print("✅ user_groups migratsiya qilindi")
+        print("✅ user_groups → group_id migratsiya tugadi")
 
     except Exception as e:
         conn.rollback()
-        print("❌ Migratsiya xato:", e)
+        print("❌ MIGRATION ERROR:", e)
 
     finally:
         cur.close()
