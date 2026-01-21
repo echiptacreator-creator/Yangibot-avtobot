@@ -45,6 +45,8 @@ from telethon.tl.types import Chat, Channel
 from database import save_temp_groups
 from telethon.utils import get_peer_id
 from risk import increase_risk
+from database import delete_finished_campaign
+from aiogram.exceptions import TelegramBadRequest
 from database import migrate_user_groups_to_group_id
 from risk import (
     get_account_risk,
@@ -1365,15 +1367,27 @@ async def resume_campaign(cb: CallbackQuery):
     # ✅ 4. FONDA ISHGA TUSHIRAMIZ
     asyncio.create_task(run_campaign(campaign_id))
 
-
-
 @dp.callback_query(F.data.startswith("camp_stop:"))
 async def stop_campaign(cb: CallbackQuery):
     campaign_id = int(cb.data.split(":")[1])
+    user_id = cb.from_user.id
+
+    # 1️⃣ avval yakunlaymiz
     update_campaign_status(campaign_id, "finished")
 
-    await cb.message.edit_text("⛔ Kampaniya yakunlandi")
-    await cb.answer()
+    # 2️⃣ keyin o‘chiramiz
+    deleted = delete_finished_campaign(campaign_id, user_id)
+
+    if deleted:
+        try:
+            await cb.message.edit_text("🗑 Kampaniya o‘chirildi")
+        except TelegramBadRequest:
+            pass
+    else:
+        await cb.answer(
+            "❌ Kampaniyani o‘chirish mumkin emas",
+            show_alert=True
+        )
 
 def campaign_control_keyboard(campaign_id: int, status: str):
     keyboard = InlineKeyboardMarkup(inline_keyboard=[])
