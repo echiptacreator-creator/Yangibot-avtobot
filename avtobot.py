@@ -734,12 +734,12 @@ async def show_group_picker(message, user_id, edit=False):
 
     if offset > 0:
         nav.append(
-            InlineKeyboardButton("⬅️ Oldingi", callback_data="grp_prev")
+            InlineKeyboardButton(text="⬅️ Oldingi", callback_data="grp_prev")
         )
 
     if offset + PAGE_SIZE < len(groups):
         nav.append(
-            InlineKeyboardButton("➡️ Keyingi", callback_data="grp_next")
+            InlineKeyboardButton(text="➡️ Keyingi", callback_data="grp_next")
         )
 
     if nav:
