@@ -1205,7 +1205,7 @@ def get_user_groups(user_id):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
-        SELECT group_id, title, username
+        SELECT group_id, title, username, peer_type
         FROM user_groups
         WHERE user_id = %s
         ORDER BY id DESC
