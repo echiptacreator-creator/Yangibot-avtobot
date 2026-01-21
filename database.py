@@ -1095,20 +1095,25 @@ def reset_campaign_stats(campaign_id: int):
 def get_all_campaigns():
     conn = get_db()
     cur = conn.cursor()
+
     cur.execute("""
-        SELECT id, status
+        SELECT id, user_id, status, chat_id
         FROM campaigns
     """)
+
     rows = cur.fetchall()
     conn.close()
 
     return [
         {
-            "id": row[0],
-            "status": row[1]
+            "id": r[0],
+            "user_id": r[1],
+            "status": r[2],
+            "chat_id": r[3],
         }
-        for row in rows
+        for r in rows
     ]
+
 
 def update_campaign_text(campaign_id: int, text: str):
     conn = get_db()
