@@ -1069,7 +1069,6 @@ async def send_to_group(client, campaign, group_id):
                 caption=campaign["text"]
             )
 
-            )
         else:
             peer_id = normalize_chat_id(group_id)
             entity = await client.get_entity(peer_id)
