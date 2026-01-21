@@ -216,10 +216,6 @@ def init_db():
     ADD COLUMN IF NOT EXISTS peer_type TEXT;
     """)
     
-    cur.execute("""
-    ALTER TABLE user_groups
-    ADD COLUMN IF NOT EXISTS added_by BIGINT;
-    """)
     
     conn.commit()
     cur.close()
