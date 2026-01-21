@@ -127,17 +127,71 @@ class EditCampaign(StatesGroup):
 # HELPERS — ACCESS
 # =====================
 
-import openai
-openai.api_key = os.getenv("OPENAI_API_KEY")
+from openai import AsyncOpenAI
+import os
 
-async def generate_ai_variants(data: dict, risk: int, count: int = 7):
-    style = (
-        "oddiy va xavfsiz"
-        if risk < 20 else
-        "o‘rtacha ehtiyotkor"
-        if risk < 50 else
-        "juda ehtiyotkor va qisqa"
+openai_client = AsyncOpenAI(
+    api_key=os.getenv("OPENAI_API_KEY")
+)
+
+async def generate_ai_variants(data: dict, risk: int, count: int = 7) -> list[str]:
+    """
+    data — miniapp form
+    risk — akkaunt xavfi
+    count — nechta variant
+    """
+
+    risk_style = (
+        "juda ehtiyotkor, neytral, qisqa"
+        if risk >= 50 else
+        "tabiiy, ishonchli"
+        if risk >= 25 else
+        "erkinroq, jonli, sotuvga yo‘naltirilgan"
     )
+
+    prompt = f"""
+Sen O‘zbekistondagi taksistlar uchun post yozuvchi yordamchisan.
+
+Quyidagi maʼlumotlardan foydalanib {count} ta BIR-BIRIGA O‘XSHAMAGAN post yoz.
+
+Uslub: {risk_style}
+Til: o‘zbekcha
+Spamga o‘xshamasin
+Emoji kam, lekin chiroyli bo‘lsin
+
+Maʼlumotlar:
+Qayerdan: {data.get('from')}
+Qayerga: {data.get('to')}
+Odamlar: {data.get('people')}
+Vaqt: {data.get('time')}
+Tezkor: {data.get('urgent')}
+Ayol: {data.get('female')}
+Oldi o‘rindiq: {data.get('front_seat')}
+Mashina: {data.get('car')}
+Yoqilg‘i: {data.get('fuel')}
+Pochta: {data.get('package')}
+Telefon: {data.get('phone')}
+Telegram: {data.get('telegram')}
+
+Natijani faqat RO‘YXAT ko‘rinishida ber.
+Har bir post orasiga `---` qo‘y.
+"""
+
+    response = await openai_client.responses.create(
+        model="gpt-4.1-mini",
+        input=prompt
+    )
+
+    raw_text = response.output_text
+
+    variants = [
+        v.strip()
+        for v in raw_text.split("---")
+        if v.strip()
+    ]
+
+    return variants[:count]
+
 
     prompt = f"""
 Siz O‘zbekistondagi taksistlar uchun Telegram post yozuvchi assistentsiz.
