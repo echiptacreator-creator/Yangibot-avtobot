@@ -789,7 +789,7 @@ async def show_group_picker(message, user_id, edit=False):
         kb.inline_keyboard.append(nav)
 
     # 🔹 MULTI MODE → DAVOM ETISH
-    if data["mode"] == "multi":
+    if data["mode"] in ("multi", "ai"):
         kb.inline_keyboard.append([
             InlineKeyboardButton(
                 text="➡️ Davom etish",
