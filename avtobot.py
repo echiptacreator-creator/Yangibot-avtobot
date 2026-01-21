@@ -318,17 +318,33 @@ async def pause_campaigns_after_restart():
 def main_menu():
     return ReplyKeyboardMarkup(
         keyboard=[
+            # 1️⃣ BIRINCHI QATOR — 1 TA ASOSIY TUGMA
             [KeyboardButton(text="➕ Xabar yuborish")],
-            [KeyboardButton(text="📥 Guruhlarni yuklash")],  # 🔥 MUHIM
-            [KeyboardButton(text="📋 Mening kampaniyalarim")],
-            [KeyboardButton(text="📂 Guruhlar katalogi")],
-            [KeyboardButton(text="💳 Tariflar")],
-            [KeyboardButton(text="📊 Statistika")],
-            [KeyboardButton(text="👤 Profil")],
+
+            # 2️⃣ QATOR — 2 TA
+            [
+                KeyboardButton(text="📥 Guruhlarni yuklash"),
+                KeyboardButton(text="📋 Mening kampaniyalarim")
+            ],
+
+            # 3️⃣ QATOR — 2 TA
+            [
+                KeyboardButton(text="📊 Statistika"),
+                KeyboardButton(text="👤 Profil")
+            ],
+
+            # 4️⃣ QATOR — 2 TA
+            [
+                KeyboardButton(text="💳 Tariflar"),
+                KeyboardButton(text="📞 Yordam")
+            ],
+
+            # 5️⃣ OXIRI — YAKKA
             [KeyboardButton(text="🚪 Chiqish")]
         ],
         resize_keyboard=True
     )
+
    
 async def subscription_watcher():
     while True:
@@ -597,6 +613,15 @@ async def load_groups_handler(message: Message):
         )
     )
 
+# 📌 XABARNI AVTOMATIK PIN QILAMIZ
+try:
+    await bot.pin_chat_message(
+        chat_id=message.chat.id,
+        message_id=msg.message_id,
+        disable_notification=True
+    )
+except:
+    pass
 
 # =====================
 # PAFINATION CALLBACK
@@ -733,6 +758,8 @@ async def pick_group(cb: CallbackQuery):
         save_user_flow(user_id, "enter_text", data)
 
         await cb.message.answer("✍️ Endi xabar matnini kiriting:")
+        reply_markup=ReplyKeyboardRemove()
+    )
         await cb.answer()
         return
 
@@ -862,6 +889,11 @@ async def pick_interval(cb: CallbackQuery):
     
 @dp.callback_query(F.data.startswith("pick_duration:"))
 async def pick_duration(cb: CallbackQuery):
+    try:
+        await cb.message.edit_reply_markup(reply_markup=None)
+    except:
+        pass
+
     user_id = cb.from_user.id
     duration = int(cb.data.split(":")[1])
 
@@ -1040,6 +1072,11 @@ def normalize_chat_id(group_id: int) -> int:
     # musbat bo‘lsa → supergroup deb qabul qilamiz
     return int("-100" + gid)
 
+# 🔥 2️⃣ ASOSIY MENYUGA QAYTARAMIZ
+await cb.message.answer(
+    "🏠 Asosiy menyu",
+    reply_markup=main_menu()
+)
 
 FLOODWAIT_PAUSE_THRESHOLD = 600  # 10 daqiqa
 
@@ -1416,17 +1453,20 @@ def campaign_control_keyboard(campaign_id: int, status: str):
     return keyboard
 
 @dp.callback_query(F.data.startswith("camp_back:"))
-async def camp_back(cb):
+async def camp_back(cb: CallbackQuery):
     campaign_id = int(cb.data.split(":")[1])
 
-    edit = editing_campaign.pop(cb.from_user.id, None)
+    # 🔥 1️⃣ Tahrirlash menyusi turgan xabarni o‘chiramiz
+    try:
+        await cb.message.delete()
+    except:
+        pass
 
-    if edit and edit.get("resume_after"):
-        update_campaign_status(campaign_id, "active")
-        asyncio.create_task(run_campaign(campaign_id))
-
+    # 🔁 2️⃣ Kampaniya kartasini qayta chizamiz
     await render_campaign(campaign_id)
+
     await cb.answer()
+
 
 def campaign_edit_keyboard(campaign_id: int):
     return InlineKeyboardMarkup(
