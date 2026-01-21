@@ -12,6 +12,7 @@ from aiogram.types import (
 )
 from telethon import TelegramClient
 import os
+import json
 import random
 from database import init_db, get_db
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -486,6 +487,22 @@ async def handle_webapp_data(message: Message):
     except Exception as e:
         await message.answer("❌ Miniapp ma’lumotini o‘qib bo‘lmadi")
 
+
+@dp.message(F.web_app_data)
+async def handle_ai_miniapp(message: Message):
+    raw = message.web_app_data.data
+
+    try:
+        data = json.loads(raw)
+    except Exception:
+        await message.answer("❌ Maʼlumotni o‘qib bo‘lmadi")
+        return
+
+    # vaqtincha tekshiruv
+    await message.answer(
+        "✅ MiniApp maʼlumot keldi:\n\n"
+        f"{data}"
+    )
 
 
 @dp.message(EditCampaign.waiting_value)
@@ -2219,6 +2236,7 @@ async def send_limit_message(chat_id: int, used: int, limit: int):
 
 
 
+
 # =====================
 # RUN
 # =====================
@@ -2504,6 +2522,7 @@ async def handle_ai_form(message: Message):
         "✅ Ma’lumotlar tayyor.\n\n"
         "⏱ Endi intervalni tanlang:"
     )
+
 
 
 
