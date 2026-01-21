@@ -3,38 +3,46 @@
 <head>
   <meta charset="UTF-8">
   <title>AI Post</title>
-
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="miniapp_config.js"></script>
-
   <link rel="stylesheet" href="miniapp_ai.css">
 </head>
-
 <body>
-  <div class="app">
 
-    <!-- HEADER -->
-    <header class="header">
-      <div class="header-title">🤖 AI Post yaratish</div>
-      <div class="header-subtitle">
-        Maʼlumotlarni tanlang, AI professional post tayyorlaydi
-      </div>
+<div class="app">
+
+  <!-- PAGE 1 -->
+  <div id="page-form">
+    <header>
+      <h1>🤖 AI Post yaratish</h1>
+      <p>Maʼlumotlarni tanlang, AI post tayyorlaydi</p>
     </header>
 
-    <!-- FORM -->
-    <form id="form" class="form"></form>
+    <form id="form"></form>
 
-    <!-- FOOTER -->
-    <div class="footer">
-      <button id="send" class="primary-btn">
-        🚀 AI orqali post yaratish
-      </button>
-    </div>
-
+    <button class="primary-btn" id="generate">
+      🚀 Postlarni yaratish
+    </button>
   </div>
 
-  <script src="miniapp_ai.js"></script>
+  <!-- PAGE 2 -->
+  <div id="page-preview" class="hidden">
+    <header>
+      <h1>📄 AI postlar</h1>
+      <p>Bot avtomatik tanlaydi</p>
+    </header>
+
+    <div id="preview-list"></div>
+
+    <button class="primary-btn" id="send">
+      ✅ Davom etish
+    </button>
+  </div>
+
+</div>
+
+<script src="miniapp_ai.js"></script>
 </body>
 </html>
