@@ -1619,14 +1619,15 @@ def ensure_user_groups_schema():
     conn.commit()
     conn.close()
 
-def add_user_group(user_id, group_id, title=None, username=None):
+def add_user_group(user_id, group_id, title, username=None, peer_type=None):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
-        INSERT INTO user_groups (user_id, group_id, title, username)
-        VALUES (%s, %s, %s, %s)
+        INSERT INTO user_groups (user_id, group_id, title, username, peer_type)
+        VALUES (%s, %s, %s, %s, %s)
         ON CONFLICT (user_id, group_id) DO NOTHING
-    """, (user_id, group_id, title, username))
+    """, (user_id, group_id, title, username, peer_type))
     conn.commit()
     conn.close()
+
 
