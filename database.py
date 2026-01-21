@@ -1376,3 +1376,23 @@ def migrate_user_groups_to_group_id():
     finally:
         cur.close()
         conn.close()
+
+def delete_finished_campaign(campaign_id: int, user_id: int) -> bool:
+    conn = get_db()
+    cur = conn.cursor()
+
+    # faqat shu userniki va finished bo‘lsa o‘chadi
+    cur.execute("""
+        DELETE FROM campaigns
+        WHERE id = %s
+          AND user_id = %s
+          AND status = 'finished'
+    """, (campaign_id, user_id))
+
+    deleted = cur.rowcount > 0
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return deleted
