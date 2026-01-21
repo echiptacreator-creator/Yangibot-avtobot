@@ -223,11 +223,6 @@ def init_db():
 	ADD COLUMN IF NOT EXISTS last_login TIMESTAMP
 	""")
 	
-    cur.execute("""
-	ALTER TABLE campaigns
-	ADD COLUMN pause_reason TEXT;
-	""")
-	
     conn.commit()
     cur.close()
     conn.close()
