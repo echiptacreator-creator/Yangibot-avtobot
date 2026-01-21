@@ -579,14 +579,7 @@ async def pause_campaigns_after_restart():
 def main_menu():
     return ReplyKeyboardMarkup(
         keyboard=[
-            [
-                KeyboardButton(
-                    text="🤖 AI orqali post yaratish",
-                    web_app=WebAppInfo(
-                        url="https://yangibot-avtobot-production.up.railway.app/static/miniapp_ai.html"
-                    )
-                )
-            ],
+  
             [KeyboardButton(text="➕ Xabar yuborish")],
             [
                 KeyboardButton(text="📥 Guruhlarni yuklash"),
@@ -2638,19 +2631,19 @@ async def choose_ai_mode(message: Message):
         user_id=user_id,
         step="choose_groups",
         data={
-            "mode": "ai",   # 🔥 MANA SHU MUHIM
+            "mode": "ai",
             "groups": get_user_groups(user_id),
             "selected_ids": []
         }
     )
 
     await message.answer(
-        "🤖 AI orqali yuborish rejimi yoqildi.\n"
-        "Guruhlarni tanlang:",
+        "🤖 AI orqali yuborish rejimi yoqildi.\nGuruhlarni tanlang:",
         reply_markup=ReplyKeyboardRemove()
     )
 
     await show_group_picker(message, user_id)
+
 
 
 
