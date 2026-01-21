@@ -1371,8 +1371,8 @@ async def send_to_group(client, campaign, group):
 
     texts = campaign.get("texts") or [campaign["text"]]
         
-    if campaign["mode"] == "ai":
-        text = random.choice(campaign["texts"])
+    if campaign.get("texts"):
+        text = random.choice(campaign["texts"]
     else:
         text = campaign["text"]
     
