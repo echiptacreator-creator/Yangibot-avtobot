@@ -434,7 +434,7 @@ def main_menu():
                 KeyboardButton(
                     text="🤖 AI orqali post yaratish",
                     web_app=WebAppInfo(url=https://yangibot-avtobot-production.up.railway.app/static/miniapp_ai.html")
-                )
+            
             ],
             [KeyboardButton(text="➕ Xabar yuborish")],
             [
