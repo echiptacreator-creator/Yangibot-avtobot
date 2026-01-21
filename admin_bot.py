@@ -143,6 +143,155 @@ async def reject_payment_cb(callback: CallbackQuery):
     await callback.answer("Rad etildi")
 
 
+from aiogram import Bot, Dispatcher, F
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
+from database import get_users_for_admin
+
+ADMIN_ID = 515902673  # o‘zingniki
+
+@dp.message(F.text == "/start")
+async def admin_start(message: Message):
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="👥 Foydalanuvchilar",
+                callback_data="admin_users:0"
+            )
+        ]
+    ])
+
+    await message.answer(
+        "🛠 *ADMIN PANEL*\n\nKerakli bo‘limni tanlang:",
+        parse_mode="Markdown",
+        reply_markup=kb
+    )
+    
+    USERS_PAGE_SIZE = 10
+
+@dp.callback_query(F.data.startswith("admin_users:"))
+async def admin_users_list(cb):
+    if cb.from_user.id != ADMIN_ID:
+        return
+
+    page = int(cb.data.split(":")[1])
+    offset = page * USERS_PAGE_SIZE
+
+    users = get_users_for_admin(limit=USERS_PAGE_SIZE, offset=offset)
+
+    kb = InlineKeyboardMarkup(inline_keyboard=[])
+
+    for u in users:
+        status = "⛔" if u["is_blocked"] else "🟢"
+        name = u["username"] or u["phone"] or u["user_id"]
+
+        kb.inline_keyboard.append([
+            InlineKeyboardButton(
+                text=f"{status} {name}",
+                callback_data=f"admin_user:{u['user_id']}"
+            )
+        ])
+
+    nav = []
+    if page > 0:
+        nav.append(
+            InlineKeyboardButton("⬅️ Oldingi", callback_data=f"admin_users:{page-1}")
+        )
+    if len(users) == USERS_PAGE_SIZE:
+        nav.append(
+            InlineKeyboardButton("➡️ Keyingi", callback_data=f"admin_users:{page+1}")
+        )
+
+    if nav:
+        kb.inline_keyboard.append(nav)
+
+    await cb.message.edit_text(
+        "👥 *Foydalanuvchilar ro‘yxati:*",
+        parse_mode="Markdown",
+        reply_markup=kb
+    )
+    await cb.answer()
+    
+    from database import get_user_admin_detail, set_user_block
+
+@dp.callback_query(F.data.startswith("admin_user:"))
+async def admin_user_detail(cb):
+    if cb.from_user.id != ADMIN_ID:
+        return
+
+    user_id = int(cb.data.split(":")[1])
+    u = get_user_admin_detail(user_id)
+
+    if not u:
+        await cb.answer("Topilmadi", show_alert=True)
+        return
+
+    sub = u["sub_status"] or "free"
+    blocked = u["is_blocked"]
+
+    text = (
+        "👤 *FOYDALANUVCHI KARTASI*\n"
+        "━━━━━━━━━━━━━━\n\n"
+        f"🆔 ID: `{u['user_id']}`\n"
+        f"👤 Username: @{u['username']}\n"
+        f"📞 Telefon: {u['phone']}\n\n"
+        f"💳 Obuna: {sub}\n"
+        f"⏳ Tugash: {u['paid_until']}\n\n"
+        f"🚫 Holat: {'Bloklangan' if blocked else 'Faol'}\n"
+        f"📅 Ro‘yxatdan o‘tgan: {u['created_at']}"
+    )
+
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="🔓 Blokdan chiqarish" if blocked else "⛔ Bloklash",
+                callback_data=f"admin_toggle_block:{u['user_id']}"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="⬅️ Orqaga",
+                callback_data="admin_users:0"
+            )
+        ]
+    ])
+
+    await cb.message.edit_text(
+        text,
+        parse_mode="Markdown",
+        reply_markup=kb
+    )
+    await cb.answer()
+    
+    @dp.callback_query(F.data.startswith("admin_toggle_block:"))
+async def admin_toggle_block(cb):
+    if cb.from_user.id != ADMIN_ID:
+        return
+
+    user_id = int(cb.data.split(":")[1])
+    u = get_user_admin_detail(user_id)
+
+    if not u:
+        return
+
+    new_status = not u["is_blocked"]
+    set_user_block(user_id, new_status)
+
+    await cb.answer(
+        "⛔ Bloklandi" if new_status else "🔓 Blokdan chiqarildi",
+        show_alert=True
+    )
+
+    # 🔄 qayta chizamiz
+    await admin_user_detail(cb)
+
+
+    
+
+
+
 # =========================
 # RUN
 # =========================
