@@ -1014,6 +1014,17 @@ async def handle_numbers(message: Message):
 # YUBORISHGA TAYYOR
 # =====================
 
+def normalize_chat_id(group_id: int) -> int:
+    gid = str(group_id)
+
+    # allaqachon to‘g‘ri bo‘lsa
+    if gid.startswith("-"):
+        return int(gid)
+
+    # musbat bo‘lsa → supergroup deb qabul qilamiz
+    return int("-100" + gid)
+
+
 FLOODWAIT_PAUSE_THRESHOLD = 600  # 10 daqiqa
 
 async def send_to_group(client, campaign, group_id):
@@ -1029,11 +1040,7 @@ async def send_to_group(client, campaign, group_id):
     is_premium = get_premium_status(user_id)[0] == "active"
 
     # ✍️ Matnni variation bilan tayyorlaymiz
-    text = apply_variation(
-        campaign["text"],
-        risk=risk,
-        is_premium=is_premium
-    )
+    text = apply_variation(campaign["text"], risk)
     
     # 🔒 0️⃣ YUBORISHDAN OLDIN QAT’IY TEKSHIRUV
     ok, reason = can_user_run_campaign(user_id)
@@ -1053,17 +1060,21 @@ async def send_to_group(client, campaign, group_id):
 
     try:
         # 📤 XABAR YUBORISH
+        peer_id = normalize_chat_id(group_id)
+        
         if campaign["media_type"] in ("photo", "video"):
             await client.send_file(
-                group_id,
+                peer_id,
                 campaign["media_file_id"],
                 caption=campaign["text"]
             )
-        else:
-            peer_id = group_id  # endi bu peer_id bo‘ladi
 
+            )
+        else:
+            peer_id = normalize_chat_id(group_id)
             entity = await client.get_entity(peer_id)
             await client.send_message(entity, campaign["text"])
+
 
         # ✅ MUVAFFAQIYAT
         increment_sent_count(campaign["id"])
