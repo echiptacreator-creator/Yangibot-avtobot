@@ -1407,12 +1407,12 @@ async def run_campaign_safe(client, campaign):
         campaign["chat_id"],
         "✅ Kampaniya yakunlandi"
     )
-	await notify_admin(
-	    "✅ *Kampaniya yakunlandi*\n\n"
-	    f"👤 User: `{campaign['user_id']}`\n"
-	    f"🆔 Kampaniya: `{campaign['id']}`\n"
-	    f"📨 Yuborildi: {campaign['sent_count']}"
-	)
+		await notify_admin(
+		    "✅ *Kampaniya yakunlandi*\n\n"
+		    f"👤 User: `{campaign['user_id']}`\n"
+		    f"🆔 Kampaniya: `{campaign['id']}`\n"
+		    f"📨 Yuborildi: {campaign['sent_count']}"
+		)
 
 
 
