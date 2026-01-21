@@ -1306,6 +1306,7 @@ async def run_campaign_safe(client, campaign):
         if not current:
             return
         
+        current = get_campaign(campaign["id"])
         if current["status"] != "active":
             return
 
@@ -1368,7 +1369,10 @@ async def run_campaign_safe(client, campaign):
             # =====================
             # ⏸ HAR 3–5 TA XABARDAN KEYIN DAM
             # =====================
-            if sent_count % random.randint(3, 5) == 0:
+            current = get_campaign(campaign["id"])
+            sent = current["sent_count"]
+            
+            if sent % random.randint(3, 5) == 0:
                 await asyncio.sleep(random.randint(600, 2400))
 
         # =====================
