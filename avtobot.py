@@ -2721,6 +2721,44 @@ async def handle_webapp_data(message: Message):
         reply_markup=interval_keyboard(intervals)
     )
 
+@dp.callback_query(F.data.startswith("ai_pick:"))
+async def ai_pick_variant(cb: CallbackQuery):
+    user_id = cb.from_user.id
+    flow = get_user_flow(user_id)
+
+    if not flow or flow["step"] != "ai_choose_variant":
+        await cb.answer()
+        return
+
+    variants = flow["data"]["variants"]
+
+    choice = cb.data.split(":")[1]
+
+    if choice == "random":
+        text = random.choice(variants)
+    else:
+        text = variants[int(choice)]
+
+    # 🔥 endi oddiy flowga o‘tamiz
+    flow["data"]["text"] = text
+    save_user_flow(user_id, "enter_interval", flow["data"])
+
+    await cb.message.edit_text(
+        "✅ Post tanlandi.\n\n⏱ Endi intervalni tanlang:"
+    )
+
+    # interval keyboard
+    risk = get_account_risk(user_id)
+    intervals, level = get_interval_options_by_risk(risk)
+
+    await cb.message.answer(
+        f"🔐 Akkaunt holati: *{level}*\n\n"
+        "Intervalni tanlang:",
+        reply_markup=interval_keyboard(intervals),
+        parse_mode="Markdown"
+    )
+
+    await cb.answer()
 
 
 
