@@ -150,15 +150,6 @@ def apply_variation(text: str, risk: int) -> str:
     return result
 
 
-from database import get_active_campaigns, update_campaign_status
-
-def pause_campaigns_on_restart():
-    campaigns = get_active_campaigns()
-    for c in campaigns:
-        update_campaign_status(c["id"], "paused")
-    print(f"⏸ {len(campaigns)} ta kampaniya restart sababli pauzaga qo‘yildi")
-
-
 from database import get_login_session
 
 def is_logged_in(user_id):
@@ -1289,21 +1280,20 @@ async def notify_admin_campaign_start(campaign):
 from asyncio import CancelledError
 
 async def run_campaign(campaign_id: int):
+    client = None
     try:
         campaign = get_campaign(campaign_id)
         if not campaign:
             return
 
         client = await get_client(campaign["user_id"])
-        ...
         await run_campaign_safe(client, campaign)
 
     except CancelledError:
-        print(f"Campaign {campaign_id} cancelled safely")
         return
 
     finally:
-        try:
+        if client:
             await client.disconnect()
         except:
             pass
@@ -2071,20 +2061,6 @@ async def notify_admin_about_subscriptions():
                 f"📌 Status: expired",
                 parse_mode="Markdown"
             )
-async def daily_resume_worker():
-    while True:
-        await asyncio.sleep(60 * 60 * 24)
-
-        conn = get_db()
-        cur = conn.cursor()
-        cur.execute("""
-            UPDATE campaigns
-            SET status = 'active'
-            WHERE status = 'paused'
-        """)
-        conn.commit()
-        conn.close()
-
 
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 
@@ -2325,7 +2301,6 @@ async def group_no_link(cb: CallbackQuery):
         show_alert=True
     )
 
-
 # =====================
 # RUN
 # =====================
@@ -2339,8 +2314,7 @@ async def main():
     
     asyncio.create_task(subscription_watcher())
     asyncio.create_task(admin_notification_worker())
-    #asyncio.create_task(daily_resume_worker())
-
+    
 
 def get_next_group(campaign):
     groups = campaign.get("groups", [])
