@@ -573,74 +573,20 @@ from aiogram.types import WebAppData
 
 from aiogram.types import Message
 import json
-
 @dp.message(F.web_app_data)
 async def handle_webapp_data(message: Message):
-    import json, random
-
     data = json.loads(message.web_app_data.data)
     user_id = message.from_user.id
 
     risk = get_account_risk(user_id)
 
-    # 🔥 Riskga qarab sozlash
-    emoji_level = "🟢" if risk < 20 else "🟡" if risk < 50 else "🔴"
-    urgency = "⚡ TEZKOR" if data.get("urgent") == "Ha" else ""
-
-    # 🔐 foydalanuvchi riskini olamiz
-    risk = get_account_risk(user_id)
-    
-    # 🤖 AI dan 7 ta variant so‘raymiz
     variants = await generate_ai_variants(
-        data=data,   # miniappdan kelgan form
-        risk=risk,   # akkaunt xavfi
-        count=7      # nechta variant kerak
+        data=data,
+        risk=risk,
+        count=7
     )
 
-
-        f"""📍 Yo‘nalish:
-{data['from']} → {data['to']}
-
-👫 {data['people']} kishi
-🕒 {data['time']}
-🚘 {data['car']}
-📞 {data['phone']}
-""",
-
-        f"""🚖 TAKSI BOR
-{data['from']} — {data['to']}
-⏱ {data['time']}
-👥 {data['people']}
-📞 {data['phone']}
-""",
-
-        f"""Assalomu alaykum.
-{data['from']} dan {data['to']} ga yo‘lga chiqamiz.
-{data['people']} ta joy bor.
-☎️ {data['phone']}
-""",
-
-        f"""🚕 {data['from']} ➜ {data['to']}
-⏰ {data['time']}
-👥 {data['people']}
-🚗 {data['car']}
-📞 {data['phone']}
-""",
-
-        f"""📣 TAKSI XIZMATI
-Yo‘nalish: {data['from']} – {data['to']}
-Odam: {data['people']}
-Vaqt: {data['time']}
-Aloqa: {data['phone']}
-""",
-
-        f"""🚘 Yo‘lga chiqamiz
-📍 {data['from']} ➜ {data['to']}
-👥 {data['people']}
-⏰ {data['time']}
-📞 {data['phone']}
-""",
-    ]
+    # keyingi preview card kodi o‘zgarishsiz qoladi
 
     # 🔀 saqlab qo‘yamiz
     save_user_flow(
