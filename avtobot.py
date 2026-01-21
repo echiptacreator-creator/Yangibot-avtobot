@@ -620,18 +620,27 @@ from aiogram.types import WebAppData
 
 from aiogram.types import Message
 import json
+
 @dp.message(F.web_app_data)
 async def handle_webapp_data(message: Message):
     data = json.loads(message.web_app_data.data)
-    user_id = message.from_user.id
 
-    risk = get_account_risk(user_id)
+    if data["type"] == "ai_posts_selected":
+        posts = data["posts"]   # 5 ta post
 
-    variants = await generate_ai_variants(
-        data=data,
-        risk=risk,
-        count=7
-    )
+        save_user_flow(
+            user_id=message.from_user.id,
+            step="enter_interval",
+            data={
+                "ai_posts": posts,
+                "text": random.choice(posts)  # hozircha bittasini tanlaymiz
+            }
+        )
+
+        await message.answer(
+            "✅ AI postlar qabul qilindi.\n\n⏱ Endi intervalni tanlang:"
+        )
+
 
     # keyingi preview card kodi o‘zgarishsiz qoladi
 
