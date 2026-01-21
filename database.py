@@ -1632,31 +1632,6 @@ def add_user_group(user_id, group_id, title, username=None, peer_type=None):
 
 from datetime import date
 
-def get_premium_status(user_id: int):
-    """
-    returns: (status: bool, paid_until: date|None, last_notify: date|None)
-    """
-    conn = get_db()
-    cur = conn.cursor()
-
-    cur.execute("""
-        SELECT paid_until, last_notify
-        FROM subscriptions
-        WHERE user_id = %s
-    """, (user_id,))
-    row = cur.fetchone()
-    conn.close()
-
-    if not row:
-        return False, None, None
-
-    paid_until, last_notify = row
-    if paid_until and paid_until >= date.today():
-        return True, paid_until, last_notify
-
-    return False, paid_until, last_notify
-
-
 def mark_premium_notified(user_id: int):
     conn = get_db()
     cur = conn.cursor()
@@ -1667,4 +1642,5 @@ def mark_premium_notified(user_id: int):
     """, (user_id,))
     conn.commit()
     conn.close()
+
 
