@@ -293,6 +293,20 @@ TARIFFS = {
 
 PAYMENT_CARD = "8600 **** **** ****"
 
+def help_keyboard():
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="⏸ Kampaniya nega pauza bo‘ldi", callback_data="help_pause")],
+            [InlineKeyboardButton(text="📨 Xabar guruhga bormayapti", callback_data="help_not_sent")],
+            [InlineKeyboardButton(text="⏱ Qaysi interval xavfsiz", callback_data="help_interval")],
+            [InlineKeyboardButton(text="🔐 Risk nima degani", callback_data="help_risk")],
+            [InlineKeyboardButton(text="📥 Guruhlar chiqmayapti", callback_data="help_groups")],
+            [InlineKeyboardButton(text="👤 Admin bilan bog‘lanish", callback_data="help_admin")],
+            [InlineKeyboardButton(text="⬅️ Orqaga", callback_data="help_back")]
+        ]
+    )
+
+
 async def pause_campaigns_after_restart():
     campaigns = get_all_campaigns()
     paused = 0
@@ -1912,6 +1926,114 @@ async def send_limit_message(chat_id: int, used: int, limit: int):
         reply_markup=kb,
         parse_mode="Markdown"
     )
+
+
+
+
+
+
+
+
+# =====================
+# RUN
+# =====================
+
+@dp.message(F.text == "📞 Yordam")
+async def help_menu(message: Message):
+    await message.answer(
+        "❓ Qaysi muammo bo‘yicha yordam kerak?",
+        reply_markup=help_keyboard()
+    )
+@dp.callback_query(F.data == "help_pause")
+async def help_pause(cb: CallbackQuery):
+    await cb.message.edit_text(
+        "⏸ *Kampaniya nega pauza bo‘ldi?*\n\n"
+        "Asosiy sabablar:\n"
+        "• Telegram FloodWait\n"
+        "• Risk darajasi oshgan\n"
+        "• Server qayta ishga tushgan\n\n"
+        "💡 Tavsiya:\n"
+        "• Intervalni 10–15 daqiqa qiling\n"
+        "• Biroz kutib davom ettiring",
+        parse_mode="Markdown",
+        reply_markup=help_keyboard()
+    )
+    await cb.answer()
+@dp.callback_query(F.data == "help_not_sent")
+async def help_not_sent(cb: CallbackQuery):
+    await cb.message.edit_text(
+        "📨 *Xabar guruhga bormayapti*\n\n"
+        "Sabablar:\n"
+        "• Guruhda yozish huquqi yo‘q\n"
+        "• Juda tez yuborilmoqda\n"
+        "• Akkaunt cheklangan\n\n"
+        "💡 Yechim:\n"
+        "• Intervalni oshiring\n"
+        "• Guruhni tekshiring",
+        parse_mode="Markdown",
+        reply_markup=help_keyboard()
+    )
+    await cb.answer()
+@dp.callback_query(F.data == "help_interval")
+async def help_interval(cb: CallbackQuery):
+    await cb.message.edit_text(
+        "⏱ *Qaysi interval xavfsiz?*\n\n"
+        "🟢 10–20 daqiqa — juda xavfsiz\n"
+        "🟡 5–10 daqiqa — o‘rtacha\n"
+        "🔴 3 daqiqa va kam — xavfli\n\n"
+        "❗ Sekin = xavfsiz",
+        parse_mode="Markdown",
+        reply_markup=help_keyboard()
+    )
+    await cb.answer()
+@dp.callback_query(F.data == "help_risk")
+async def help_risk(cb: CallbackQuery):
+    await cb.message.edit_text(
+        "🔐 *Risk nima?*\n\n"
+        "Risk — Telegram akkauntingiz xavf darajasi.\n\n"
+        "Risk oshadi agar:\n"
+        "• Juda tez yuborsangiz\n"
+        "• Bir xil matn ko‘p ketsa\n\n"
+        "Risk kamayadi agar:\n"
+        "• Interval katta bo‘lsa\n"
+        "• Tanaffus qilinsa",
+        parse_mode="Markdown",
+        reply_markup=help_keyboard()
+    )
+    await cb.answer()
+@dp.callback_query(F.data == "help_groups")
+async def help_groups(cb: CallbackQuery):
+    await cb.message.edit_text(
+        "📥 *Guruhlar chiqmayapti*\n\n"
+        "Sabablar:\n"
+        "• Login yo‘q yoki eskirgan\n"
+        "• Sessiya bekor bo‘lgan\n\n"
+        "💡 Yechim:\n"
+        "• Qayta login qiling\n"
+        "• Guruhlarni qayta yuklang",
+        parse_mode="Markdown",
+        reply_markup=help_keyboard()
+    )
+    await cb.answer()
+@dp.callback_query(F.data == "help_admin")
+async def help_admin(cb: CallbackQuery):
+    await cb.message.edit_text(
+        "👤 *Admin bilan bog‘lanish*\n\n"
+        "Telegram: @Khamilofff\n\n"
+        "Iltimos, muammoni aniq yozing 🙏",
+        parse_mode="Markdown",
+        reply_markup=help_keyboard()
+    )
+    await cb.answer()
+@dp.callback_query(F.data == "help_back")
+async def help_back(cb: CallbackQuery):
+    await cb.message.delete()
+    await cb.message.answer(
+        "🏠 Asosiy menyu",
+        reply_markup=main_menu()
+    )
+    await cb.answer()
+
 
 # =====================
 # RUN
