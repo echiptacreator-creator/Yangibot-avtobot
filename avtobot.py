@@ -1184,8 +1184,7 @@ async def send_to_group(client, campaign, group):
     group_id = group["group_id"]
     #peer_type = group.get("peer_type", "channel")
 
-    decay_account_risk(user_id)
-    risk = get_account_risk(user_id)
+    risk = decay_account_risk(user_id)
 
     text = apply_variation(campaign["text"], risk)
 
@@ -1222,7 +1221,14 @@ async def send_to_group(client, campaign, group):
     
         increment_sent_count(campaign["id"])
         increment_daily_usage(user_id, 1)
-        increase_risk(user_id, 1)
+        risk_inc = 1
+
+        if campaign["interval"] <= 5:
+            risk_inc += 2
+        elif campaign["interval"] <= 10:
+            risk_inc += 1
+        
+        increase_risk(user_id, risk_inc)
         reset_campaign_error(campaign["id"])
         return True
 
@@ -1231,7 +1237,8 @@ async def send_to_group(client, campaign, group):
         if e.seconds >= FLOODWAIT_PAUSE_THRESHOLD:
             pause_campaign_with_reason(
                 campaign["id"],
-                "...sabab..."
+                "risk_high"
+            )"
             )
 
             await notify_user(
@@ -1325,7 +1332,11 @@ async def run_campaign_safe(client, campaign):
         risk = decay_account_risk(user_id)
 
         if risk >= 80:
-            update_campaign_status(campaign["id"], "blocked")
+            pause_campaign_with_reason(
+                campaign["id"],
+                "risk_high"
+            )
+
             await notify_user(
                 campaign["chat_id"],
                 "⛔ Kampaniya to‘xtatildi\n"
@@ -1336,7 +1347,8 @@ async def run_campaign_safe(client, campaign):
         if risk >= 60:
             pause_campaign_with_reason(
                 campaign["id"],
-                "...sabab..."
+                "risk_high"
+            )
             )
             await notify_user(
                 campaign["chat_id"],
