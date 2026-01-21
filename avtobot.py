@@ -114,7 +114,6 @@ ADMIN_ID = int(os.getenv("ADMIN_ID"))
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 DATABASE_URL = os.getenv("DATABASE_URL")
 LOGIN_WEBAPP_URL = os.getenv("LOGIN_WEBAPP_URL")
-MINIAPP_URL =https://yangibot-avtobot-production.up.railway.app/miniapp_ai.html"
 
 bot = Bot(BOT_TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
@@ -434,7 +433,7 @@ def main_menu():
             [
                 KeyboardButton(
                     text="🤖 AI orqali post yaratish",
-                    web_app=WebAppInfo(url=MINIAPP_URL)
+                    web_app=WebAppInfo(url=https://yangibot-avtobot-production.up.railway.app/miniapp_ai.html")
                 )
             ],
             [KeyboardButton(text="➕ Xabar yuborish")],
