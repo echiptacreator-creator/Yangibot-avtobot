@@ -325,10 +325,10 @@ def save_user_groups_bulk():
     save_user_groups(user_id, groups)
 
     # 2️⃣ BOTGA XABAR YUBORAMIZ  🔥
-    notify_bot(
-        user_id,
-        f"✅ *{len(groups)} ta guruh*\n"
-        "xabar yuborish uchun qo‘shildi 📬"
+    notify_admin_bot(
+        "📥 *Guruhlar qo‘shildi*\n\n"
+        f"👤 User ID: `{user_id}`\n"
+        f"📦 Guruhlar soni: *{len(groups)}*"
     )
 
     return jsonify({
@@ -404,8 +404,6 @@ def payment_success():
         "status": "ok",
         "paid_until": str(paid_until)
     })
-
-
 
 
 # =====================
