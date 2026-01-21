@@ -27,7 +27,6 @@ from database import (
 from telethon.tl.types import Chat, Channel
 from telethon.errors import SessionRevokedError
 from database import get_db, get_temp_groups_from_db
-from admin_bot import notify_admin
 import requests
 import os
 
@@ -445,7 +444,7 @@ def api_groups_add():
             "📋 <b>Ro‘yxat:</b>\n" +
             "\n".join(f"• {t}" for t in added_titles)
         )
-        notify_admin(text)
+        notify_admin_bot(text)
 
     return jsonify({"status": "ok"})
 
