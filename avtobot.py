@@ -385,6 +385,7 @@ async def pause_campaigns_after_restart():
     for c in campaigns:
         if c["status"] == "active":
             update_campaign_status(c["id"], "paused")
+            stop_campaign_task(c["id"])
 
             # 📢 Userga xabar beramiz
             await notify_user(
@@ -669,9 +670,6 @@ async def load_groups_handler(message: Message):
             })
 
     except SessionRevokedError:
-        update_campaign_status(campaign_id, "paused")
-        stop_campaign_task(campaign_id)
-    
         await notify_user(
             chat_id,
             "🔐 Telegram login chiqib ketgan.\n"
@@ -1288,31 +1286,27 @@ async def notify_admin_campaign_start(campaign):
         parse_mode="Markdown"
     )
 
+from asyncio import CancelledError
+
 async def run_campaign(campaign_id: int):
-    campaign = get_campaign(campaign_id)
-    if not campaign:
-        return
-
-    client = await get_client(campaign["user_id"])
-
-    # 🔐 SESSION TEKSHIRUV (QO‘SHILDI)
-    if not await client.is_user_authorized():
-        update_campaign_status(campaign["id"], "paused")
-
-        await notify_user(
-            campaign["chat_id"],
-            "⛔ Kampaniya boshlanmadi\n\n"
-            "Sabab: Telegram akkaunt login holati topilmadi.\n"
-            "Iltimos, qayta login qiling."
-        )
-
-        await client.disconnect()
-        return
-
     try:
+        campaign = get_campaign(campaign_id)
+        if not campaign:
+            return
+
+        client = await get_client(campaign["user_id"])
+        ...
         await run_campaign_safe(client, campaign)
+
+    except CancelledError:
+        print(f"Campaign {campaign_id} cancelled safely")
+        return
+
     finally:
-        await client.disconnect()
+        try:
+            await client.disconnect()
+        except:
+            pass
 
 
 async def run_campaign_safe(client, campaign):
@@ -1530,8 +1524,6 @@ async def resume_campaign(cb: CallbackQuery):
     # ✅ 2. STATUSNI O‘ZGARTIRAMIZ
     update_campaign_status(campaign_id, "active")
     update_campaign_started(campaign_id)
-    task = asyncio.create_task(run_campaign(campaign_id))
-    running_campaigns[campaign_id] = task
 
 
     # ✅ 3. UI NI YANGILAYMIZ
