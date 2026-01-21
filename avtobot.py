@@ -2666,33 +2666,11 @@ async def generate_ai_posts(form_data: dict) -> list[str]:
 async def handle_webapp_data(message: Message):
     import json
 
-    data = json.loads(message.web_app_data.data)
-
-    save_user_flow(
-        user_id=message.from_user.id,
-        step="enter_interval",
-        data={
-            "mode": "ai",
-            "ai_form": data,
-            "selected_ids": get_user_groups(message.from_user.id)
-        }
-    )
-
-    preview = "🤖 *AI tomonidan yaratilgan postlar:*\n\n"
-
-    for i, p in enumerate(posts, 1):
-        preview += f"*{i})* {p}\n\n"
-    
-    preview += (
-        "ℹ️ Ushbu postlar avtomatik ishlatiladi.\n"
-        "Bot har safar bittasini tasodifiy tanlaydi.\n\n"
-        "⏱ Endi intervalni tanlang 👇"
-    )
-    
-    await message.answer(
-        preview,
-        parse_mode="Markdown"
-    )
+    try:
+        form_data = json.loads(message.web_app_data.data)
+    except Exception:
+        await message.answer("❌ AI form ma’lumotini o‘qib bo‘lmadi")
+        return
 
     
     risk = get_account_risk(message.from_user.id)
