@@ -2217,12 +2217,20 @@ async def cat_next(cb: CallbackQuery):
 async def group_no_link(cb: CallbackQuery):
     username = cb.data.split(":")[1]
 
+    if not username or username == "None":
+        await cb.answer(
+            "🔒 Bu guruhda link yo‘q va foydalanuvchi username qo‘ymagan.",
+            show_alert=True
+        )
+        return
+
     await cb.answer(
-        f"🔗 Bu guruhda ochiq link yo‘q.\n"
+        f"🔗 Guruhda ochiq link yo‘q.\n"
         f"👤 Qo‘shgan foydalanuvchi: @{username}\n\n"
         "Shu odamdan so‘rab ko‘ring.",
         show_alert=True
     )
+
 
 # =====================
 # RUN
