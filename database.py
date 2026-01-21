@@ -1269,13 +1269,15 @@ def save_user_groups(user_id, groups):
                 peer_type
             )
             VALUES (%s, %s, %s, %s, %s)
-        """, (...))
+            ON CONFLICT (user_id, group_id) DO NOTHING
+        """, (
             user_id,
             g["group_id"],
             g.get("title"),
             g.get("username"),
             g.get("peer_type", "channel")
         ))
+
 
     conn.commit()
     cur.close()
