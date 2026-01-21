@@ -1,36 +1,155 @@
 <!DOCTYPE html>
 <html lang="uz">
 <head>
-  <meta charset="UTF-8">
-  <title>Taxi Post</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Taxi Post</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<style>
+:root{
+  --bg:#f5f7fb;
+  --card:#ffffff;
+  --primary:#4f46e5;
+  --text:#0f172a;
+  --hint:#6b7280;
+  --radius:16px;
+}
+
+body{
+  margin:0;
+  background:var(--bg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;
+  color:var(--text);
+}
+
+.container{
+  max-width:420px;
+  margin:auto;
+  padding:16px 16px 100px;
+}
+
+h2{
+  font-size:18px;
+  margin-bottom:12px;
+}
+
+.card{
+  background:var(--card);
+  border-radius:var(--radius);
+  padding:14px;
+  margin-bottom:14px;
+}
+
+label{
+  font-size:13px;
+  color:var(--hint);
+}
+
+select, input{
+  width:100%;
+  margin-top:6px;
+  margin-bottom:12px;
+  height:44px;
+  border-radius:12px;
+  border:1px solid #d1d5db;
+  padding:0 12px;
+  font-size:14px;
+}
+
+.action{
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  background:var(--card);
+  padding:12px;
+  box-shadow:0 -8px 20px rgba(0,0,0,.15);
+}
+
+button{
+  width:100%;
+  height:48px;
+  border:none;
+  border-radius:16px;
+  background:var(--primary);
+  color:#fff;
+  font-size:15px;
+  font-weight:700;
+}
+</style>
 </head>
+
 <body>
+<div class="container">
+  <h2>🤖 AI orqali post yaratish</h2>
 
-<h3>🚕 Taxi post yaratish</h3>
+  <div class="card">
+    <label>📍 Qayerdan</label>
+    <input id="from">
 
-<input id="from" placeholder="Qayerdan"><br><br>
-<input id="to" placeholder="Qayerga"><br><br>
-<input id="people" placeholder="Nechta odam"><br><br>
-<input id="time" placeholder="Qaysi vaqtga"><br><br>
-<input id="phone" placeholder="Telefon"><br><br>
+    <label>📍 Qayerga</label>
+    <input id="to">
 
-<button id="send">Yuborish</button>
+    <label>👥 Nechta odam</label>
+    <select id="people">
+      <option>1 ta</option>
+      <option>2 ta</option>
+      <option>3 ta</option>
+      <option>4 ta</option>
+    </select>
+
+    <label>⚡ Tezkor</label>
+    <select id="urgent">
+      <option>Yo‘q</option>
+      <option>Ha</option>
+    </select>
+
+    <label>⏰ Qaysi vaqtga</label>
+    <input id="time" placeholder="Masalan: 23:00">
+
+    <label>🚗 Mashina</label>
+    <select id="car">
+      <option>Jentra</option>
+      <option>Cobalt</option>
+      <option>Elantra</option>
+      <option>Tracker</option>
+    </select>
+
+    <label>⛽ Yoqilg‘i</label>
+    <select id="fuel">
+      <option>Gaz</option>
+      <option>Benzin</option>
+    </select>
+
+    <label>📞 Telefon</label>
+    <input id="phone">
+  </div>
+</div>
+
+<div class="action">
+  <button id="send">✨ AI post yaratish</button>
+</div>
 
 <script>
-  document.getElementById("send").onclick = () => {
-    const data = {
-      from: document.getElementById("from").value,
-      to: document.getElementById("to").value,
-      people: document.getElementById("people").value,
-      time: document.getElementById("time").value,
-      phone: document.getElementById("phone").value
-    };
+const tg = Telegram.WebApp;
+tg.ready();
 
-    Telegram.WebApp.sendData(JSON.stringify(data));
-    Telegram.WebApp.close();
+document.getElementById("send").onclick = ()=>{
+  const data = {
+    from: from.value,
+    to: to.value,
+    people: people.value,
+    urgent: urgent.value,
+    time: time.value,
+    car: car.value,
+    fuel: fuel.value,
+    phone: phone.value
   };
-</script>
 
+  tg.sendData(JSON.stringify(data));
+  tg.close();
+};
+</script>
 </body>
 </html>
