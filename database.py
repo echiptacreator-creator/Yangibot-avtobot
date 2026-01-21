@@ -222,7 +222,12 @@ def init_db():
 	ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW(),
 	ADD COLUMN IF NOT EXISTS last_login TIMESTAMP
 	""")
-    
+	
+    cur.execute("""
+	ALTER TABLE campaigns
+	ADD COLUMN pause_reason TEXT;
+	""")
+	
     conn.commit()
     cur.close()
     conn.close()
@@ -1643,4 +1648,13 @@ def mark_premium_notified(user_id: int):
     conn.commit()
     conn.close()
 
+def update_campaign_pause_reason(campaign_id: int, reason: str):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE campaigns SET pause_reason = %s WHERE id = %s",
+        (reason, campaign_id)
+    )
+    conn.commit()
+    conn.close()
 
