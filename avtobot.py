@@ -1170,9 +1170,13 @@ async def run_campaign_safe(client, campaign):
     while time.time() < end_time:
 
         # 🔴 STATUS TEKSHIRISH
-        campaign = get_campaign(campaign["id"])
-        if campaign["status"] != "active":
+        current = get_campaign(campaign["id"])
+        if not current:
             return
+        
+        if current["status"] != "active":
+            return
+
 
         # =====================
         # 🔥 RISK LOGIKA
@@ -1216,7 +1220,9 @@ async def run_campaign_safe(client, campaign):
             # =====================
             ok = await send_to_group(client, campaign, group)
             if not ok:
-                return
+                # ❗ faqat shu guruhni tashlab ketamiz
+                await asyncio.sleep(60)
+                continue
 
             sent_count += 1
             reset_campaign_error(campaign["id"])
