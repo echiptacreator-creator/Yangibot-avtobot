@@ -1123,8 +1123,8 @@ async def handle_enter_text_onl(message: Message):
         data["text"] = message.text
 
 
-    if not flow or flow["step"] != "enter_interval":
-    return
+        if not flow or flow["step"] != "enter_interval":
+        return
 
 
     # 🔐 RISKKA MOS INTERVALNI OLDINDAN KO‘RSATAMIZ
