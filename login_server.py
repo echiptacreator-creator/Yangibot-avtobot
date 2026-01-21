@@ -1,4 +1,5 @@
 import os
+import requests
 import asyncio
 import re
 from flask import Flask, request, jsonify, render_template
@@ -320,6 +321,79 @@ def save_user_groups_bulk():
         "ok": True,
         "added": len(groups)
     })
+
+from datetime import date, timedelta
+from database import get_db
+
+@app.route("/api/payment/success", methods=["POST"])
+def payment_success():
+    data = request.json or {}
+
+    user_id = data.get("user_id")
+    months = int(data.get("months", 0))
+
+    if not user_id or months <= 0:
+        return jsonify({"status": "error"}), 400
+
+    today = date.today()
+    paid_until = today + timedelta(days=30 * months)
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    # 🔎 oldindan subscription bormi?
+    cur.execute(
+        "SELECT paid_until FROM subscriptions WHERE user_id = %s",
+        (user_id,)
+    )
+    row = cur.fetchone()
+
+    if row:
+        # agar oldin premium bo‘lgan bo‘lsa — ustiga qo‘shamiz
+        old_until = row[0]
+        if old_until and old_until > today:
+            paid_until = old_until + timedelta(days=30 * months)
+
+        cur.execute("""
+            UPDATE subscriptions
+            SET paid_until = %s,
+                status = 'active',
+                last_notify = NULL
+            WHERE user_id = %s
+        """, (paid_until, user_id))
+    else:
+        # yangi premium
+        cur.execute("""
+            INSERT INTO subscriptions (user_id, paid_until, status)
+            VALUES (%s, %s, 'active')
+        """, (user_id, paid_until))
+
+    # payments ni completed qilamiz
+    cur.execute("""
+        UPDATE payments
+        SET status = 'completed'
+        WHERE user_id = %s AND status = 'pending'
+    """, (user_id,))
+
+    conn.commit()
+    conn.close()
+
+    # 🤖 BOTGA XABAR
+    notify_bot(
+        user_id,
+        f"🎉 *Premium faollashtirildi!*\n\n"
+        f"⏳ Amal qilish muddati: *{paid_until}*\n\n"
+        "🚀 Endi cheklovsiz ishlashingiz mumkin"
+    )
+
+    return jsonify({
+        "status": "ok",
+        "paid_until": str(paid_until)
+    })
+
+
+
+
 # =====================
 # RUN
 # =====================
