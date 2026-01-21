@@ -601,19 +601,32 @@ Aloqa: {data['phone']}
         }
     )
 
-    # 🧠 userga tanlashni ko‘rsatamiz
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=f"{i+1}-variant", callback_data=f"ai_pick:{i}")]
-        for i in range(len(variants))
-    ] + [[
-        InlineKeyboardButton(text="🎲 Tasodifiy tanlash", callback_data="ai_pick:random")
-    ]])
-
+    cards = []
+    
+    for i, text in enumerate(variants):
+        preview = text.strip().split("\n")[0][:40]  # 1-qator preview
+        cards.append([
+            InlineKeyboardButton(
+                text=f"📝 {preview}...",
+                callback_data=f"ai_pick:{i}"
+            )
+        ])
+    
+    cards.append([
+        InlineKeyboardButton(
+            text="🎲 AI o‘zi tanlasin",
+            callback_data="ai_pick:random"
+        )
+    ])
+    
+    kb = InlineKeyboardMarkup(inline_keyboard=cards)
+    
     await message.answer(
-        "🤖 AI bir nechta post tayyorladi.\n\n"
-        "👇 Qaysi birini ishlatamiz?",
+        "🤖 AI bir nechta variant tayyorladi.\n\n"
+        "👇 Postni tanlang:",
         reply_markup=kb
     )
+    
 
 
 
