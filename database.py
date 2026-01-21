@@ -216,6 +216,12 @@ def init_db():
     ADD COLUMN IF NOT EXISTS peer_type TEXT;
     """)
     
+    cur.execute("""
+    ALTER TABLE user_groups
+    ADD CONSTRAINT user_groups_user_group_unique
+    UNIQUE (user_id, group_id);
+    """)
+    
     conn.commit()
     cur.close()
     conn.close()
@@ -1263,8 +1269,7 @@ def save_user_groups(user_id, groups):
                 peer_type
             )
             VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (user_id, group_id) DO NOTHING
-        """, (
+        """, (...))
             user_id,
             g["group_id"],
             g.get("title"),
