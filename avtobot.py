@@ -1141,6 +1141,7 @@ async def pick_duration(cb: CallbackQuery):
     campaign_id = create_campaign(
         user_id=user_id,
         text=data.get("text", ""),
+        texts=data.get("texts"),  # 🔥 MUHIM
         groups=data["selected_ids"],
         interval=data["interval"],
         duration=data["duration"],
@@ -1305,7 +1306,13 @@ async def send_to_group(client, campaign, group):
     risk = decay_account_risk(user_id)
 
     texts = campaign.get("texts") or [campaign["text"]]
-    text = apply_variation(random.choice(texts), risk)
+    if campaign.get("texts"):
+        base_text = random.choice(campaign["texts"])
+    else:
+        base_text = campaign["text"]
+    
+    text = apply_variation(base_text, risk)
+
 
     ok, reason = can_user_run_campaign(user_id)
     if not ok:
@@ -2554,6 +2561,14 @@ async def handle_ai_form(message: Message):
 
     # text ni saqlaymiz (bot uchun oddiy text)
     data["text"] = text
+
+    data["texts"] = [
+        text,
+        apply_variation(text, 20),
+        apply_variation(text, 40),
+        apply_variation(text, 60),
+        apply_variation(text, 80),
+    ]
 
     # endi oddiy interval bosqichiga o‘tamiz
     save_user_flow(user_id, "enter_interval", data)
