@@ -898,9 +898,9 @@ async def pick_interval(cb: CallbackQuery):
     
 @dp.callback_query(F.data.startswith("pick_duration:"))
 async def pick_duration(cb: CallbackQuery):
-        # ✅ 1. AVVAL INLINE TUGMANI YO‘Q QILAMIZ
+    # ✅ 1. XABARNI TO‘LIQ YO‘Q QILAMIZ (MATN + TUGMA)
     try:
-        await cb.message.edit_reply_markup(reply_markup=None)
+        await cb.message.delete()
     except:
         pass
         
