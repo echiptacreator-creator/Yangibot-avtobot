@@ -1263,18 +1263,6 @@ async def send_to_group(client, campaign, group):
 # =====================
 # ISHLAYAPTI
 # =====================
-from database import get_campaign
-
-async def restore_campaigns():
-    campaigns = get_all_campaigns()
-
-    paused = 0
-    for c in campaigns:
-        if c["status"] == "active":
-            update_campaign_status(c["id"], "paused")
-            paused += 1
-
-    print(f"🔒 {paused} ta kampaniya restart sababli pauzaga qo‘yildi")
 
 async def notify_admin_campaign_start(campaign):
     await bot.send_message(
@@ -1560,23 +1548,25 @@ async def resume_campaign(cb: CallbackQuery):
         await cb.message.answer(reason)
         return
 
-    if c["pause_reason"] == "risk_high":
+    pause_reason = c.get("pause_reason")
+    
+    if pause_reason == "risk_high":
         await cb.message.answer(
             "🔐 Akkaunt xavfi hali yuqori.\n"
             "Iltimos, biroz kutib keyin davom ettiring."
         )
         return
     
-    if c["pause_reason"] == "daily_limit":
+    if pause_reason == "daily_limit":
         await cb.message.answer(
             "📊 Kunlik limit tugagan.\n"
             "Ertaga qayta urinib ko‘ring."
         )
         return
-
-
-    if c["status"] != "paused":
-        return
+    
+    
+        if c["status"] != "paused":
+            return
 
     # ✅ 2. STATUSNI O‘ZGARTIRAMIZ
     update_campaign_status(campaign_id, "active")
