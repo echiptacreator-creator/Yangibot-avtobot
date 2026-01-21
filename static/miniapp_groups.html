@@ -16,7 +16,6 @@
   --primary: var(--tg-theme-button-color, #4f46e5);
   --primary-text: var(--tg-theme-button-text-color, #ffffff);
   --success: #22c55e;
-  --danger: #ef4444;
   --radius: 18px;
 }
 
@@ -25,21 +24,20 @@
 body {
   margin: 0;
   background: var(--bg);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, Helvetica, Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial;
   color: var(--text);
 }
 
 .container {
   max-width: 420px;
   margin: auto;
-  padding: 18px;
+  padding: 16px;
 }
 
 /* HEADER */
 .header {
   text-align: center;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 .header h1 {
   font-size: 22px;
@@ -50,13 +48,43 @@ body {
   color: var(--hint);
 }
 
+/* TABS */
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.tab {
+  flex: 1;
+  padding: 10px;
+  text-align: center;
+  border-radius: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid #e5e7eb;
+}
+.tab.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+/* SEARCH */
+.search input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 12px;
+}
+
 /* CARD */
 .card {
   background: var(--card);
   border-radius: var(--radius);
   padding: 14px;
-  margin-bottom: 16px;
   box-shadow: 0 10px 28px rgba(0,0,0,.08);
+  margin-bottom: 14px;
 }
 
 /* GROUP */
@@ -69,22 +97,26 @@ body {
   margin-bottom: 8px;
   background: var(--bg);
 }
-
 .group.saved {
   background: rgba(34,197,94,.12);
   border: 1px solid var(--success);
   cursor: pointer;
 }
-
-.group input {
-  width: 18px;
-  height: 18px;
-}
-
 .group-title {
   flex: 1;
   font-size: 14px;
-  font-weight: 500;
+}
+
+/* ACTIONS */
+.actions {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+.actions span {
+  cursor: pointer;
+  color: var(--primary);
 }
 
 /* BUTTON */
@@ -121,20 +153,26 @@ body {
     <p><span id="count">0</span> ta guruh saqlangan</p>
   </div>
 
-  <!-- SAQLANGAN -->
-  <div class="card">
-    <b>🟢 Saqlangan guruhlar</b>
-    <div id="saved-groups" class="empty">Yuklanmoqda...</div>
+  <div class="tabs">
+    <div class="tab active" data-tab="saved">🟢 Saqlangan</div>
+    <div class="tab" data-tab="new">➕ Qo‘shilmagan</div>
   </div>
 
-  <!-- YANGI -->
-  <div class="card">
-    <b>➕ Qo‘shilmagan guruhlar</b>
-    <div id="new-groups" class="empty">Yuklanmoqda...</div>
+  <div class="search">
+    <input id="search" placeholder="🔍 Guruh nomini qidirish">
+  </div>
 
-    <button id="addBtn" class="btn" disabled>
-      ➕ Tanlanganlarni qo‘shish
-    </button>
+  <!-- SAQLANGAN -->
+  <div id="saved-card" class="card"></div>
+
+  <!-- YANGI -->
+  <div id="new-card" class="card" style="display:none;">
+    <div class="actions">
+      <span id="selectAll">☑️ Hammasini belgilash</span>
+      <span id="clearAll">✖️ Tozalash</span>
+    </div>
+    <div id="new-groups"></div>
+    <button id="addBtn" class="btn" disabled>➕ Tanlanganlarni qo‘shish</button>
   </div>
 
   <button class="btn" onclick="tg.close()">Yopish</button>
@@ -142,154 +180,146 @@ body {
 </div>
 
 <script>
-/* =====================
-   INIT
-===================== */
 const tg = Telegram.WebApp;
 tg.ready();
 
-const userId = tg?.initDataUnsafe?.user?.id;
-if (!userId) {
-  document.getElementById("saved-groups").innerHTML =
-    "<div class='empty'>Foydalanuvchi aniqlanmadi</div>";
-  throw new Error("No user");
-}
+const userId = tg.initDataUnsafe.user.id;
 
-/* =====================
-   STATE
-===================== */
 let saved = [];
 let available = [];
 let selected = new Set();
+let activeTab = "saved";
 
-/* =====================
-   LOAD
-===================== */
-async function loadGroups() {
-  try {
-    const res = await fetch(`/api/groups?user_id=${userId}`);
-    const data = await res.json();
+/* LOAD */
+async function load() {
+  const res = await fetch(`/api/groups?user_id=${userId}`);
+  const data = await res.json();
 
-    saved = Array.isArray(data.saved) ? data.saved : [];
-    available = Array.isArray(data.available) ? data.available : [];
+  saved = data.saved || [];
+  available = data.available || [];
+  document.getElementById("count").textContent = saved.length;
+  selected.clear();
 
-    document.getElementById("count").textContent = saved.length;
-    selected.clear();
-
-    renderSaved();
-    renderNew();
-  } catch {
-    document.getElementById("saved-groups").innerHTML =
-      "<div class='empty'>Xatolik yuz berdi</div>";
-  }
+  render();
 }
 
-/* =====================
-   RENDER
-===================== */
-function renderSaved() {
-  const box = document.getElementById("saved-groups");
-  box.innerHTML = "";
+/* RENDER */
+function render() {
+  const q = document.getElementById("search").value.toLowerCase();
+  renderSaved(q);
+  renderNew(q);
+}
+
+/* SAVED */
+function renderSaved(q) {
+  const box = document.getElementById("saved-card");
+  box.innerHTML = "<b>🟢 Saqlangan guruhlar</b>";
 
   if (!saved.length) {
-    box.innerHTML = "<div class='empty'>Hozircha saqlangan guruh yo‘q</div>";
+    box.innerHTML += "<div class='empty'>Hozircha yo‘q</div>";
     return;
   }
 
-  saved.forEach(g => {
-    const div = document.createElement("div");
-    div.className = "group saved";
-
-    const title = document.createElement("span");
-    title.className = "group-title";
-    title.textContent = g.title || "Nomsiz guruh";
-    div.appendChild(title);
-
-    div.onclick = () => {
-      if (confirm("Bu guruhni o‘chirasizmi?")) {
-        removeGroup(g.group_id);
-      }
-    };
-
-    box.appendChild(div);
-  });
+  saved
+    .filter(g => (g.title||"").toLowerCase().includes(q))
+    .forEach(g => {
+      const div = document.createElement("div");
+      div.className = "group saved";
+      div.innerHTML = `<span class="group-title">${g.title}</span>`;
+      div.onclick = () => {
+        if (confirm("Bu guruhni o‘chirasizmi?")) removeGroup(g.group_id);
+      };
+      box.appendChild(div);
+    });
 }
 
-function renderNew() {
+/* NEW */
+function renderNew(q) {
   const box = document.getElementById("new-groups");
   box.innerHTML = "";
 
   if (!available.length) {
     box.innerHTML = "<div class='empty'>Qo‘shilmagan guruh yo‘q</div>";
-    document.getElementById("addBtn").disabled = true;
     return;
   }
 
-  available.forEach(g => {
-    const div = document.createElement("div");
-    div.className = "group";
+  available
+    .filter(g => (g.title||"").toLowerCase().includes(q))
+    .forEach(g => {
+      const div = document.createElement("div");
+      div.className = "group";
 
-    const cb = document.createElement("input");
-    cb.type = "checkbox";
-    cb.onchange = () => toggle(g.group_id);
-    div.appendChild(cb);
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = selected.has(g.group_id);
+      cb.onchange = () => toggle(g.group_id);
 
-    const title = document.createElement("span");
-    title.className = "group-title";
-    title.textContent = g.title || "Nomsiz guruh";
-    div.appendChild(title);
-
-    box.appendChild(div);
-  });
+      div.appendChild(cb);
+      div.innerHTML += `<span class="group-title">${g.title}</span>`;
+      box.appendChild(div);
+    });
 
   document.getElementById("addBtn").disabled = selected.size === 0;
 }
 
-/* =====================
-   ACTIONS
-===================== */
+/* ACTIONS */
 function toggle(id) {
   selected.has(id) ? selected.delete(id) : selected.add(id);
   document.getElementById("addBtn").disabled = selected.size === 0;
 }
 
-async function addSelected() {
-  if (!selected.size) return;
+document.getElementById("selectAll").onclick = () => {
+  available.forEach(g => selected.add(g.group_id));
+  renderNew(document.getElementById("search").value.toLowerCase());
+};
 
+document.getElementById("clearAll").onclick = () => {
+  selected.clear();
+  renderNew(document.getElementById("search").value.toLowerCase());
+};
+
+document.getElementById("addBtn").onclick = async () => {
   await fetch("/api/groups/add", {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({
-      user_id: userId,
-      group_ids: Array.from(selected)
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({
+      user_id:userId,
+      group_ids:Array.from(selected)
     })
   });
-
-  tg.showPopup({ message: "✅ Guruhlar muvaffaqiyatli qo‘shildi" });
-  loadGroups();
-}
+  tg.showPopup({ message:"✅ Guruhlar qo‘shildi" });
+  document.querySelector(".tab[data-tab='saved']").click();
+  load();
+};
 
 async function removeGroup(id) {
   await fetch("/api/groups/remove", {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ user_id:userId, group_id:id })
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ user_id:userId, group_id:id })
   });
-
-  tg.showPopup({ message: "🗑 Guruh o‘chirildi" });
-  loadGroups();
+  tg.showPopup({ message:"🗑 Guruh o‘chirildi" });
+  load();
 }
 
-/* =====================
-   EVENTS
-===================== */
-document.getElementById("addBtn").onclick = addSelected;
+/* TABS */
+document.querySelectorAll(".tab").forEach(t => {
+  t.onclick = () => {
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    t.classList.add("active");
+    activeTab = t.dataset.tab;
 
-/* =====================
-   START
-===================== */
-loadGroups();
+    document.getElementById("saved-card").style.display =
+      activeTab === "saved" ? "block" : "none";
+    document.getElementById("new-card").style.display =
+      activeTab === "new" ? "block" : "none";
+  };
+});
+
+document.getElementById("search").oninput = render;
+
+/* START */
+load();
 </script>
 </body>
 </html>
-
