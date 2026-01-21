@@ -1232,10 +1232,11 @@ def save_user_groups(user_id, groups):
             VALUES (%s, %s, %s, %s)
         """, (
             user_id,
-            g["group_id"],   # 🔥 -100 bilan kelgan RAW ID
+            g["group_id"],   # 🔥 MiniApp’dan kelgan group_id
             g["title"],
             g.get("username")
         ))
+
 
     conn.commit()
     conn.close()
