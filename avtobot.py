@@ -898,11 +898,12 @@ async def pick_interval(cb: CallbackQuery):
     
 @dp.callback_query(F.data.startswith("pick_duration:"))
 async def pick_duration(cb: CallbackQuery):
+        # ✅ 1. AVVAL INLINE TUGMANI YO‘Q QILAMIZ
     try:
         await cb.message.edit_reply_markup(reply_markup=None)
     except:
         pass
-
+        
     user_id = cb.from_user.id
     duration = int(cb.data.split(":")[1])
 
@@ -951,6 +952,7 @@ async def pick_duration(cb: CallbackQuery):
 
     asyncio.create_task(run_campaign(campaign_id))
     await cb.answer("🚀 Kampaniya boshlandi")
+
 
 
 @dp.message(F.text.regexp(r"^\d+$"))
