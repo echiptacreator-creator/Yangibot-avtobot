@@ -128,14 +128,8 @@ body {
   font-weight: 600;
   cursor: pointer;
 }
-.btn.secondary {
-  background: transparent;
-  color: var(--primary);
-  border: 1px solid var(--primary);
-}
 .btn:disabled { opacity: .5; }
 
-/* ANIM */
 @keyframes fade {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
@@ -162,15 +156,10 @@ body {
   </div>
 
   <div class="card">
-    <b>Guruhlar ro‘yxati</b>
     <div id="groups">Yuklanmoqda...</div>
-
-    <button id="addBtn" class="btn" disabled>
-      ➕ Tanlanganlarni kampaniyaga qo‘shish
-    </button>
   </div>
 
-  <button class="btn secondary" onclick="tg.close()">Yopish</button>
+  <button class="btn" onclick="tg.close()">Yopish</button>
 
 </div>
 
@@ -179,19 +168,18 @@ const tg = Telegram.WebApp;
 tg.ready();
 
 const userId = tg.initDataUnsafe.user.id;
-const params = new URLSearchParams(location.search);
-const campaignId = params.get("campaign_id"); // 🧩 BOG‘LANISH
 
 let saved = [];
 let available = [];
-let selected = new Set();
 let filter = "all";
 
 async function load() {
   const res = await fetch(`/api/groups?user_id=${userId}`);
   const data = await res.json();
-  saved = data.saved;
-  available = data.available;
+
+  saved = data.saved || [];
+  available = data.available || [];
+
   document.getElementById("count").textContent = saved.length;
   render();
 }
@@ -201,31 +189,24 @@ function render() {
   const box = document.getElementById("groups");
   box.innerHTML = "";
 
-  const all = [
-    ...saved.map(g => ({...g, type:"saved"})),
-    ...available.map(g => ({...g, type:"new"}))
-  ];
+  let list = [];
 
-  all
-    .filter(g => filter==="all" || g.type===filter)
+  if (filter === "saved") list = saved;
+  else if (filter === "new") list = available;
+  else list = [...saved, ...available];
+
+  list
     .filter(g => g.title.toLowerCase().includes(q))
     .forEach(g => {
       const div = document.createElement("div");
-      div.className = "group " + (g.type==="saved"?"saved":"");
-
-      if (g.type === "new") {
-        const cb = document.createElement("input");
-        cb.type = "checkbox";
-        cb.onchange = () => toggle(g.group_id);
-        div.appendChild(cb);
-      }
+      div.className = "group" + (saved.find(x=>x.group_id===g.group_id) ? " saved" : "");
 
       const t = document.createElement("span");
       t.className = "group-title";
       t.textContent = g.title;
       div.appendChild(t);
 
-      if (g.type === "saved") {
+      if (saved.find(x=>x.group_id===g.group_id)) {
         div.onclick = () => {
           if (confirm("Bu guruhni o‘chirasizmi?")) {
             removeGroup(g.group_id);
@@ -236,12 +217,9 @@ function render() {
       box.appendChild(div);
     });
 
-  document.getElementById("addBtn").disabled = selected.size===0;
-}
-
-function toggle(id) {
-  selected.has(id) ? selected.delete(id) : selected.add(id);
-  document.getElementById("addBtn").disabled = selected.size===0;
+  if (!box.children.length) {
+    box.innerHTML = "<small>Hech narsa topilmadi</small>";
+  }
 }
 
 async function removeGroup(id) {
@@ -252,20 +230,6 @@ async function removeGroup(id) {
   });
   load();
 }
-
-document.getElementById("addBtn").onclick = async () => {
-  await fetch("/api/groups/add", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({
-      user_id:userId,
-      group_ids:Array.from(selected),
-      campaign_id: campaignId
-    })
-  });
-  selected.clear();
-  load();
-};
 
 document.getElementById("search").oninput = render;
 
