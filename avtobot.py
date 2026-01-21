@@ -1246,7 +1246,6 @@ async def send_to_group(client, campaign, group):
             pause_campaign_with_reason(
                 campaign["id"],
                 "risk_high"
-            )"
             )
 
             await notify_user(
