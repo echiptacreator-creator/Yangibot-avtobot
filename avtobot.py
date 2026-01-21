@@ -600,21 +600,6 @@ import json
 from aiogram.types import Message
 import json
 
-@dp.message(F.web_app_data)
-async def handle_webapp_data(message: Message):
-    try:
-        raw = message.web_app_data.data
-        data = json.loads(raw)
-    except Exception as e:
-        await message.answer("❌ MiniApp maʼlumotini o‘qib bo‘lmadi")
-        return
-
-    # 🔍 TEKSHIRUV (ENG MUHIM)
-    await message.answer(
-        "✅ MiniApp’dan maʼlumot keldi!\n\n"
-        f"📦 Action: {data.get('action')}\n"
-        f"📄 Data:\n{json.dumps(data.get('payload'), indent=2)}"
-    )
 
 
 
@@ -2669,35 +2654,6 @@ async def generate_ai_posts(form_data: dict) -> list[str]:
         f"Bugun yo‘nalish: {form_data['from']} → {form_data['to']}"
     ]
 
-@dp.message(F.web_app_data)
-async def handle_webapp_data(message: Message):
-    import json
-
-    data = json.loads(message.web_app_data.data)
-
-    # 🔥 AI postlar yasaymiz
-    posts = generate_ai_posts_from_form(data)
-
-    # 🔥 USER FLOW ga saqlaymiz
-    save_user_flow(
-        user_id=message.from_user.id,
-        step="enter_interval",
-        data={
-            "mode": "ai",
-            "texts": posts,
-            "selected_ids": get_user_groups(message.from_user.id)
-        }
-    )
-
-    await message.answer(
-        "🤖 AI postlar tayyor.\n\n"
-        "⏱ Endi intervalni tanlang:",
-        reply_markup=interval_keyboard(
-            get_interval_options_by_risk(
-                get_account_risk(message.from_user.id)
-            )[0]
-        )
-    )
 
 @dp.message(F.web_app_data)
 async def handle_webapp_data(message: Message):
