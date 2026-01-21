@@ -572,46 +572,38 @@ def get_user_statistics(user_id: int):
     }
 
 def get_user_limits(user_id: int):
-    """
-    User tarifiga qarab limitlarni qaytaradi.
-    """
     conn = get_db()
     cur = conn.cursor()
 
-    cur.execute(
-        "SELECT status FROM subscriptions WHERE user_id = %s",
-        (user_id,)
-    )
-    row = cur.fetchone()
+    # 🔍 subscriptionni tekshiramiz
+    cur.execute("""
+        SELECT status, paid_until
+        FROM subscriptions
+        WHERE user_id = %s
+    """, (user_id,))
+    sub = cur.fetchone()
+
     conn.close()
 
-    # default — bepul
-    if not row:
+    # =====================
+    # 👑 PREMIUM USER
+    # =====================
+    if sub and sub[0] == "active":
         return {
-            "max_campaigns": 3,
-            "max_active": 1,
-            "daily_limit": 200
-        }
-
-    status = row[0]
-
-    if status == "active":
-        return {
+            "tariff": "premium",
+            "daily_limit": 10**9,      # amalda cheksiz
             "max_campaigns": 50,
             "max_active": 10,
-            "daily_limit": 5000
         }
 
-    if status == "blocked":
-        return {
-            "blocked": True
-        }
-
-    # expired
+    # =====================
+    # 🆓 FREE USER (DEFAULT)
+    # =====================
     return {
-        "max_campaigns": 3,
+        "tariff": "free",
+        "daily_limit": 10,           # 🔥 SEN AYTGAN LIMIT
+        "max_campaigns": 1,          # 🔥 1 ta kampaniya
         "max_active": 1,
-        "daily_limit": 200
     }
 
 def get_user_usage(user_id: int):
