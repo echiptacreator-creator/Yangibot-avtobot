@@ -2638,13 +2638,20 @@ async def choose_ai_mode(message: Message):
     )
 
     await message.answer(
-        "🤖 AI orqali yuborish rejimi yoqildi.\nGuruhlarni tanlang:",
-        reply_markup=ReplyKeyboardRemove()
+        "🤖 AI yordamida post yaratamiz.\nDavom etish uchun bosing 👇",
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="🤖 AI post yaratish",
+                        web_app=WebAppInfo(
+                            url="https://yangibot-avtobot-production.up.railway.app/static/miniapp_ai.html"
+                        )
+                    )
+                ]
+            ]
+        )
     )
-
-    await show_group_picker(message, user_id)
-
-
 
 
 @dp.message(
