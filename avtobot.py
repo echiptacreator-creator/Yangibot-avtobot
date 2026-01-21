@@ -2150,52 +2150,54 @@ async def open_group_catalog(message: Message):
 
 CATALOG_PAGE_SIZE = 20
 
-async def show_group_catalog(message: Message, page: int):
-    groups = get_catalog_groups()  # keyin yozamiz (DB)
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+async def show_group_catalog(message: Message, page: int = 0):
+    groups = get_catalog_groups()
 
     if not groups:
-        await message.answer("📭 Katalog hozircha bo‘sh")
+        await message.answer("📭 Katalogda hozircha guruhlar yo‘q.")
         return
-
-    start = page * CATALOG_PAGE_SIZE
-    end = start + CATALOG_PAGE_SIZE
-    page_groups = groups[start:end]
 
     kb = InlineKeyboardMarkup(inline_keyboard=[])
 
-    for g in page_groups:
-        if g["username"]:
-            text = f"👥 {g['title']}\n🔗 @{g['username']}"
+    for g in groups[page*10:(page+1)*10]:
+        title = g["title"]
+        username = g.get("username")
+        added_by = g.get("added_by")
+
+        # 🟢 AGAR USERNAME BO‘LSA — LINK
+        if username:
+            kb.inline_keyboard.append([
+                InlineKeyboardButton(
+                    text=f"👥 {title}",
+                    url=f"https://t.me/{username}"
+                )
+            ])
         else:
-            text = (
-                f"👥 {g['title']}\n"
-                f"🔒 Ochiq havola yo‘q\n"
-                f"👤 Qo‘shgan: @{g['added_by']}"
-            )
+            # 🔵 AKS HOLDA — QO‘SHGAN ODAMGA YO‘NALTIRAMIZ
+            kb.inline_keyboard.append([
+                InlineKeyboardButton(
+                    text=f"👥 {title} (link yo‘q)",
+                    callback_data=f"group_no_link:{added_by}"
+                )
+            ])
 
-        kb.inline_keyboard.append([
-            InlineKeyboardButton(text=text, callback_data="noop")
-        ])
-
-    # 🔁 Pagination
-    nav = []
-    if start > 0:
-        nav.append(
-            InlineKeyboardButton("⬅️ Oldingi", callback_data=f"cat_prev:{page-1}")
+    # 🔻 pastiga yopish
+    kb.inline_keyboard.append([
+        InlineKeyboardButton(
+            text="⬅️ Orqaga",
+            callback_data="catalog_back"
         )
-    if end < len(groups):
-        nav.append(
-            InlineKeyboardButton("➡️ Keyingi", callback_data=f"cat_next:{page+1}")
-        )
-
-    if nav:
-        kb.inline_keyboard.append(nav)
+    ])
 
     await message.answer(
-        "📚 *Guruhlar katalogi*",
-        parse_mode="Markdown",
-        reply_markup=kb
+        "📚 *Guruhlar katalogi*\n\n"
+        "Premium foydalanuvchilar uchun ochiq 👑",
+        reply_markup=kb,
+        parse_mode="Markdown"
     )
+
 
 @dp.callback_query(F.data.startswith("cat_prev:"))
 async def cat_prev(cb: CallbackQuery):
@@ -2211,8 +2213,16 @@ async def cat_next(cb: CallbackQuery):
     await show_group_catalog(cb.message, page)
     await cb.answer()
 
+@dp.callback_query(F.data.startswith("group_no_link:"))
+async def group_no_link(cb: CallbackQuery):
+    username = cb.data.split(":")[1]
 
-
+    await cb.answer(
+        f"🔗 Bu guruhda ochiq link yo‘q.\n"
+        f"👤 Qo‘shgan foydalanuvchi: @{username}\n\n"
+        "Shu odamdan so‘rab ko‘ring.",
+        show_alert=True
+    )
 
 # =====================
 # RUN
