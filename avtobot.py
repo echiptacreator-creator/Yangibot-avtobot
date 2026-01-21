@@ -71,6 +71,7 @@ PAGE_SIZE = 20  # bir sahifada nechta guruh chiqadi
 # =====================
 API_ID = 34188035
 API_HASH = "2f39ded3e260910e54b48b00a264f19c"
+ADMIN_BOT_TOKEN = os.getenv("ADMIN_BOT_TOKEN")
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -104,6 +105,21 @@ SUFFIXES = [
     "Hozir mavjud.",
     "Shoshililar.",
 ]
+
+def notify_admin_via_adminbot(text: str):
+    try:
+        requests.post(
+            f"https://api.telegram.org/bot{ADMIN_BOT_TOKEN}/sendMessage",
+            json={
+                "chat_id": ADMIN_ID,
+                "text": text,
+                "parse_mode": "Markdown"
+            },
+            timeout=5
+        )
+    except Exception as e:
+        print("ADMIN BOT NOTIFY ERROR:", e)
+
 
 def apply_variation(text: str, risk: int) -> str:
     result = text.strip()
