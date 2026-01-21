@@ -1380,3 +1380,28 @@ def delete_finished_campaign(campaign_id: int, user_id: int) -> bool:
     conn.close()
 
     return deleted
+
+def get_user_groups(user_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT group_id, title, username, peer_type
+        FROM user_groups
+        WHERE user_id = %s
+        ORDER BY id ASC
+    """, (user_id,))
+
+    rows = cur.fetchall()
+    conn.close()
+
+    groups = []
+    for group_id, title, username, peer_type in rows:
+        groups.append({
+            "group_id": group_id,
+            "title": title,
+            "username": username,
+            "peer_type": peer_type
+        })
+
+    return groups
