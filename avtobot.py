@@ -1082,10 +1082,10 @@ def normalize_chat_id(group_id: int) -> int:
     return int("-100" + gid)
 
         # 🔥 2️⃣ ASOSIY MENYUGA QAYTARAMIZ
-        await cb.message.answer(
-            "🏠 Asosiy menyu",
-            reply_markup=main_menu()
-        )
+    await cb.message.answer(
+        "🏠 Asosiy menyu",
+        reply_markup=main_menu()
+    )
 
 FLOODWAIT_PAUSE_THRESHOLD = 600  # 10 daqiqa
 
