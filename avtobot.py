@@ -128,33 +128,46 @@ class EditCampaign(StatesGroup):
 # =====================
 
 def generate_ai_posts_from_form(f: dict) -> list[str]:
-    posts = []
-
-    posts.append(
-        f"🚕 {f['from']} → {f['to']}\n\n"
-        f"👥 {f['people']} kishi\n"
-        f"⏰ {f['time']}\n"
-        f"🚗 {f['car']} ({f['fuel']})\n"
-        f"📞 {f['phone']}"
-    )
-
-    posts.append(
-        f"Assalomu alaykum.\n\n"
-        f"{f['from']}dan {f['to']}ga yuramiz.\n"
-        f"{f['time']} ga.\n"
-        f"{f['people']} kishi bor.\n"
-        f"📞 {f['phone']}"
-    )
-
-    posts.append(
-        f"Bugungi yo‘nalish:\n"
-        f"{f['from']} → {f['to']}\n\n"
-        f"⏰ {f['time']}\n"
-        f"🚗 {f['car']} ({f['fuel']})\n"
-        f"📞 {f['phone']}"
-    )
-
-    return posts
+    return [
+        (
+            f"🚕 {f['from']} → {f['to']}\n\n"
+            f"👥 {f['people']} ta odam\n"
+            f"⏰ {f['time']}\n"
+            f"🚗 {f['car']} ({f['fuel']})\n"
+            f"📦 Pochta: {f['package']}\n"
+            f"📞 {f['phone']}"
+        ),
+        (
+            f"Assalomu alaykum.\n\n"
+            f"{f['from']}dan {f['to']}ga yuramiz.\n"
+            f"{f['time']} ga.\n"
+            f"{f['people']} ta joy bor.\n"
+            f"🚗 {f['car']} ({f['fuel']})\n"
+            f"📞 {f['phone']}"
+        ),
+        (
+            f"Bugungi qatnov 🚖\n"
+            f"{f['from']} → {f['to']}\n\n"
+            f"⏰ {f['time']}\n"
+            f"👥 {f['people']} ta\n"
+            f"📦 Pochta olamiz\n"
+            f"📞 {f['phone']}"
+        ),
+        (
+            f"❗ Yo‘nalish mavjud\n\n"
+            f"{f['from']} ➡️ {f['to']}\n"
+            f"⏰ {f['time']}\n"
+            f"🚗 {f['car']} ({f['fuel']})\n"
+            f"📞 {f['phone']}"
+        ),
+        (
+            f"🚕 Safarga chiqamiz\n\n"
+            f"{f['from']} — {f['to']}\n"
+            f"{f['time']} da.\n"
+            f"{f['people']} ta odam.\n"
+            f"📞 {f['phone']}"
+        )
+    ]
 
 
 
@@ -2588,6 +2601,35 @@ async def handle_webapp_data(message: Message):
                 get_account_risk(message.from_user.id)
             )[0]
         )
+    )
+
+@dp.message(F.web_app_data)
+async def handle_webapp_data(message: Message):
+    import json
+
+    f = json.loads(message.web_app_data.data)
+
+    posts = generate_ai_posts_from_form(f)
+
+    save_user_flow(
+        user_id=message.from_user.id,
+        step="enter_interval",
+        data={
+            "mode": "ai",
+            "texts": posts,
+            "selected_ids": get_user_groups(message.from_user.id)
+        }
+    )
+
+    risk = get_account_risk(message.from_user.id)
+    intervals, level = get_interval_options_by_risk(risk)
+
+    await message.answer(
+        "🤖 *AI postlar tayyor!* (5 variant)\n\n"
+        "⏱ Endi intervalni tanlang:\n"
+        f"🔐 Holat: *{level}*",
+        parse_mode="Markdown",
+        reply_markup=interval_keyboard(intervals)
     )
 
 
