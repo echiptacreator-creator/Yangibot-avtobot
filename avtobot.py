@@ -46,6 +46,7 @@ from database import save_temp_groups
 from telethon.utils import get_peer_id
 from risk import increase_risk
 from database import migrate_user_groups_table
+from database import migrate_user_groups_to_group_id
 from risk import (
     get_account_risk,
     increase_risk,
@@ -1859,7 +1860,8 @@ async def main():
     await dp.start_polling(bot)
     migrate_user_groups_table()
     await restore_campaigns()
-
+    await dp.start_polling(bot)
+    
     asyncio.create_task(subscription_watcher())
     asyncio.create_task(admin_notification_worker())
     #asyncio.create_task(daily_resume_worker())
