@@ -202,15 +202,6 @@ async def notify_user(chat_id: int, text: str):
 
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
-async def notify_admin(text: str):
-    try:
-        await bot.send_message(
-            ADMIN_ID,
-            text,
-            parse_mode="Markdown"
-        )
-    except Exception as e:
-        print("ADMIN NOTIFY ERROR:", e)
 
 def random_interval(base_seconds: int) -> int:
     """
@@ -1433,7 +1424,7 @@ async def run_campaign_safe(client, campaign):
     )
     
     # 👮 ADMIN GA XABAR
-    await notify_admin(
+    notify_admin_via_adminbot(
         "✅ *Kampaniya yakunlandi*\n\n"
         f"👤 User ID: `{campaign['user_id']}`\n"
         f"🆔 Kampaniya ID: `{campaign['id']}`\n"
