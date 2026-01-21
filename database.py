@@ -1361,8 +1361,6 @@ def get_temp_groups_from_db(user_id):
         }
         for r in rows
     ]
-
-
 def delete_finished_campaign(campaign_id: int, user_id: int) -> bool:
     conn = get_db()
     cur = conn.cursor()
