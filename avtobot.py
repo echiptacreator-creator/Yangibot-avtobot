@@ -1739,26 +1739,20 @@ def build_campaign_status_text(campaign_id: int) -> str:
 
 @dp.callback_query(F.data.startswith("camp_pause:"))
 async def pause_campaign_handler(cb: CallbackQuery):
-    campaign_id = int(cb.data.split(":")[1])
-    pause_campaign_with_reason(campaign_id, "manual_pause")
-
-    await cb.message.edit_reply_markup(
-        reply_markup=campaign_control_keyboard(campaign_id, "paused")
-    )
+    # ✅ ENG AVVAL JAVOB
     await cb.answer("⏸ Pauzaga qo‘yildi")
 
-
-
-from access_control import can_user_run_campaign
-
-@dp.callback_query(F.data.startswith("camp_resume:"))
-async def resume_campaign(cb: CallbackQuery):
-    await cb.answer("▶ Kampaniya davom ettirildi")
-
     campaign_id = int(cb.data.split(":")[1])
-    c = get_campaign(campaign_id)
-    if not c:
-        return
+
+    pause_campaign_with_reason(campaign_id, "manual_pause")
+
+    try:
+        await cb.message.edit_reply_markup(
+            reply_markup=campaign_control_keyboard(campaign_id, "paused")
+        )
+    except Exception:
+        pass
+n
 
     # 🔐 xavfsiz o‘qish
     pause_reason = c.get("pause_reason")
