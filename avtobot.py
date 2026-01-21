@@ -458,9 +458,6 @@ def main_menu():
         resize_keyboard=True
     )
 
-
-]
-
    
 async def subscription_watcher():
     while True:
