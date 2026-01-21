@@ -547,30 +547,20 @@ async def load_groups_handler(message: Message):
         async for dialog in client.iter_dialogs():
             entity = dialog.entity
 
-            # ❌ shaxsiy chatlar
             if isinstance(entity, User):
                 continue
-
-            # ❌ botlar
-            if getattr(entity, "bot", False):
-                continue
-
-            # ❌ broadcast kanallar
-            if isinstance(entity, Channel) and entity.broadcast:
-                continue
-
-            # ✅ oddiy group
+            
             if isinstance(entity, Chat):
                 peer_type = "chat"
-
-            # ✅ supergroup
+            
             elif isinstance(entity, Channel):
-                peer_type = "channel"
-
+                if entity.broadcast:
+                    continue
+                peer_type = "supergroup"
+            
             else:
                 continue
-
-            # ✅ ENG MUHIM JOY — SIKL ICHIDA
+            
             groups.append({
                 "group_id": entity.id,
                 "title": entity.title,
