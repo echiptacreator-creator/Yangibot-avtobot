@@ -1365,20 +1365,28 @@ import random
 async def send_to_group(client, campaign, group):
     user_id = campaign["user_id"]
     group_id = group["group_id"]
-    #peer_type = group.get("peer_type", "channel")
 
+    # 🔐 Riskni yangilaymiz
     risk = decay_account_risk(user_id)
 
-    texts = campaign.get("texts") or [campaign["text"]]
-        
-    if campaign.get("texts"):
-        text = random.choice(campaign["texts"]
+    # =========================
+    # 🧠 POST TANLASH LOGIKASI
+    # =========================
+    # Agar AI postlar bo‘lsa → shulardan random tanlaymiz
+    # Aks holda → oddiy post ishlaydi
+    texts = campaign.get("texts")
+
+    if texts and isinstance(texts, list) and len(texts) > 0:
+        base_text = random.choice(texts)
     else:
-        text = campaign["text"]
-    
+        base_text = campaign.get("text", "")
+
+    # 🔀 Riskga qarab variation qo‘llaymiz
     text = apply_variation(base_text, risk)
 
-
+    # =========================
+    # ⛔ LIMIT / RUXSAT TEKSHIRUV
+    # =========================
     ok, reason = can_user_run_campaign(user_id)
     if not ok:
         pause_campaign_with_reason(
@@ -1397,11 +1405,11 @@ async def send_to_group(client, campaign, group):
         return False
 
     try:
-        # 🎯 PEER ANIQLASH (HAR DOIM ISHONCHLI)
+        # 🎯 PEER ANIQLASH
         peer = await client.get_input_entity(group_id)
-    
+
         # 📤 YUBORISH
-        if campaign["media_type"] in ("photo", "video"):
+        if campaign.get("media_type") in ("photo", "video"):
             await client.send_file(
                 peer,
                 campaign["media_file_id"],
@@ -1409,21 +1417,27 @@ async def send_to_group(client, campaign, group):
             )
         else:
             await client.send_message(peer, text)
-    
+
+        # =========================
+        # 📊 STATISTIKA & RISK
+        # =========================
         increment_sent_count(campaign["id"])
         increment_daily_usage(user_id, 1)
-        risk_inc = 1
 
+        risk_inc = 1
         if campaign["interval"] <= 5:
             risk_inc += 2
         elif campaign["interval"] <= 10:
             risk_inc += 1
-        
+
         increase_risk(user_id, risk_inc)
         reset_campaign_error(campaign["id"])
+
         return True
 
-
+    # =========================
+    # 🚨 FLOODWAIT
+    # =========================
     except FloodWaitError as e:
         if e.seconds >= FLOODWAIT_PAUSE_THRESHOLD:
             pause_campaign_with_reason(
@@ -1438,23 +1452,27 @@ async def send_to_group(client, campaign, group):
             )
         return False
 
+    # =========================
+    # ❌ BOSHQA XATOLAR
+    # =========================
     except Exception as e:
         print("SEND ERROR:", e)
         increment_campaign_error(campaign["id"])
 
         updated = get_campaign(campaign["id"])
         if updated.get("error_count", 0) >= 3:
-
-            pause_campaign(
+            pause_campaign_with_reason(
                 campaign["id"],
                 "technical_errors"
             )
+
             await notify_user(
                 campaign["chat_id"],
                 "⏸ Kampaniya pauzaga qo‘yildi\n"
                 "Sabab: ketma-ket xatolar"
             )
         return False
+
 
 # =====================
 # KOMPANIYANI BOSHLASH
