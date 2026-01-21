@@ -2666,6 +2666,23 @@ async def handle_webapp_data(message: Message):
         }
     )
 
+    preview = "🤖 *AI tomonidan yaratilgan postlar:*\n\n"
+
+    for i, p in enumerate(posts, 1):
+        preview += f"*{i})* {p}\n\n"
+    
+    preview += (
+        "ℹ️ Ushbu postlar avtomatik ishlatiladi.\n"
+        "Bot har safar bittasini tasodifiy tanlaydi.\n\n"
+        "⏱ Endi intervalni tanlang 👇"
+    )
+    
+    await message.answer(
+        preview,
+        parse_mode="Markdown"
+    )
+
+    
     risk = get_account_risk(message.from_user.id)
     intervals, level = get_interval_options_by_risk(risk)
 
