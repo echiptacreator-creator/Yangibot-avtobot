@@ -1356,7 +1356,7 @@ async def run_campaign_safe(client, campaign):
                 campaign["id"],
                 "risk_high"
             )
-            )
+        
             await notify_user(
                 campaign["chat_id"],
                 "⏸ Kampaniya pauzaga qo‘yildi\n"
