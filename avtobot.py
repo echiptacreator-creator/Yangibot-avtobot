@@ -2039,7 +2039,7 @@ async def send_limit_message(chat_id: int, used: int, limit: int):
         [
             InlineKeyboardButton(
                 text="💳 Premium tariflarni ko‘rish",
-                web_app=WebAppInfo(url=PREMIUM_MINIAPP_URL)
+                web_app=WebAppInfo(url="https://yangibot-avtobot-production.up.railway.app/static/miniapp_pricing.html")
             )
         ]
     ])
