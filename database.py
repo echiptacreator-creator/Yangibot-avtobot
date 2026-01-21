@@ -1397,32 +1397,38 @@ def get_user_groups(user_id: int):
 
     return groups
 
-def get_catalog_groups():
+def get_catalog_groups(limit=50):
     conn = get_db()
     cur = conn.cursor()
 
     cur.execute("""
         SELECT
-            title,
-            username,
-            added_by
-        FROM user_groups
-        WHERE is_catalog = TRUE
-        ORDER BY added_at DESC
-        LIMIT 200
-    """)
+            g.group_id,
+            g.title,
+            g.username,
+            g.added_by,
+            u.username as added_by_username
+        FROM user_groups g
+        LEFT JOIN users u ON u.user_id = g.added_by
+        GROUP BY g.group_id, g.title, g.username, g.added_by, u.username
+        ORDER BY COUNT(*) DESC
+        LIMIT %s
+    """, (limit,))
 
     rows = cur.fetchall()
     conn.close()
 
-    return [
-        {
-            "title": r[0],
-            "username": r[1],
-            "added_by": r[2]
-        }
-        for r in rows
-    ]
+    result = []
+    for r in rows:
+        result.append({
+            "group_id": r[0],
+            "title": r[1],
+            "username": r[2],
+            "added_by": r[3],
+            "added_by_username": r[4]
+        })
+
+    return result
 
 
 def mark_premium_notified(user_id: int):
@@ -1599,11 +1605,7 @@ def ensure_user_groups_schema():
     conn = get_db()
     cur = conn.cursor()
 
-    # 1️⃣ added_by
-    cur.execute("""
-        ALTER TABLE user_groups
-        ADD COLUMN IF NOT EXISTS added_by BIGINT
-    """)
+
 
     # 2️⃣ is_catalog (katalogda ko‘rinishi uchun)
     cur.execute("""
