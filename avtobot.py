@@ -2293,7 +2293,6 @@ async def main():
     # 🔥 RESTARTDAN KEYIN AKTIV KAMPANIYALARNI PAUZA QILAMIZ
     pause_campaigns_on_restart()
     # ▶️ BOTNI ISHGA TUSHIRAMIZ
-    await restore_campaigns()
     await dp.start_polling(bot)
     
     asyncio.create_task(subscription_watcher())
