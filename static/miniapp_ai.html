@@ -40,8 +40,23 @@
 
     const post = buildPost(data);
 
-    Telegram.WebApp.sendData(post);
-    Telegram.WebApp.close();
+const data = {
+  from: "Andijon",
+  to: "Toshkent",
+  people: "2 ta",
+  time: "23:00",
+  urgent: "Ha",
+  female: "Yo‘q",
+  car: "Jentra",
+  fuel: "Gaz",
+  package: "Bor",
+  phone: "+998901234567",
+  telegram: "@username"
+};
+
+Telegram.WebApp.sendData(JSON.stringify(data));
+Telegram.WebApp.close();
+
   };
 </script>
 
