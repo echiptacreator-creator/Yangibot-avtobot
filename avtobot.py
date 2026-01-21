@@ -475,18 +475,6 @@ async def admin_notification_worker():
 
 from aiogram.types import WebAppData
 
-@dp.message(F.web_app_data)
-async def handle_webapp_data(message: Message):
-    try:
-        data = message.web_app_data.data
-        # hozircha faqat text deb qabul qilamiz
-        await message.answer(
-            "✅ Post qabul qilindi:\n\n" + data,
-            reply_markup=main_menu()
-        )
-    except Exception as e:
-        await message.answer("❌ Miniapp ma’lumotini o‘qib bo‘lmadi")
-
 
 from aiogram.types import Message
 import json
