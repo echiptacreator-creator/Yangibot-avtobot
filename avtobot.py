@@ -132,7 +132,13 @@ def apply_variation(text: str, risk: int) -> str:
     return result
 
 
+from database import get_active_campaigns, update_campaign_status
 
+def pause_campaigns_on_restart():
+    campaigns = get_active_campaigns()
+    for c in campaigns:
+        update_campaign_status(c["id"], "paused")
+    print(f"⏸ {len(campaigns)} ta kampaniya restart sababli pauzaga qo‘yildi")
 
 
 from database import get_login_session
@@ -445,6 +451,7 @@ async def edit_value_handler(message: Message, state: FSMContext):
 
     if resume_after:
         update_campaign_status(campaign_id, "active")
+        update_campaign_started(campaign_id)
         asyncio.create_task(run_campaign(campaign_id))
 
     await message.answer("✅ Yangilandi")
@@ -1478,6 +1485,8 @@ async def resume_campaign(cb: CallbackQuery):
 
     # ✅ 2. STATUSNI O‘ZGARTIRAMIZ
     update_campaign_status(campaign_id, "active")
+    update_campaign_started(campaign_id)
+    asyncio.create_task(run_campaign(campaign_id))
 
     # ✅ 3. UI NI YANGILAYMIZ
     # 1️⃣ Tahrirlash menyusini o‘chiramiz
@@ -2275,7 +2284,7 @@ async def group_no_link(cb: CallbackQuery):
     
 async def main():
     # 🔥 RESTARTDAN KEYIN AKTIV KAMPANIYALARNI PAUZA QILAMIZ
-    await pause_campaigns_after_restart()
+    pause_campaigns_on_restart()
     # ▶️ BOTNI ISHGA TUSHIRAMIZ
     await restore_campaigns()
     await dp.start_polling(bot)
