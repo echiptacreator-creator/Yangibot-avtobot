@@ -383,7 +383,7 @@ def main_menu():
                 KeyboardButton(text="📋 Mening xabarlarim")
             ],
             [
-                KeyboardButton(text="💳 To'lov premium"),
+                KeyboardButton(text="💳 Obuna to'lov"),
                 KeyboardButton(text="👤 Profil")
             ],
             [
@@ -1880,7 +1880,7 @@ async def show_profile(message: Message):
 # =====================
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 
-@dp.message(F.text == "💳 To'lov premium")
+@dp.message(F.text == "💳 Obuna to'lov")
 async def open_premium_miniapp(message):
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
