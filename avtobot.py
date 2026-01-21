@@ -363,20 +363,25 @@ def main_menu():
             [KeyboardButton(text="➕ Xabar yuborish")],
             [
                 KeyboardButton(text="📥 Guruhlarni yuklash"),
-                KeyboardButton(text="📋 Mening kampaniyalarim")
+                KeyboardButton(text="📋 Mening xabarlarim")
             ],
             [
-                KeyboardButton(text="📊 Statistika"),
+                KeyboardButton(text="💳 To'lov premium"),
                 KeyboardButton(text="👤 Profil")
             ],
             [
-                KeyboardButton(text="💳 Tariflar"),
-                KeyboardButton(text="📞 Yordam")
-            ],
-            [KeyboardButton(text="🚪 Chiqish")]
+                KeyboardButton(text="📊 Statistika"),
+                KeyboardButton(text="📚 Guruhlar katalogi")
+                            ],
+            [   KeyboardButton(text="📞 Yordam"),
+                KeyboardButton(text="🚪 Chiqish")]
         ],
         resize_keyboard=True   # ⬅️ MANA SHU JUDA MUHIM
     )
+
+[
+    KeyboardButton(text="📚 Guruhlar katalogi")
+]
 
    
 async def subscription_watcher():
@@ -1667,7 +1672,7 @@ async def render_campaign(campaign_id: int):
 # =====================
 # KOMPANIYALARIM
 # =====================
-@dp.message(F.text == "📋 Mening kampaniyalarim")
+@dp.message(F.text == "📋 Mening xabarlarim")
 async def my_campaigns(message, state):
     await state.clear()
     user_id = message.from_user.id
@@ -1699,7 +1704,7 @@ async def my_campaigns(message, state):
         ])
 
     await message.answer(
-        "📋 *Mening kampaniyalarim*\n\nKampaniyani tanlang:",
+        "📋 *Mening xabarlarim*\n\nKampaniyani tanlang:",
         reply_markup=kb,
         parse_mode="Markdown"
     )
@@ -1837,7 +1842,7 @@ async def show_profile(message: Message):
 # =====================
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 
-@dp.message(F.text == "💳 Tariflar")
+@dp.message(F.text == "💳 To'lov premium")
 async def open_premium_miniapp(message):
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
