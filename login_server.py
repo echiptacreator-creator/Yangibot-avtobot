@@ -414,6 +414,52 @@ def api_user_groups():
     groups = get_user_groups(user_id)
     return jsonify(groups)
 
+@app.route("/api/groups")
+def api_groups():
+    user_id = int(request.args.get("user_id"))
+
+    saved = get_user_groups(user_id)
+    temp = get_temp_groups_from_db(user_id)
+
+    saved_ids = {g["group_id"] for g in saved}
+
+    available = [
+        g for g in temp
+        if g["group_id"] not in saved_ids
+    ]
+
+    return jsonify({
+        "saved": saved,
+        "available": available
+    })
+@app.route("/api/groups/add", methods=["POST"])
+def api_groups_add():
+    data = request.json
+    user_id = data["user_id"]
+    group_ids = data["group_ids"]
+
+    for gid in group_ids:
+        add_user_group(user_id, gid)
+
+    return jsonify({"status": "ok"})
+
+@app.route("/api/groups/remove", methods=["POST"])
+def api_groups_remove():
+    data = request.json
+    user_id = data["user_id"]
+    group_id = data["group_id"]
+
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        DELETE FROM user_groups
+        WHERE user_id = %s AND group_id = %s
+    """, (user_id, group_id))
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "removed"})
+
 
 # =====================
 # RUN
