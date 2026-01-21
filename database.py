@@ -215,7 +215,11 @@ def init_db():
     ALTER TABLE user_groups
     ADD COLUMN IF NOT EXISTS peer_type TEXT;
     """)
-
+    
+    cur.execute("""
+    ALTER TABLE user_groups
+    ADD COLUMN added_by BIGINT;
+    """)
     
     conn.commit()
     cur.close()
@@ -1256,38 +1260,24 @@ def remove_user_group(user_id, group_id):
     conn.commit()
     cur.close()
 
-def save_user_groups(user_id, groups):
+def save_user_groups(user_id: int, groups: list):
     conn = get_db()
     cur = conn.cursor()
 
-    # eski guruhlarni o‘chiramiz
-    cur.execute(
-        "DELETE FROM user_groups WHERE user_id = %s",
-        (user_id,)
-    )
-
     for g in groups:
         cur.execute("""
-            INSERT INTO user_groups (
-                user_id,
-                group_id,
-                title,
-                username,
-                peer_type
-            )
+            INSERT INTO user_groups (user_id, group_id, title, username, added_by)
             VALUES (%s, %s, %s, %s, %s)
             ON CONFLICT (user_id, group_id) DO NOTHING
         """, (
             user_id,
             g["group_id"],
-            g.get("title"),
+            g["title"],
             g.get("username"),
-            g.get("peer_type", "channel")
+            user_id   # 🔥 MANA SHU MUHIM
         ))
 
-
     conn.commit()
-    cur.close()
     conn.close()
 
 
@@ -1411,34 +1401,31 @@ def get_catalog_groups():
     cur = conn.cursor()
 
     cur.execute("""
-        SELECT DISTINCT ON (ug.group_id)
-            ug.group_id,
-            ug.title,
-            ug.username,
-            au.username AS added_by,
-            c.sent_count
-        FROM user_groups ug
-        JOIN campaigns c ON c.user_id = ug.user_id
-        LEFT JOIN authorized_users au ON au.user_id = ug.user_id
-        WHERE c.sent_count > 0
-        ORDER BY ug.group_id, c.sent_count DESC
-        LIMIT 200
+        SELECT DISTINCT
+            g.group_id,
+            g.title,
+            g.username,
+            u.username AS added_by_username
+        FROM user_groups g
+        LEFT JOIN authorized_users u ON u.user_id = g.added_by
+        WHERE g.is_public = TRUE
+        ORDER BY g.group_id DESC
+        LIMIT 100
     """)
 
     rows = cur.fetchall()
     conn.close()
 
-    result = []
-    for group_id, title, username, added_by, sent_count in rows:
-        result.append({
-            "group_id": group_id,
-            "title": title,
-            "username": username,
-            "added_by": added_by or "foydalanuvchi",
-            "sent_count": sent_count
-        })
+    return [
+        {
+            "group_id": r[0],
+            "title": r[1],
+            "username": r[2],
+            "added_by": r[3]   # 🔥 ENDI USERNAME BOR
+        }
+        for r in rows
+    ]
 
-    return result
 def mark_premium_notified(user_id: int):
     conn = get_db()
     cur = conn.cursor()
