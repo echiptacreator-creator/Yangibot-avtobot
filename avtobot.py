@@ -56,6 +56,11 @@ from risk import (
     increase_risk,
     decay_account_risk
 )
+from database import is_user_blocked
+
+if is_user_blocked(user_id):
+    return False, "⛔ Hisobingiz admin tomonidan bloklangan @khamilofff admin bilan bog'laning!"
+
 
 # =====================
 # STATE (XABAR YUBORISH)
