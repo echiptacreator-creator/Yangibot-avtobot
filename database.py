@@ -1262,22 +1262,20 @@ def remove_user_group(user_id, group_id):
     conn.commit()
     cur.close()
 
-def save_user_groups(user_id: int, groups: list):
+def save_user_groups(user_id, groups):
     conn = get_db()
     cur = conn.cursor()
 
     for g in groups:
         cur.execute("""
-            INSERT INTO user_groups (user_id, group_id, title, username, added_by)
-            VALUES (%s, %s, %s, %s, %s)
-
-            ON CONFLICT (user_id, group_id) DO NOTHING
+            INSERT INTO user_groups (group_id, title, username, added_by)
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT (group_id) DO NOTHING
         """, (
-            user_id,
             g["group_id"],
             g["title"],
             g.get("username"),
-            user_id   # 🔥 MANA SHU MUHIM
+            user_id
         ))
 
     conn.commit()
@@ -1399,33 +1397,29 @@ def get_user_groups(user_id: int):
 
     return groups
 
-def get_catalog_groups(limit=50):
+def get_catalog_groups():
     conn = get_db()
     cur = conn.cursor()
 
     cur.execute("""
         SELECT
-            g.group_id,
-            g.title,
-            g.username,
-            g.added_by,
-            COUNT(*) as times_used
-        FROM user_groups g
-        GROUP BY g.group_id, g.title, g.username, g.added_by
-        ORDER BY times_used DESC
-        LIMIT %s
-    """, (limit,))
+            title,
+            username,
+            added_by
+        FROM user_groups
+        WHERE is_catalog = TRUE
+        ORDER BY added_at DESC
+        LIMIT 200
+    """)
 
     rows = cur.fetchall()
     conn.close()
 
     return [
         {
-            "group_id": r[0],
-            "title": r[1],
-            "username": r[2],
-            "added_by": r[3],
-            "times_used": r[4]
+            "title": r[0],
+            "username": r[1],
+            "added_by": r[2]
         }
         for r in rows
     ]
@@ -1592,6 +1586,36 @@ def get_all_users():
         SET blocked = %s
         WHERE user_id = %s
     """, (blocked, user_id))
+
+    conn.commit()
+    conn.close()
+    
+    
+def ensure_user_groups_schema():
+    """
+    user_groups jadvalida kerakli columnlar borligini tekshiradi,
+    yo‘q bo‘lsa avtomatik qo‘shadi.
+    """
+    conn = get_db()
+    cur = conn.cursor()
+
+    # 1️⃣ added_by
+    cur.execute("""
+        ALTER TABLE user_groups
+        ADD COLUMN IF NOT EXISTS added_by BIGINT
+    """)
+
+    # 2️⃣ is_catalog (katalogda ko‘rinishi uchun)
+    cur.execute("""
+        ALTER TABLE user_groups
+        ADD COLUMN IF NOT EXISTS is_catalog BOOLEAN DEFAULT TRUE
+    """)
+
+    # 3️⃣ added_at (tartiblash uchun)
+    cur.execute("""
+        ALTER TABLE user_groups
+        ADD COLUMN IF NOT EXISTS added_at TIMESTAMP DEFAULT NOW()
+    """)
 
     conn.commit()
     conn.close()
