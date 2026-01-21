@@ -1,39 +1,37 @@
-# ai_prompts.py
+from openai import OpenAI
 
-BASE_PROMPT = """
-Sen O‘zbekistondagi taksistlar Telegram guruhlariga yoziladigan REAL e’lonlarni yozadigan yordamchisan.
+client = OpenAI()
 
-Qoidalar:
-- Post taksist o‘zi yozgandek bo‘lsin
-- Rasmiy matn bo‘lmasin
-- UZ + RU aralash bo‘lishi mumkin
-- Ba’zan emoji ishlat, ba’zan yo‘q
-- Bir xil struktura bo‘lmasin
-- Telefon va ma’lumotlar aniq ko‘rinsin
+def generate_ai_posts(form: dict, count: int = 5) -> list[str]:
+    prompt = f"""
+Sen tajribali taksist eʼlon yozuvchisan.
+Quyidagi maʼlumotlar asosida {count} xil, bir-biridan farqli,
+ammo maʼnosi bir xil bo‘lgan Telegram postlar yoz.
+
+Maʼlumotlar:
+- Qayerdan: {form.get('from')}
+- Qayerga: {form.get('to')}
+- Odamlar: {form.get('people')}
+- Vaqt: {form.get('time')}
+- Telefon: {form.get('phone')}
+- Status
+- Aloqa
+- mashina rusumi
+Talablar:
+- Qisqa
+- Tabiiy
+- Spamga o‘xshamasin
+- Emoji kamroq ishlat
 """
 
-STYLE_PROMPTS = {
-    "oddiy": """
-Oddiy taksist uslubida yoz.
-Minimal emoji.
-""",
+    res = client.responses.create(
+        model="gpt-4.1-mini",
+        input=prompt
+    )
 
-    "tezkor": """
-Tezkor va shoshilinch uslubda yoz.
-SROCHNI, ZARUR kabi so‘zlar bo‘lsin.
-""",
+    text = res.output_text
 
-    "emoji": """
-Ko‘proq emoji ishlat.
-Telegram guruhda tez ko‘rinadigan post bo‘lsin.
-""",
+    # AI odatda postlarni \n\n bilan ajratib beradi
+    posts = [p.strip() for p in text.split("\n\n") if p.strip()]
 
-    "caps": """
-Katta harflarda yoz.
-Eski taksistlar yozadigan formatda bo‘lsin.
-""",
-
-    "tartibli": """
-Tartibli, o‘qishga qulay, lekin rasmiy bo‘lmagan uslubda yoz.
-"""
-}
+    return posts[:count]
