@@ -414,10 +414,26 @@ def api_groups_add():
     user_id = data["user_id"]
     group_ids = data["group_ids"]
 
-    for gid in group_ids:
-        add_user_group(user_id, gid)
+    conn = get_db()
+    cur = conn.cursor()
 
+    for gid in group_ids:
+        cur.execute("""
+            SELECT title, username, peer_type
+            FROM telegram_groups_temp
+            WHERE user_id = %s AND group_id = %s
+        """, (user_id, gid))
+
+        row = cur.fetchone()
+        if not row:
+            continue
+
+        title, username, peer_type = row
+        add_user_group(user_id, gid, title, username, peer_type)
+
+    conn.close()
     return jsonify({"status": "ok"})
+
 
 @app.route("/api/groups/remove", methods=["POST"])
 def api_groups_remove():
