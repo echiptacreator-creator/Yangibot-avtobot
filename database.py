@@ -215,12 +215,7 @@ def init_db():
     ALTER TABLE user_groups
     ADD COLUMN IF NOT EXISTS peer_type TEXT;
     """)
-    
-    cur.execute("""
-    ALTER TABLE user_groups
-    ADD CONSTRAINT user_groups_user_group_unique
-    UNIQUE (user_id, group_id);
-    """)
+
     
     conn.commit()
     cur.close()
