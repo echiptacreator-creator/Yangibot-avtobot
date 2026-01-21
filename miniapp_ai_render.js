@@ -27,3 +27,9 @@ function buildPost(data) {
 
   return text;
 }
+
+document.getElementById("send").onclick = () => {
+  Telegram.WebApp.sendData("TEST POST ISHLADI");
+  Telegram.WebApp.close();
+};
+
