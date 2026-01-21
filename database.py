@@ -1240,18 +1240,6 @@ def get_premium_status(user_id: int):
     # ⚠️ Tugagan
     return "expired", 0, False
 
-
-def add_user_group(user_id, group_id, title, username):
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("""
-        INSERT INTO user_groups (user_id, group_id, title, username)
-        VALUES (%s, %s, %s, %s)
-        ON CONFLICT (user_id, group_id) DO NOTHING
-    """, (user_id, group_id, title, username))
-    conn.commit()
-    cur.close()
-
 def remove_user_group(user_id, group_id):
     conn = get_db()
     cur = conn.cursor()
@@ -1631,14 +1619,14 @@ def ensure_user_groups_schema():
     conn.commit()
     conn.close()
 
-
-def add_user_group(user_id, group_id):
+def add_user_group(user_id, group_id, title=None, username=None):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
-        INSERT INTO user_groups (user_id, group_id)
-        VALUES (%s, %s)
-        ON CONFLICT DO NOTHING
-    """, (user_id, group_id))
+        INSERT INTO user_groups (user_id, group_id, title, username)
+        VALUES (%s, %s, %s, %s)
+        ON CONFLICT (user_id, group_id) DO NOTHING
+    """, (user_id, group_id, title, username))
     conn.commit()
     conn.close()
+
