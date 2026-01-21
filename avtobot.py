@@ -2567,10 +2567,6 @@ def get_next_group(campaign):
     return group
 
 
-@dp.message()
-async def catch_all(message: Message):
-    print("CATCH:", message.text)
-
 if __name__ == "__main__":
     asyncio.run(main())
     
