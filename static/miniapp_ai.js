@@ -1,16 +1,16 @@
 const form = document.getElementById("form");
 
 window.AI_FORM_CONFIG.forEach(f => {
-  const wrap = document.createElement("div");
-  wrap.style.marginBottom = "10px";
+  const field = document.createElement("div");
+  field.className = "field";
 
   const label = document.createElement("label");
   label.innerText = f.label;
-  wrap.appendChild(label);
+  field.appendChild(label);
 
   let input;
 
-  if (f.type === "select") {
+  if (f.type === "select" || f.type === "toggle") {
     input = document.createElement("select");
     f.options.forEach(o => {
       const opt = document.createElement("option");
@@ -18,17 +18,7 @@ window.AI_FORM_CONFIG.forEach(f => {
       opt.innerText = o;
       input.appendChild(opt);
     });
-  } 
-  else if (f.type === "toggle") {
-    input = document.createElement("select");
-    f.options.forEach(o => {
-      const opt = document.createElement("option");
-      opt.value = o;
-      opt.innerText = o;
-      input.appendChild(opt);
-    });
-  }
-  else {
+  } else {
     input = document.createElement("input");
     input.type = f.type === "phone" ? "tel" : f.type;
   }
@@ -36,8 +26,8 @@ window.AI_FORM_CONFIG.forEach(f => {
   input.name = f.key;
   input.required = true;
 
-  wrap.appendChild(input);
-  form.appendChild(wrap);
+  field.appendChild(input);
+  form.appendChild(field);
 });
 
 document.getElementById("send").onclick = () => {
