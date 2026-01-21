@@ -1752,7 +1752,6 @@ async def pause_campaign_handler(cb: CallbackQuery):
         )
     except Exception:
         pass
-n
 
     # 🔐 xavfsiz o‘qish
     pause_reason = c.get("pause_reason")
