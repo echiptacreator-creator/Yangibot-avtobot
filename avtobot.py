@@ -2663,21 +2663,27 @@ async def handle_webapp_data(message: Message):
 
     posts = generate_ai_posts_from_form(f)
 
+    risk = get_account_risk(message.from_user.id)
+    limit = 5 if risk < 30 else 3 if risk < 60 else 2
+    posts = posts[:limit]
+
+    groups = get_user_groups(message.from_user.id)
+    group_ids = [g["group_id"] for g in groups]
+
     save_user_flow(
         user_id=message.from_user.id,
         step="enter_interval",
         data={
             "mode": "ai",
             "texts": posts,
-            "selected_ids": get_user_groups(message.from_user.id)
+            "selected_ids": group_ids
         }
     )
 
-    risk = get_account_risk(message.from_user.id)
     intervals, level = get_interval_options_by_risk(risk)
 
     await message.answer(
-        "🤖 *AI postlar tayyor!* (5 variant)\n\n"
+        f"🤖 *AI postlar tayyor!* ({len(posts)} variant)\n\n"
         "⏱ Endi intervalni tanlang:\n"
         f"🔐 Holat: *{level}*",
         parse_mode="Markdown",
