@@ -292,6 +292,14 @@ document.querySelectorAll(".filter").forEach(f => {
     f.classList.add("active");
     filter = f.dataset.filter;
     render();
+
+    const addBtn = document.getElementById("addBtn");
+    
+    if (filter === "saved") {
+      addBtn.style.display = "none";
+    } else {
+      addBtn.style.display = "block";
+    }
   };
 });
 
