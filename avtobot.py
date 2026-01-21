@@ -1455,8 +1455,6 @@ def pause_campaign_with_reason(campaign_id: int, reason: str):
     stop_campaign_task(campaign_id)
 
 
-
-
 def stop_campaign_task(campaign_id: int):
     task = running_campaigns.get(campaign_id)
 
@@ -1535,59 +1533,45 @@ from access_control import can_user_run_campaign
 
 @dp.callback_query(F.data.startswith("camp_resume:"))
 async def resume_campaign(cb: CallbackQuery):
-    # ✅ 1. BIRINCHI JAVOB BERAMIZ (ENG MUHIM)
     await cb.answer("▶ Kampaniya davom ettirildi")
 
     campaign_id = int(cb.data.split(":")[1])
-
     c = get_campaign(campaign_id)
     if not c:
         return
 
-    # 🔒 RESUME OLDIDAN TEKSHIRUV
-    ok, reason = can_user_run_campaign(c["user_id"])
-    if not ok:
-        await cb.message.answer(reason)
-        return
-
+    # 🔐 xavfsiz o‘qish
     pause_reason = c.get("pause_reason")
-    
+
+    # ⛔ cheklovlar
     if pause_reason == "risk_high":
         await cb.message.answer(
-            "🔐 Akkaunt xavfi hali yuqori.\n"
-            "Iltimos, biroz kutib keyin davom ettiring."
+            "🔐 Akkaunt xavfi hali yuqori.\nBiroz kutib qayta urinib ko‘ring."
         )
         return
-    
+
     if pause_reason == "daily_limit":
         await cb.message.answer(
-            "📊 Kunlik limit tugagan.\n"
-            "Ertaga qayta urinib ko‘ring."
+            "📊 Kunlik limit tugagan.\nErtaga davom ettirishingiz mumkin."
         )
         return
-    
-    
-        if c["status"] != "paused":
-            return
 
-    # ✅ 2. STATUSNI O‘ZGARTIRAMIZ
+    if c["status"] != "paused":
+        return
+
+    # ✅ statusni aktiv qilamiz
     update_campaign_status(campaign_id, "active")
-    update_campaign_started(campaign_id)
 
+    # 🧹 eski task bo‘lsa to‘xtatamiz
+    stop_campaign_task(campaign_id)
 
-    # ✅ 3. UI NI YANGILAYMIZ
-    # 1️⃣ Tahrirlash menyusini o‘chiramiz
-    try:
-        await cb.message.delete()
-    except:
-        pass
-    
-    # 2️⃣ Asosiy kampaniya kartasini qayta chizamiz
+    # 🔁 UI yangilash
     await render_campaign(campaign_id)
 
-    # ✅ 4. FONDA ISHGA TUSHIRAMIZ
+    # ▶️ qayta ishga tushirish
     task = asyncio.create_task(run_campaign(campaign_id))
     running_campaigns[campaign_id] = task
+
 
 
 @dp.callback_query(F.data.startswith("camp_stop:"))
