@@ -1046,7 +1046,7 @@ FLOODWAIT_PAUSE_THRESHOLD = 600  # 10 daqiqa
 async def send_to_group(client, campaign, group):
     user_id = campaign["user_id"]
     group_id = group["group_id"]
-    peer_type = group.get("peer_type", "channel")
+    #peer_type = group.get("peer_type", "channel")
 
     decay_account_risk(user_id)
     risk = get_account_risk(user_id)
@@ -1102,7 +1102,9 @@ async def send_to_group(client, campaign, group):
         print("SEND ERROR:", e)
         increment_campaign_error(campaign["id"])
 
-        if campaign.get("error_count", 0) + 1 >= 3:
+        updated = get_campaign(campaign["id"])
+        if updated.get("error_count", 0) >= 3:
+
             update_campaign_status(campaign["id"], "paused")
             await notify_user(
                 campaign["chat_id"],
@@ -1195,51 +1197,49 @@ async def run_campaign_safe(client, campaign):
             )
             return
 
-        # =====================
-        # 🎲 RANDOM SKIP (18%)
-        # =====================
-        skip_chance = 0.1 + (risk / 200)
-
-        if random.random() < skip_chance:
-            await asyncio.sleep(random.randint(120, 600))
-            continue
-
-        # =====================
-        # ⏱ RANDOM INTERVAL
-        # =====================
-        delay = random_interval(campaign["interval"] * 60)
-        await asyncio.sleep(delay)
-
         try:
+            # =====================
             # 📍 NAVBATDAGI GURUH
-            group_id = get_next_group(campaign)
+            # =====================
+            group = get_next_group(campaign)
 
-            # ✍️ TYPING
-            async with client.action(group_id, "typing"):
-                await asyncio.sleep(random.uniform(1.5, 4.0))
+            # ✍️ TYPING (faqat kosmetik)
+            try:
+                peer = await client.get_input_entity(group["group_id"])
+                async with client.action(peer, "typing"):
+                    await asyncio.sleep(random.uniform(1.5, 3.0))
+            except Exception:
+                pass
 
-            # 📤 YUBORISH
+            # =====================
+            # 📤 XABARNI YUBORISH (ENG MUHIM JOY)
+            # =====================
             ok = await send_to_group(client, campaign, group)
+            if not ok:
+                return
 
-            if ok:
-                sent_count += 1
-                reset_campaign_error(campaign["id"])
+            sent_count += 1
+            reset_campaign_error(campaign["id"])
 
+            # =====================
+            # ⏱ RANDOM INTERVAL (FAQAT YUBORISHDAN KEYIN)
+            # =====================
+            delay = random_interval(campaign["interval"] * 60)
+            await asyncio.sleep(delay)
+
+            # =====================
             # ⏸ HAR 3–5 TA XABARDAN KEYIN DAM
-            if sent_count > 0 and sent_count % random.randint(3, 5) == 0:
+            # =====================
+            if sent_count % random.randint(3, 5) == 0:
                 await asyncio.sleep(random.randint(600, 2400))
 
         # =====================
-        # 🚨 FLOODWAIT (TO‘G‘RILANGAN)
+        # 🚨 FLOODWAIT
         # =====================
         except FloodWaitError as e:
-            # 🔐 Riskni markaziy funksiya orqali oshiramiz
             increase_risk(user_id, 40)
-
-            # ⏸ Kampaniyani pauza qilamiz
             update_campaign_status(campaign["id"], "paused")
 
-            # 📢 Userga tushunarli xabar
             await notify_user(
                 campaign["chat_id"],
                 "⏸ Kampaniya vaqtincha pauza qilindi\n\n"
@@ -1247,25 +1247,19 @@ async def run_campaign_safe(client, campaign):
                 f"⏳ Taxminiy kutish: {e.seconds // 60} daqiqa\n\n"
                 "Akkauntni himoyalash uchun kampaniya to‘xtatildi."
             )
-
-            return  # 🔴 JUDA MUHIM
+            return
 
         # =====================
-        # ❌ BOSHQA XATOLAR (TO‘G‘RILANGAN)
+        # ❌ BOSHQA XATOLAR
         # =====================
         except Exception as e:
-            # 🔐 Riskni ozgina oshiramiz
-            increase_risk(user_id, 5)
+            print("CAMPAIGN ERROR:", e)
 
-            # ❗ Xato hisobini oshiramiz
+            increase_risk(user_id, 5)
             increment_campaign_error(campaign["id"])
 
-            # 🔄 YANGI qiymatni DBdan qayta o‘qiymiz
             updated = get_campaign(campaign["id"])
-            error_count = updated.get("error_count", 0)
-
-            # ⛔ 3 ta ketma-ket xato — pauza
-            if error_count >= 3:
+            if updated.get("error_count", 0) >= 3:
                 update_campaign_status(campaign["id"], "paused")
 
                 await notify_user(
@@ -1276,7 +1270,6 @@ async def run_campaign_safe(client, campaign):
                 )
                 return
 
-            # 💤 Aks holda biroz kutamiz va davom etamiz
             await asyncio.sleep(120)
 
     # =====================
@@ -1287,7 +1280,6 @@ async def run_campaign_safe(client, campaign):
         campaign["chat_id"],
         "✅ Kampaniya yakunlandi"
     )
-
 
 
 
