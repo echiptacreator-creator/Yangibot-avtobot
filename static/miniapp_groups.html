@@ -16,6 +16,7 @@
   --primary: var(--tg-theme-button-color, #4f46e5);
   --primary-text: var(--tg-theme-button-text-color, #ffffff);
   --success: #22c55e;
+  --danger: #ef4444;
   --radius: 18px;
 }
 
@@ -35,9 +36,10 @@ body {
   padding: 18px;
 }
 
+/* HEADER */
 .header {
   text-align: center;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 .header h1 {
   font-size: 22px;
@@ -48,41 +50,16 @@ body {
   color: var(--hint);
 }
 
-.search input {
-  width: 100%;
-  padding: 12px 14px;
-  border-radius: 14px;
-  border: 1px solid #e5e7eb;
-  margin-bottom: 10px;
-}
-
-.filters {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-.filter {
-  flex: 1;
-  text-align: center;
-  padding: 8px;
-  border-radius: 12px;
-  font-size: 13px;
-  cursor: pointer;
-  border: 1px solid #e5e7eb;
-}
-.filter.active {
-  background: var(--primary);
-  color: #fff;
-  border-color: var(--primary);
-}
-
+/* CARD */
 .card {
   background: var(--card);
   border-radius: var(--radius);
   padding: 14px;
+  margin-bottom: 16px;
   box-shadow: 0 10px 28px rgba(0,0,0,.08);
 }
 
+/* GROUP */
 .group {
   display: flex;
   align-items: center;
@@ -92,20 +69,27 @@ body {
   margin-bottom: 8px;
   background: var(--bg);
 }
+
 .group.saved {
   background: rgba(34,197,94,.12);
   border: 1px solid var(--success);
   cursor: pointer;
 }
 
+.group input {
+  width: 18px;
+  height: 18px;
+}
+
 .group-title {
   flex: 1;
   font-size: 14px;
+  font-weight: 500;
 }
 
+/* BUTTON */
 .btn {
   width: 100%;
-  margin-top: 10px;
   padding: 14px;
   border-radius: 16px;
   border: none;
@@ -115,7 +99,10 @@ body {
   font-weight: 600;
   cursor: pointer;
 }
-.btn:disabled { opacity: .5; }
+.btn:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
 
 .empty {
   text-align: center;
@@ -134,89 +121,123 @@ body {
     <p><span id="count">0</span> ta guruh saqlangan</p>
   </div>
 
-  <div class="search">
-    <input id="search" placeholder="🔍 Guruh nomini qidirish">
-  </div>
-
-  <div class="filters">
-    <div class="filter active" data-filter="all">Hammasi</div>
-    <div class="filter" data-filter="saved">Saqlangan</div>
-    <div class="filter" data-filter="new">Yangi</div>
-  </div>
-
+  <!-- SAQLANGAN -->
   <div class="card">
-    <div id="groups" class="empty">Yuklanmoqda...</div>
-    <button id="addBtn" class="btn" disabled>➕ Tanlanganlarni qo‘shish</button>
+    <b>🟢 Saqlangan guruhlar</b>
+    <div id="saved-groups" class="empty">Yuklanmoqda...</div>
   </div>
+
+  <!-- YANGI -->
+  <div class="card">
+    <b>➕ Qo‘shilmagan guruhlar</b>
+    <div id="new-groups" class="empty">Yuklanmoqda...</div>
+
+    <button id="addBtn" class="btn" disabled>
+      ➕ Tanlanganlarni qo‘shish
+    </button>
+  </div>
+
+  <button class="btn" onclick="tg.close()">Yopish</button>
 
 </div>
 
 <script>
+/* =====================
+   INIT
+===================== */
 const tg = Telegram.WebApp;
 tg.ready();
 
-const userId = tg.initDataUnsafe.user.id;
+const userId = tg?.initDataUnsafe?.user?.id;
+if (!userId) {
+  document.getElementById("saved-groups").innerHTML =
+    "<div class='empty'>Foydalanuvchi aniqlanmadi</div>";
+  throw new Error("No user");
+}
 
+/* =====================
+   STATE
+===================== */
 let saved = [];
 let available = [];
 let selected = new Set();
-let filter = "all";
 
-async function load() {
-  const res = await fetch(`/api/groups?user_id=${userId}`);
-  const data = await res.json();
+/* =====================
+   LOAD
+===================== */
+async function loadGroups() {
+  try {
+    const res = await fetch(`/api/groups?user_id=${userId}`);
+    const data = await res.json();
 
-  saved = Array.isArray(data.saved) ? data.saved : [];
-  available = Array.isArray(data.available) ? data.available : [];
+    saved = Array.isArray(data.saved) ? data.saved : [];
+    available = Array.isArray(data.available) ? data.available : [];
 
-  document.getElementById("count").textContent = saved.length;
-  selected.clear();
-  render();
+    document.getElementById("count").textContent = saved.length;
+    selected.clear();
+
+    renderSaved();
+    renderNew();
+  } catch {
+    document.getElementById("saved-groups").innerHTML =
+      "<div class='empty'>Xatolik yuz berdi</div>";
+  }
 }
 
-function render() {
-  const q = document.getElementById("search").value.toLowerCase();
-  const box = document.getElementById("groups");
+/* =====================
+   RENDER
+===================== */
+function renderSaved() {
+  const box = document.getElementById("saved-groups");
   box.innerHTML = "";
 
-  const savedIds = new Set(saved.map(g => g.group_id));
-  let list = [];
+  if (!saved.length) {
+    box.innerHTML = "<div class='empty'>Hozircha saqlangan guruh yo‘q</div>";
+    return;
+  }
 
-  if (filter === "saved") list = saved;
-  else if (filter === "new") list = available;
-  else list = [...saved, ...available];
+  saved.forEach(g => {
+    const div = document.createElement("div");
+    div.className = "group saved";
 
-  list = list.filter(g => (g.title || "").toLowerCase().includes(q));
+    const title = document.createElement("span");
+    title.className = "group-title";
+    title.textContent = g.title || "Nomsiz guruh";
+    div.appendChild(title);
 
-  if (!list.length) {
-    box.innerHTML = "<div class='empty'>Hech narsa topilmadi</div>";
+    div.onclick = () => {
+      if (confirm("Bu guruhni o‘chirasizmi?")) {
+        removeGroup(g.group_id);
+      }
+    };
+
+    box.appendChild(div);
+  });
+}
+
+function renderNew() {
+  const box = document.getElementById("new-groups");
+  box.innerHTML = "";
+
+  if (!available.length) {
+    box.innerHTML = "<div class='empty'>Qo‘shilmagan guruh yo‘q</div>";
     document.getElementById("addBtn").disabled = true;
     return;
   }
 
-  list.forEach(g => {
+  available.forEach(g => {
     const div = document.createElement("div");
-    const isSaved = savedIds.has(g.group_id);
+    div.className = "group";
 
-    div.className = "group" + (isSaved ? " saved" : "");
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.onchange = () => toggle(g.group_id);
+    div.appendChild(cb);
 
-    if (!isSaved) {
-      const cb = document.createElement("input");
-      cb.type = "checkbox";
-      cb.onchange = () => toggle(g.group_id);
-      div.appendChild(cb);
-    }
-
-    const t = document.createElement("span");
-    t.className = "group-title";
-    t.textContent = g.title || "Nomsiz guruh";
-    div.appendChild(t);
-
-    if (isSaved) {
-      div.onclick = () => {
-        if (confirm("Bu guruhni o‘chirasizmi?")) removeGroup(g.group_id);
-      };
-    }
+    const title = document.createElement("span");
+    title.className = "group-title";
+    title.textContent = g.title || "Nomsiz guruh";
+    div.appendChild(title);
 
     box.appendChild(div);
   });
@@ -224,6 +245,9 @@ function render() {
   document.getElementById("addBtn").disabled = selected.size === 0;
 }
 
+/* =====================
+   ACTIONS
+===================== */
 function toggle(id) {
   selected.has(id) ? selected.delete(id) : selected.add(id);
   document.getElementById("addBtn").disabled = selected.size === 0;
@@ -242,7 +266,7 @@ async function addSelected() {
   });
 
   tg.showPopup({ message: "✅ Guruhlar muvaffaqiyatli qo‘shildi" });
-  load();
+  loadGroups();
 }
 
 async function removeGroup(id) {
@@ -253,22 +277,19 @@ async function removeGroup(id) {
   });
 
   tg.showPopup({ message: "🗑 Guruh o‘chirildi" });
-  load();
+  loadGroups();
 }
 
+/* =====================
+   EVENTS
+===================== */
 document.getElementById("addBtn").onclick = addSelected;
-document.getElementById("search").oninput = render;
 
-document.querySelectorAll(".filter").forEach(f=>{
-  f.onclick = ()=>{
-    document.querySelectorAll(".filter").forEach(x=>x.classList.remove("active"));
-    f.classList.add("active");
-    filter = f.dataset.filter;
-    render();
-  };
-});
-
-load();
+/* =====================
+   START
+===================== */
+loadGroups();
 </script>
 </body>
 </html>
+
