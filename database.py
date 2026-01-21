@@ -1582,3 +1582,16 @@ def get_all_users():
         })
 
     return users
+    
+    def set_user_blocked(user_id: int, blocked: bool):
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE user_limits
+        SET blocked = %s
+        WHERE user_id = %s
+    """, (blocked, user_id))
+
+    conn.commit()
+    conn.close()
