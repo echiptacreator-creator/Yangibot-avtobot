@@ -29,6 +29,7 @@ from telethon.errors import SessionRevokedError
 from database import get_db, get_temp_groups_from_db
 import requests
 import os
+from datetime import datetime
 
 ADMIN_BOT_TOKEN = os.getenv("ADMIN_BOT_TOKEN")
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
@@ -440,7 +441,8 @@ def api_groups_add():
         text = (
             "➕ <b>Yangi guruhlar qo‘shildi</b>\n\n"
             f"👤 User ID: <code>{user_id}</code>\n"
-            f"📦 Guruhlar soni: <b>{len(added_titles)}</b>\n\n"
+            f"📦 Guruhlar soni: <b>{len(added_titles)}</b>\n"
+            f"⏰ Vaqt: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
             "📋 <b>Ro‘yxat:</b>\n" +
             "\n".join(f"• {t}" for t in added_titles)
         )
