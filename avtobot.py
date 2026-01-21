@@ -1735,17 +1735,54 @@ async def show_profile(message: Message):
 
     limits = get_user_limits(user_id)
     usage = get_user_usage(user_id)
+    used_today = get_today_usage(user_id)
+    risk = get_account_risk(user_id)
+
+    status, days_left, _ = get_premium_status(user_id)
+
+    # 🏷 OBUNA
+    if status == "active":
+        sub_text = f"👑 Premium (faol)\n⏳ Qoldi: {days_left} kun"
+    elif status == "expired":
+        sub_text = "⚠️ Premium muddati tugagan"
+    else:
+        sub_text = "🆓 Bepul tarif"
+
+    # 🔐 RISK KO‘RINISHI
+    if risk < 20:
+        risk_text = "🟢 Past"
+        interval_hint = "10–20 daqiqa"
+    elif risk < 50:
+        risk_text = "🟡 O‘rtacha"
+        interval_hint = "15–30 daqiqa"
+    else:
+        risk_text = "🔴 Yuqori"
+        interval_hint = "30+ daqiqa"
 
     text = (
-        "👤 *Profil*\n\n"
+        "👤 *PROFIL*\n\n"
+        f"🆔 ID: `{user_id}`\n"
+        f"{sub_text}\n\n"
+        "📊 *FAOLIYAT*\n"
+        "━━━━━━━━━━━━━━\n"
         f"📂 Jami kampaniyalar: {usage['total_campaigns']} / {limits.get('max_campaigns', '-')}\n"
         f"🟢 Faol kampaniyalar: {usage['active_campaigns']} / {limits.get('max_active', '-')}\n"
+        f"📨 Bugun yuborildi: {used_today} / {limits.get('daily_limit', '-')}\n\n"
+        "🔐 *XAVFSIZLIK*\n"
+        "━━━━━━━━━━━━━━\n"
+        f"🛡 Risk darajasi: {risk_text}\n"
+        f"⚡ Tavsiya etilgan interval: {interval_hint}\n\n"
+        "ℹ️ *MASLAHAT*\n"
+        "━━━━━━━━━━━━━━\n"
+        "Sekin yuboring — akkaunt uzoq yashaydi 🚀"
     )
 
-    if limits.get("blocked"):
-        text += "\n⛔ Hisob bloklangan"
+    await message.answer(
+        text,
+        parse_mode="Markdown",
+        reply_markup=main_menu()
+    )
 
-    await message.answer(text, parse_mode="Markdown")
 
 # =====================
 # TOLOV
