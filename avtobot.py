@@ -44,6 +44,7 @@ from database import save_user_groups
 from telethon.tl.types import Chat, Channel
 from database import save_temp_groups
 from telethon.utils import get_peer_id
+from risk import increase_risk
 from risk import (
     get_account_risk,
     increase_risk,
@@ -1138,19 +1139,25 @@ async def run_campaign_safe(client, campaign):
                 await asyncio.sleep(random.randint(600, 2400))
 
         # =====================
-        # 🚨 FLOODWAIT
+        # 🚨 FLOODWAIT (TO‘G‘RILANGAN)
         # =====================
         except FloodWaitError as e:
-            risk += 40
-            save_account_risk(user_id, risk)
+            # 🔐 Riskni markaziy funksiya orqali oshiramiz
+            increase_risk(user_id, 40)
 
+            # ⏸ Kampaniyani pauza qilamiz
             update_campaign_status(campaign["id"], "paused")
+
+            # 📢 Userga tushunarli xabar
             await notify_user(
                 campaign["chat_id"],
-                "⏸ Kampaniya pauzaga qo‘yildi\n"
-                f"Sabab: FloodWait ({e.seconds} soniya)"
+                "⏸ Kampaniya vaqtincha pauza qilindi\n\n"
+                "Telegram xavfsizlik cheklovi qo‘ydi.\n"
+                f"⏳ Taxminiy kutish: {e.seconds // 60} daqiqa\n\n"
+                "Akkauntni himoyalash uchun kampaniya to‘xtatildi."
             )
-            return
+
+            return  # 🔴 JUDA MUHIM
 
         # =====================
         # ❌ BOSHQA XATOLAR
