@@ -755,15 +755,16 @@ if data["mode"] == "single":
     data["selected_ids"] = [group_id]
     save_user_flow(user_id, "enter_text", data)
 
-    # 🧹 Guruh tanlash xabarini o‘chiramiz
+    # 🧹 Inline guruh tanlash xabarini o‘chiramiz
     try:
         await cb.message.delete()
     except:
         pass
 
-    # ⌨️ Pastdagi reply menuni olib tashlab, matn so‘raymiz
-    await cb.message.answer(
-        "👉 Endi xabar matnini kiriting:",
+    # ⌨️ YANGI xabar yuboramiz (o‘chirilgan message emas!)
+    await cb.bot.send_message(
+        chat_id=cb.from_user.id,
+        text="👉 Endi xabar matnini kiriting:",
         reply_markup=ReplyKeyboardRemove()
     )
 
