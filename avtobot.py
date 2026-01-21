@@ -77,12 +77,50 @@ class EditCampaign(StatesGroup):
 # HELPERS — ACCESS
 # =====================
 
+import random
 
+PREFIXES = [
+    "🚕 Salom.",
+    "Assalomu alaykum.",
+    "Diqqat.",
+    "Ma’lumot uchun.",
+    "Bugungi yo‘nalish:",
+]
 
-def to_peer_id(raw_id: int) -> int:
-    if raw_id < 0:
-        return raw_id
-    return int(f"-100{raw_id}")
+SUFFIXES = [
+    "Bog‘lanish uchun yozing.",
+    "Aloqaga chiqing.",
+    "Batafsil kelishamiz.",
+    "Hozir mavjud.",
+    "Qulay narxda.",
+]
+
+def apply_variation(text: str, risk: int) -> str:
+    result = text.strip()
+
+    # 🟢 Default ehtimollar
+    prefix_chance = 0.2
+    suffix_chance = 0.2
+
+    # 🟡 Risk oshsa — variation ham oshadi
+    if risk >= 30:
+        prefix_chance = 0.4
+        suffix_chance = 0.4
+
+    if risk >= 60:
+        prefix_chance = 0.7
+        suffix_chance = 0.7
+
+    # 🔹 Prefix
+    if random.random() < prefix_chance:
+        result = f"{random.choice(PREFIXES)}\n{result}"
+
+    # 🔹 Suffix
+    if random.random() < suffix_chance:
+        result = f"{result}\n{random.choice(SUFFIXES)}"
+
+    return result
+
 
 
 
@@ -251,6 +289,27 @@ TARIFFS = {
 }
 
 PAYMENT_CARD = "8600 **** **** ****"
+
+async def pause_campaigns_after_restart():
+    campaigns = get_all_campaigns()
+    paused = 0
+
+    for c in campaigns:
+        if c["status"] == "active":
+            update_campaign_status(c["id"], "paused")
+
+            # 📢 Userga xabar beramiz
+            await notify_user(
+                c["chat_id"],
+                "⏸ Kampaniya vaqtincha pauza qilindi\n\n"
+                "Sabab: server qayta ishga tushdi.\n"
+                "Xavfsizlik uchun kampaniya avtomatik to‘xtatildi.\n\n"
+                "▶️ Xohlasangiz, qayta davom ettirishingiz mumkin."
+            )
+
+            paused += 1
+
+    print(f"⏸ {paused} ta kampaniya restart sababli pauzaga qo‘yildi")
 
 
 def main_menu():
@@ -957,10 +1016,24 @@ async def handle_numbers(message: Message):
 FLOODWAIT_PAUSE_THRESHOLD = 600  # 10 daqiqa
 
 async def send_to_group(client, campaign, group_id):
-    # 🔄 YUBORISHDAN OLDIN RISKNI YUMSHATISH
     user_id = campaign["user_id"]
+
+    # 🔐 Riskni sekin pasaytirish
     decay_account_risk(user_id)
 
+    # 🔍 Joriy riskni olamiz
+    risk = get_account_risk(user_id)
+
+    # 👑 Premium holatini tekshiramiz
+    is_premium = get_premium_status(user_id)[0] == "active"
+
+    # ✍️ Matnni variation bilan tayyorlaymiz
+    text = apply_variation(
+        campaign["text"],
+        risk=risk,
+        is_premium=is_premium
+    )
+    
     # 🔒 0️⃣ YUBORISHDAN OLDIN QAT’IY TEKSHIRUV
     ok, reason = can_user_run_campaign(user_id)
     if not ok:
@@ -1061,10 +1134,25 @@ async def run_campaign(campaign_id: int):
 
     client = await get_client(campaign["user_id"])
 
+    # 🔐 SESSION TEKSHIRUV (QO‘SHILDI)
+    if not await client.is_user_authorized():
+        update_campaign_status(campaign["id"], "paused")
+
+        await notify_user(
+            campaign["chat_id"],
+            "⛔ Kampaniya boshlanmadi\n\n"
+            "Sabab: Telegram akkaunt login holati topilmadi.\n"
+            "Iltimos, qayta login qiling."
+        )
+
+        await client.disconnect()
+        return
+
     try:
         await run_campaign_safe(client, campaign)
     finally:
         await client.disconnect()
+
 
 async def run_campaign_safe(client, campaign):
     user_id = campaign["user_id"]
@@ -1160,23 +1248,32 @@ async def run_campaign_safe(client, campaign):
             return  # 🔴 JUDA MUHIM
 
         # =====================
-        # ❌ BOSHQA XATOLAR
+        # ❌ BOSHQA XATOLAR (TO‘G‘RILANGAN)
         # =====================
-        except Exception:
-            risk += 5
-            save_account_risk(user_id, risk)
+        except Exception as e:
+            # 🔐 Riskni ozgina oshiramiz
+            increase_risk(user_id, 5)
 
+            # ❗ Xato hisobini oshiramiz
             increment_campaign_error(campaign["id"])
 
-            if campaign["error_count"] + 1 >= 3:
+            # 🔄 YANGI qiymatni DBdan qayta o‘qiymiz
+            updated = get_campaign(campaign["id"])
+            error_count = updated.get("error_count", 0)
+
+            # ⛔ 3 ta ketma-ket xato — pauza
+            if error_count >= 3:
                 update_campaign_status(campaign["id"], "paused")
+
                 await notify_user(
                     campaign["chat_id"],
-                    "⏸ Kampaniya pauzaga qo‘yildi\n"
-                    "Sabab: ketma-ket xatolar"
+                    "⏸ Kampaniya pauzaga qo‘yildi\n\n"
+                    "Sabab: ketma-ket texnik xatolar.\n"
+                    "Iltimos, birozdan so‘ng qayta urinib ko‘ring."
                 )
                 return
 
+            # 💤 Aks holda biroz kutamiz va davom etamiz
             await asyncio.sleep(120)
 
     # =====================
@@ -1755,7 +1852,12 @@ async def send_limit_message(chat_id: int, used: int, limit: int):
 # =====================
     
 async def main():
-    print("🤖 Avtobot ishga tushdi")
+    # 🔥 RESTARTDAN KEYIN AKTIV KAMPANIYALARNI PAUZA QILAMIZ
+    await pause_campaigns_after_restart()
+
+    # ▶️ BOTNI ISHGA TUSHIRAMIZ
+    await dp.start_polling(bot)
+
 
     asyncio.create_task(subscription_watcher())
     asyncio.create_task(admin_notification_worker())
