@@ -459,7 +459,7 @@ async def edit_value_handler(message: Message, state: FSMContext):
     if resume_after:
         update_campaign_status(campaign_id, "active")
         update_campaign_started(campaign_id)
-        asyncio.create_task(run_campaign(campaign_id))
+        
 
     await message.answer("✅ Yangilandi")
     await render_campaign(campaign_id)
@@ -1030,7 +1030,7 @@ async def pick_duration(cb: CallbackQuery):
         reply_markup=campaign_control_keyboard(campaign_id, "active")
     )
 
-    asyncio.create_task(run_campaign(campaign_id))
+    
     await cb.answer("🚀 Kampaniya boshlandi")
 
 
@@ -1508,8 +1508,6 @@ async def resume_campaign(cb: CallbackQuery):
     await render_campaign(campaign_id)
 
     # ✅ 4. FONDA ISHGA TUSHIRAMIZ
-    asyncio.create_task(run_campaign(campaign_id))
-
 @dp.callback_query(F.data.startswith("camp_stop:"))
 async def stop_campaign(cb: CallbackQuery):
     campaign_id = int(cb.data.split(":")[1])
