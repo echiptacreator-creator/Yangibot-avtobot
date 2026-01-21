@@ -571,13 +571,17 @@ async def send_message_start(message: Message, state: FSMContext):
     save_user_flow(
         user_id=user_id,
         step="choose_mode",
-        data={}
+        data={
+            "mode": "classic"  # default
+        }
     )
+
 
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="📍 Bitta guruhga")],
             [KeyboardButton(text="📍 Ko‘p guruhlarga")],
+            [KeyboardButton(text="🤖 AI orqali yuborish")],
             [KeyboardButton(text="⬅️ Bekor qilish")]
         ],
         resize_keyboard=True
@@ -941,7 +945,11 @@ async def handle_enter_text_onl(message: Message):
     flow = get_user_flow(user_id)
 
     data = flow["data"]
-    data["text"] = message.text
+    if data.get("mode") == "ai":
+        data["text"] = f"(AI) {message.text}"
+    else:
+        data["text"] = message.text
+
 
     save_user_flow(user_id, "enter_interval", data)
 
@@ -2361,6 +2369,37 @@ async def group_no_link(cb: CallbackQuery):
         "Shu odamdan so‘rab ko‘ring.",
         show_alert=True
     )
+# =====================
+# AIAIAIAIAIAIAIAIAIAI
+# =====================
+
+@dp.message(F.text == "🤖 AI orqali yuborish")
+async def choose_ai_mode(message: Message):
+    user_id = message.from_user.id
+
+    save_user_flow(
+        user_id=user_id,
+        step="choose_groups",
+        data={
+            "mode": "ai",   # 🔥 MANA SHU MUHIM
+            "groups": get_user_groups(user_id),
+            "selected_ids": []
+        }
+    )
+
+    await message.answer(
+        "🤖 AI orqali yuborish rejimi yoqildi.\n"
+        "Guruhlarni tanlang:",
+        reply_markup=ReplyKeyboardRemove()
+    )
+
+    await show_group_picker(message, user_id)
+
+
+
+
+
+
 
 # =====================
 # RUN
