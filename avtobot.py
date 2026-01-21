@@ -58,9 +58,6 @@ from risk import (
 )
 from database import is_user_blocked
 
-if is_user_blocked(user_id):
-    return False, "⛔ Hisobingiz admin tomonidan bloklangan @khamilofff admin bilan bog'laning!"
-
 
 # =====================
 # STATE (XABAR YUBORISH)
@@ -1968,7 +1965,7 @@ async def check_subscriptions():
 from datetime import date
 
 WARNING_DAYS = [7, 5, 3, 2, 1]
-ADMIN_ID = 515902673  # hozircha bitta admin
+
 NOTIFY_USER_IDS = [6840894477]
 
 async def notify_admin_about_subscriptions():
