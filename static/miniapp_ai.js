@@ -1,6 +1,11 @@
 const form = document.getElementById("form");
+const pageForm = document.getElementById("page-form");
+const pagePreview = document.getElementById("page-preview");
+const previewList = document.getElementById("preview-list");
 
-window.AI_FORM_CONFIG.forEach(f => {
+const formData = {};
+
+AI_FORM_CONFIG.forEach(f => {
   const field = document.createElement("div");
   field.className = "field";
 
@@ -8,38 +13,64 @@ window.AI_FORM_CONFIG.forEach(f => {
   label.innerText = f.label;
   field.appendChild(label);
 
-  let input;
+  if (f.type === "toggle") {
+    const wrap = document.createElement("div");
+    wrap.className = "toggle";
 
-  if (f.type === "select" || f.type === "toggle") {
-    input = document.createElement("select");
-    f.options.forEach(o => {
-      const opt = document.createElement("option");
-      opt.value = o;
-      opt.innerText = o;
-      input.appendChild(opt);
+    ["Yo‘q", "Ha"].forEach(v => {
+      const btn = document.createElement("button");
+      btn.innerText = v;
+      btn.onclick = e => {
+        e.preventDefault();
+        formData[f.key] = v;
+        [...wrap.children].forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+      };
+      wrap.appendChild(btn);
     });
+
+    field.appendChild(wrap);
   } else {
-    input = document.createElement("input");
-    input.type = f.type === "phone" ? "tel" : f.type;
+    let input = f.type === "select"
+      ? document.createElement("select")
+      : document.createElement("input");
+
+    if (f.type === "select") {
+      f.options.forEach(o => {
+        const opt = document.createElement("option");
+        opt.value = o;
+        opt.innerText = o;
+        input.appendChild(opt);
+      });
+    } else {
+      input.type = f.type === "phone" ? "tel" : f.type;
+    }
+
+    input.onchange = () => formData[f.key] = input.value;
+    field.appendChild(input);
   }
 
-  input.name = f.key;
-  input.required = true;
-
-  field.appendChild(input);
   form.appendChild(field);
 });
 
-document.getElementById("send").onclick = () => {
-  const data = {};
-  [...form.elements].forEach(el => {
-    if (el.name) data[el.name] = el.value;
-  });
+document.getElementById("generate").onclick = () => {
+  // fake preview (real AI botda)
+  previewList.innerHTML = "";
+  for (let i = 1; i <= 5; i++) {
+    const card = document.createElement("div");
+    card.className = "preview-card";
+    card.innerText = `🚕 ${formData.from} → ${formData.to}\n👥 ${formData.people} ta\n⏰ ${formData.time}`;
+    previewList.appendChild(card);
+  }
 
+  pageForm.classList.add("hidden");
+  pagePreview.classList.remove("hidden");
+};
+
+document.getElementById("send").onclick = () => {
   Telegram.WebApp.sendData(JSON.stringify({
     type: "ai_form",
-    payload: data
+    payload: formData
   }));
-
   Telegram.WebApp.close();
 };
