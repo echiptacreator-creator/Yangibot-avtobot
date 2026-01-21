@@ -527,10 +527,13 @@ async def get_client(user_id: int):
 # GURUH YUKLASH
 # =====================
 
+from telethon.tl.types import User, Chat, Channel
+from telethon.errors import SessionRevokedError
+
 @dp.message(F.text == "📥 Guruhlarni yuklash")
 async def load_groups_handler(message: Message):
     user_id = message.from_user.id
-    await message.answer("⏳ Guruhlar yuklanmoqda bu biroz vaqt oladi kuting...")
+    await message.answer("⏳ Guruhlar yuklanmoqda, iltimos kuting...")
 
     try:
         client = await get_client(user_id)
@@ -542,40 +545,56 @@ async def load_groups_handler(message: Message):
 
     try:
         async for dialog in client.iter_dialogs():
-            if dialog.is_user:
+            entity = dialog.entity
+
+            # ❌ shaxsiy chatlar
+            if isinstance(entity, User):
                 continue
-            # qolgan koding shu yerda davom etadi
-    
+
+            # ❌ botlar
+            if getattr(entity, "bot", False):
+                continue
+
+            # ❌ broadcast kanallar
+            if isinstance(entity, Channel) and entity.broadcast:
+                continue
+
+            # ✅ oddiy group
+            if isinstance(entity, Chat):
+                peer_type = "chat"
+
+            # ✅ supergroup
+            elif isinstance(entity, Channel):
+                peer_type = "channel"
+
+            else:
+                continue
+
+            # ✅ ENG MUHIM JOY — SIKL ICHIDA
+            groups.append({
+                "group_id": entity.id,
+                "title": entity.title,
+                "username": getattr(entity, "username", None),
+                "peer_type": peer_type
+            })
+
     except SessionRevokedError:
         await message.answer(
             "🔐 Telegram sessiyangiz bekor qilingan.\n\n"
-            "Iltimos, qayta login qiling va yana urinib ko‘ring."
+            "Iltimos, qayta login qiling."
         )
         await client.disconnect()
         return
-
-
-        # ✅ faqat guruhlar (private + supergroup)
-        raw_id = dialog.entity.id
-        
-        
-        groups.append({
-            "group_id": raw_id,
-            "title": dialog.entity.title,
-            "username": getattr(dialog.entity, "username", None),
-            "peer_type": "chat" if isinstance(dialog.entity, Chat) else "channel"
-        })
 
     if not groups:
         await message.answer("❌ Hech qanday guruh topilmadi")
         return
 
-    # 🔥 TEMP DB GA YOZAMIZ
     save_temp_groups(user_id, groups)
 
     await message.answer(
         f"✅ {len(groups)} ta guruh topildi.\n\n"
-        "Endi qaysilarini doimiy saqlashni tanlang 👇",
+        "Endi qaysilarini saqlashni tanlang 👇",
         reply_markup=InlineKeyboardMarkup(
             inline_keyboard=[[
                 InlineKeyboardButton(
@@ -587,6 +606,7 @@ async def load_groups_handler(message: Message):
             ]]
         )
     )
+
 
 # =====================
 # PAFINATION CALLBACK
