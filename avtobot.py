@@ -134,63 +134,39 @@ openai_client = AsyncOpenAI(
     api_key=os.getenv("OPENAI_API_KEY")
 )
 
-async def generate_ai_variants(data: dict, risk: int, count: int = 7) -> list[str]:
+def generate_ai_variants(form_data: dict, count: int = 10) -> list[str]:
     """
-    data — miniapp form
-    risk — akkaunt xavfi
-    count — nechta variant
+    AI o‘rniga hozircha professional template generator
     """
-
-    risk_style = (
-        "juda ehtiyotkor, neytral, qisqa"
-        if risk >= 50 else
-        "tabiiy, ishonchli"
-        if risk >= 25 else
-        "erkinroq, jonli, sotuvga yo‘naltirilgan"
+    base = (
+        f"🚕 {form_data.get('from')} → {form_data.get('to')}\n"
+        f"👥 {form_data.get('people')} ta odam\n"
+        f"⏰ {form_data.get('time')}\n"
+        f"🚗 {form_data.get('car')} ({form_data.get('fuel')})\n"
+        f"📞 {form_data.get('phone')}"
     )
 
-    prompt = f"""
-Sen O‘zbekistondagi taksistlar uchun post yozuvchi yordamchisan.
-
-Quyidagi maʼlumotlardan foydalanib {count} ta BIR-BIRIGA O‘XSHAMAGAN post yoz.
-
-Uslub: {risk_style}
-Til: o‘zbekcha
-Spamga o‘xshamasin
-Emoji kam, lekin chiroyli bo‘lsin
-
-Maʼlumotlar:
-Qayerdan: {data.get('from')}
-Qayerga: {data.get('to')}
-Odamlar: {data.get('people')}
-Vaqt: {data.get('time')}
-Tezkor: {data.get('urgent')}
-Ayol: {data.get('female')}
-Oldi o‘rindiq: {data.get('front_seat')}
-Mashina: {data.get('car')}
-Yoqilg‘i: {data.get('fuel')}
-Pochta: {data.get('package')}
-Telefon: {data.get('phone')}
-Telegram: {data.get('telegram')}
-
-Natijani faqat RO‘YXAT ko‘rinishida ber.
-Har bir post orasiga `---` qo‘y.
-"""
-
-    response = await openai_client.responses.create(
-        model="gpt-4.1-mini",
-        input=prompt
-    )
-
-    raw_text = response.output_text
-
-    variants = [
-        v.strip()
-        for v in raw_text.split("---")
-        if v.strip()
+    styles = [
+        "Assalomu alaykum!",
+        "Diqqat eʼlon!",
+        "Bugungi yo‘nalish:",
+        "🚕 Taxi xizmati",
+        "📍 Yo‘nalish bo‘yicha",
+        "🔔 Maʼlumot uchun",
+        "🚖 Safar haqida",
+        "🛣 Yo‘lga chiqamiz",
+        "⚡ Tezkor taklif",
+        "📢 Eʼlon qilamiz",
     ]
 
-    return variants[:count]
+    variants = []
+
+    for i in range(count):
+        text = f"{styles[i % len(styles)]}\n\n{base}"
+        variants.append(text)
+
+    return variants
+
 
 
     prompt = f"""
@@ -623,67 +599,29 @@ import json
 
 @dp.message(F.web_app_data)
 async def handle_webapp_data(message: Message):
-    data = json.loads(message.web_app_data.data)
+    try:
+        form_data = json.loads(message.web_app_data.data)
+    except Exception:
+        await message.answer("❌ MiniApp maʼlumotini o‘qib bo‘lmadi")
+        return
 
-    if data["type"] == "ai_posts_selected":
-        posts = data["posts"]   # 5 ta post
+    # 1️⃣ 10 ta post yaratamiz
+    variants = generate_ai_variants(form_data, count=10)
 
-        save_user_flow(
-            user_id=message.from_user.id,
-            step="enter_interval",
-            data={
-                "ai_posts": posts,
-                "text": random.choice(posts)  # hozircha bittasini tanlaymiz
-            }
-        )
+    # 2️⃣ BOT O‘ZI 5 TASINI TANLAYDI
+    import random
+    selected = random.sample(variants, 5)
 
-        await message.answer(
-            "✅ AI postlar qabul qilindi.\n\n⏱ Endi intervalni tanlang:"
-        )
+    # 3️⃣ USERGA KO‘RSATAMIZ
+    text = "🤖 *AI tayyorlagan postlar (avtomatik tanlandi):*\n\n"
 
+    for i, post in enumerate(selected, 1):
+        text += f"*{i}.*\n{post}\n\n"
 
-    # keyingi preview card kodi o‘zgarishsiz qoladi
+    await message.answer(text, parse_mode="Markdown")
 
-    # 🔀 saqlab qo‘yamiz
-    save_user_flow(
-        user_id=user_id,
-        step="ai_choose_variant",
-        data={
-            "variants": variants,
-            "selected_ids": get_user_groups(user_id),
-            "mode": "ai"
-        }
-    )
-
-    cards = []
-    
-    for i, text in enumerate(variants):
-        preview = text.strip().split("\n")[0][:40]  # 1-qator preview
-        cards.append([
-            InlineKeyboardButton(
-                text=f"📝 {preview}...",
-                callback_data=f"ai_pick:{i}"
-            )
-        ])
-    
-    cards.append([
-        InlineKeyboardButton(
-            text="🎲 AI o‘zi tanlasin",
-            callback_data="ai_pick:random"
-        )
-    ])
-    
-    kb = InlineKeyboardMarkup(inline_keyboard=cards)
-    
-    await message.answer(
-        "🤖 AI bir nechta variant tayyorladi.\n\n"
-        "👇 Postni tanlang:",
-        reply_markup=kb
-    )
-    
-
-
-
+    # 4️⃣ KEYIN ODDIY FLOWGA O‘TAMIZ
+    # (guruh tanlash, interval va hokazo)
 
 @dp.message(EditCampaign.waiting_value)
 async def edit_value_handler(message: Message, state: FSMContext):
