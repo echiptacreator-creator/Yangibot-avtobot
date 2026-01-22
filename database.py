@@ -336,11 +336,11 @@ def create_campaign(
     user_id,
     text,
     groups,
+    interval,
+    duration,
     chat_id,
     status_message_id,
-    interval=None,      # 👈 QABUL QILADI
-    duration=None,      # 👈 QABUL QILADI
-    **kwargs            # 👈 KELAJAK UCHUN XAVFSIZLIK
+    **kwargs
 ):
     conn = get_db()
     cur = conn.cursor()
@@ -351,19 +351,23 @@ def create_campaign(
             user_id,
             text,
             groups,
+            interval_minutes,
+            duration_minutes,
             chat_id,
             status_message_id,
             status,
             sent_count,
             error_count
         )
-        VALUES (%s, %s, %s, %s, %s, 'active', 0, 0)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, 'active', 0, 0)
         RETURNING id
         """,
         (
             user_id,
             text,
             json.dumps(groups),
+            interval,        # ✅ NOT NULL TALABI BAJARILDI
+            duration,        # ✅ NOT NULL TALABI BAJARILDI
             chat_id,
             status_message_id
         )
