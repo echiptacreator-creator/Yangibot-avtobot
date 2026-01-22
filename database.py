@@ -337,7 +337,10 @@ def create_campaign(
     text,
     groups,
     chat_id,
-    status_message_id
+    status_message_id,
+    interval=None,      # 👈 QABUL QILADI
+    duration=None,      # 👈 QABUL QILADI
+    **kwargs            # 👈 KELAJAK UCHUN XAVFSIZLIK
 ):
     conn = get_db()
     cur = conn.cursor()
