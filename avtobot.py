@@ -1078,20 +1078,19 @@ async def groups_done(cb: CallbackQuery):
     # 🤖 AI MODE
     # =========================
     if mode == "ai":
-        # 👉 guruhlar saqlanadi, postlar allaqachon bor (texts)
         save_user_flow(
             user_id=user_id,
-            stepstep="enter_interval",
+            step="enter_interval",   # ✅ MUHIM
             data=data
         )
-
+    
         risk = get_account_risk(user_id)
         intervals, level = get_interval_options_by_risk(risk)
-
+    
         await cb.message.edit_text(
             "🤖 *AI postlar tayyor!*\n\n"
             f"🔐 Akkaunt holati: *{level}*\n\n"
-            "⏱ Endi intervalni tanlang 👇",
+            "⏱ Intervalni tanlang:",
             parse_mode="Markdown",
             reply_markup=interval_keyboard(intervals)
         )
@@ -1806,22 +1805,22 @@ async def resume_campaign_handler(cb: CallbackQuery):
 
 @dp.callback_query(F.data.startswith("camp_pause:"))
 async def pause_campaign_handler(cb: CallbackQuery):
-    # ✅ ENG AVVAL JAVOB
     await cb.answer("⏸ Pauzaga qo‘yildi")
 
     campaign_id = int(cb.data.split(":")[1])
-
     pause_campaign_with_reason(campaign_id, "manual_pause")
 
     try:
         await cb.message.edit_reply_markup(
             reply_markup=campaign_control_keyboard(campaign_id, "paused")
         )
-    except Exception:
+    except:
         pass
 
+
     # 🔐 xavfsiz o‘qish
-    pause_reason = c.get("pause_reason")
+    c = get_campaign(campaign_id)
+    pause_reason = c.get("pause_reason") if c else None
 
     # ⛔ cheklovlar
     if pause_reason == "risk_high":
@@ -2733,25 +2732,18 @@ async def generate_ai_posts(form_data: dict) -> list[str]:
 async def handle_webapp_data(message: Message):
     import json
 
-    user_id = message.from_user.id
     form_data = json.loads(message.web_app_data.data)
 
-    # 🤖 AI postlar
     texts = generate_ai_variants(form_data, count=5)
 
-    groups = get_user_groups(user_id)
-    if not groups:
-        await message.answer("❌ Avval guruhlarni yuklang")
-        return
-
     save_user_flow(
-        user_id=user_id,
+        user_id=message.from_user.id,
         step="choose_groups",
         data={
             "mode": "ai",
-            "groups": groups,
-            "selected_ids": [],
-            "texts": texts
+            "texts": texts,
+            "groups": get_user_groups(message.from_user.id),
+            "selected_ids": []
         }
     )
 
