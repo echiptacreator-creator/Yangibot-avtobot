@@ -142,52 +142,46 @@ import os
 
 openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-
-def generate_ai_variants(form_data: dict, count: int = 17) -> list[str]:
-    """
-    REAL AI orqali post yaratadi
-    """
-
-    def v(key):
-        return form_data.get(key, "—")
-
+async def generate_ai_variants(form_data: dict, count: int = 5) -> list[str]:
     prompt = f"""
 Siz O‘zbekistondagi taksistlar uchun Telegram post yozuvchi assistentsiz.
 
-Maʼlumotlar:
-Qayerdan: {v('from')}
-Qayerga: {v('to')}
-Odamlar soni: {v('people')}
-Ketish vaqti: {v('time')}
-Mashina: {v('car')}
-Yoqilg‘i: {v('fuel')}
-Telefon: {v('phone')}
-Telegram: {v('telegram')}
-Qo‘shimcha: {v('comment')}
+Ma’lumotlar:
+Qayerdan: {form_data.get('from')}
+Qayerga: {form_data.get('to')}
+Odamlar: {form_data.get('people')}
+Vaqt: {form_data.get('time')}
+Tezkorlik: {form_data.get('urgent')}
+Mashina: {form_data.get('car')}
+Yoqilg‘i: {form_data.get('fuel')}
+Telefon: {form_data.get('phone')}
+Telegram: {form_data.get('telegram')}
+Izoh: {form_data.get('comment')}
 
 Talablar:
-- {count} xil variant yoz
-- Telegram uchun mos bo‘lsin
+- {count} xil post yoz
+- Telegram uchun mos
 - Spamga o‘xshamasin
-- Emoji kam, lekin joyida
-- Har biri alohida post bo‘lsin
+- Emoji kam, joyida
+- Har biri alohida bo‘lsin
 """
 
     response = await openai_client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}],
-        temperature=0.8,
+        temperature=0.8
     )
 
-    text = response.choices[0].message.content.strip()
+    text = response.choices[0].message.content
 
     variants = [
         v.strip()
         for v in text.split("\n\n")
-        if len(v.strip()) > 30
+        if len(v.strip()) > 20
     ]
 
     return variants[:count]
+
 
 def generate_ai_posts_from_form(f: dict) -> list[str]:
     return [
@@ -2727,39 +2721,23 @@ async def generate_ai_posts(form_data: dict) -> list[str]:
 async def handle_webapp_data(message: Message):
     import json
 
-    try:
-        raw = json.loads(message.web_app_data.data)
-    except Exception:
-        await message.answer("❌ MiniApp ma’lumotini o‘qib bo‘lmadi")
-        return
+    payload = json.loads(message.web_app_data.data)
+    form_data = payload["payload"]
 
-    # 🔑 ENG MUHIM QATOR
-    form_data = raw.get("payload", {})
-
-    # 🔍 1 MARTA LOG KO‘RISH UCHUN
     print("AI FORM DATA:", form_data)
 
+    # 🔥 MUHIM JOY
     texts = await generate_ai_variants(form_data, count=5)
-
-    if not texts:
-        await message.answer("❌ AI post yaratilmadi")
-        return
 
     user_id = message.from_user.id
     groups = get_user_groups(user_id)
-
-    if not groups:
-        await message.answer(
-            "❌ Sizda hali guruhlar yo‘q.\nAvval 📥 Guruhlarni yuklang."
-        )
-        return
 
     save_user_flow(
         user_id=user_id,
         step="choose_groups",
         data={
             "mode": "ai",
-            "texts": texts,
+            "texts": texts,          # ✅ list[str]
             "groups": groups,
             "selected_ids": [],
             "offset": 0
