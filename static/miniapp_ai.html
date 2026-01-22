@@ -5,10 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>AI Taxi Post</title>
 
-<!-- Telegram Mini App -->
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-<!-- DATA + LOGIC -->
 <script src="miniapp_data.js"></script>
 <script defer src="miniapp_ai_v2.js"></script>
 
@@ -51,7 +48,6 @@ textarea{resize:vertical;min-height:70px}
   border-radius:999px;
   font-size:13px;
   cursor:pointer;
-  user-select:none
 }
 .toggle.active{
   background:var(--accent);
@@ -68,12 +64,6 @@ button{
   cursor:pointer;
   color:#052e16
 }
-button.secondary{
-  margin-top:8px;
-  background:#020617;
-  color:#fff;
-  border:1px dashed var(--border)
-}
 .hidden{display:none}
 </style>
 </head>
@@ -89,23 +79,24 @@ button.secondary{
   <div class="row">
     <select id="from_region"></select>
     <select id="to_region"></select>
-<!-- TUMANLAR QATORI -->
+  </div>
+</div>
+
+<!-- TUMANLAR (2 TA BIR QATORDA) -->
 <div class="row">
 
-  <!-- QAYERDAN -->
   <div class="card">
     <div class="label">Qayerdan (tumanlar)</div>
     <div id="from_districts"></div>
-    <button type="button" onclick="addDistrict('from')">
+    <button type="button" onclick="addDistrict('from')" style="margin-top:8px">
       + Tuman qo‘shish
     </button>
   </div>
 
-  <!-- QAYERGA -->
   <div class="card">
     <div class="label">Qayerga (tumanlar)</div>
     <div id="to_districts"></div>
-    <button type="button" onclick="addDistrict('to')">
+    <button type="button" onclick="addDistrict('to')" style="margin-top:8px">
       + Tuman qo‘shish
     </button>
   </div>
@@ -115,7 +106,7 @@ button.secondary{
 <!-- YO‘LOVCHI -->
 <div class="card">
   <div class="label">Mashinadagi odamlar (dona)</div>
-  <input id="people" type="number" min="1" placeholder="Masalan: 1" />
+  <input id="people" type="number" min="1" />
 </div>
 
 <!-- HOLATLAR -->
@@ -139,12 +130,7 @@ button.secondary{
 <div class="card">
   <div class="label">Mashina rusumi</div>
   <select id="car"></select>
-  <input
-    id="custom_car"
-    class="hidden"
-    placeholder="Mashina nomini yozing"
-    style="margin-top:8px"
-  />
+  <input id="custom_car" class="hidden" style="margin-top:8px" />
 </div>
 
 <!-- YOQILGI -->
@@ -161,29 +147,20 @@ button.secondary{
 <!-- ALOQA -->
 <div class="card">
   <div class="label">Telefon</div>
-  <input id="phone" placeholder="+998 88 472 77 72" />
-  <input
-    id="phone2"
-    placeholder="Qo‘shimcha telefon (ixtiyoriy)"
-    style="margin-top:8px"
-  />
+  <input id="phone" />
+  <input id="phone2" style="margin-top:8px" />
 </div>
 
 <!-- TELEGRAM -->
 <div class="card">
   <div class="label">Telegramdan bog‘lanish</div>
-  <div class="toggle" data-key="telegram">
-    Telegram ruxsat
-  </div>
+  <div class="toggle" data-key="telegram">Telegram ruxsat</div>
 </div>
 
 <!-- IZOH -->
 <div class="card">
   <div class="label">Qo‘shimcha izoh</div>
-  <textarea
-    id="comment"
-    placeholder="Masalan: Ilyosni olib ketaman..."
-  ></textarea>
+  <textarea id="comment"></textarea>
 </div>
 
 <button onclick="submitForm()">🚀 AI post yaratish</button>
