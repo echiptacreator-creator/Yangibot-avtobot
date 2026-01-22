@@ -137,79 +137,43 @@ openai_client = AsyncOpenAI(
     api_key=os.getenv("OPENAI_API_KEY")
 )
 
-def generate_ai_variants(form_data: dict, count: int = 10) -> list[str]:
+def generate_ai_variants(form_data: dict, count: int = 5) -> list[str]:
     """
-    AI o‘rniga hozircha professional template generator
+    Ishonchli, professional post generator (AI o‘rniga)
     """
+
+    def v(key, default="—"):
+        return form_data.get(key) or default
+
     base = (
-        f"🚕 {form_data.get('from')} → {form_data.get('to')}\n"
-        f"👥 {form_data.get('people')} ta odam\n"
-        f"⏰ {form_data.get('time')}\n"
-        f"🚗 {form_data.get('car')} ({form_data.get('fuel')})\n"
-        f"📞 {form_data.get('phone')}"
+        f"🚕 {v('from')} → {v('to')}\n"
+        f"👥 {v('people')} ta odam\n"
+        f"⏰ {v('time')}\n"
+        f"🚗 {v('car')} ({v('fuel')})\n"
+        f"📞 {v('phone')}"
     )
 
     styles = [
         "Assalomu alaykum!",
-        "Diqqat eʼlon!",
-        "Bugungi yo‘nalish:",
+        "📢 Diqqat eʼlon!",
         "🚕 Taxi xizmati",
         "📍 Yo‘nalish bo‘yicha",
-        "🔔 Maʼlumot uchun",
-        "🚖 Safar haqida",
-        "🛣 Yo‘lga chiqamiz",
+        "🛣 Safar haqida",
         "⚡ Tezkor taklif",
-        "📢 Eʼlon qilamiz",
+        "🔔 Maʼlumot uchun",
+        "🚖 Bugungi yo‘nalish",
+        "📣 Eʼlon qilamiz",
+        "🚘 Yo‘lga chiqamiz",
     ]
 
     variants = []
 
     for i in range(count):
-        text = f"{styles[i % len(styles)]}\n\n{base}"
-        variants.append(text)
+        variants.append(
+            f"{styles[i % len(styles)]}\n\n{base}"
+        )
 
     return variants
-
-
-
-    prompt = f"""
-Siz O‘zbekistondagi taksistlar uchun Telegram post yozuvchi assistentsiz.
-
-Ma’lumotlar:
-Qayerdan: {data['from']}
-Qayerga: {data['to']}
-Odam: {data['people']}
-Vaqt: {data['time']}
-Mashina: {data['car']}
-Yoqilg‘i: {data['fuel']}
-Telefon: {data['phone']}
-
-Talablar:
-- {count} xil variant yoz
-- Telegram uchun mos bo‘lsin
-- Spamga o‘xshamasin
-- Uslub: {style}
-- Emoji kam, lekin joyida
-- Har bir variant alohida bo‘lsin
-"""
-
-    response = openai.ChatCompletion.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.8
-    )
-
-    text = response.choices[0].message.content
-
-    # variantlarni bo‘lib olamiz
-    variants = [
-        v.strip()
-        for v in text.split("\n\n")
-        if len(v.strip()) > 20
-    ]
-
-    return variants[:count]
-
 
 def generate_ai_posts_from_form(f: dict) -> list[str]:
     return [
