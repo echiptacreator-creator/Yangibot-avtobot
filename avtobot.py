@@ -2728,16 +2728,21 @@ async def handle_webapp_data(message: Message):
     import json
 
     try:
-        form_data = json.loads(message.web_app_data.data)
+        raw = json.loads(message.web_app_data.data)
     except Exception:
-        await message.answer("❌ AI forma ma’lumotini o‘qib bo‘lmadi")
+        await message.answer("❌ MiniApp ma’lumotini o‘qib bo‘lmadi")
         return
 
-    # 🔥 REAL AI POSTLAR
-    texts = await generate_ai_variants(form_data, count=5)
+    # 🔑 ENG MUHIM QATOR
+    form_data = raw.get("payload", {})
+
+    # 🔍 1 MARTA LOG KO‘RISH UCHUN
+    print("AI FORM DATA:", form_data)
+
+    texts = generate_ai_variants(form_data, count=5)
 
     if not texts:
-        await message.answer("❌ AI post yaratolmadi")
+        await message.answer("❌ AI post yaratilmadi")
         return
 
     user_id = message.from_user.id
@@ -2745,7 +2750,7 @@ async def handle_webapp_data(message: Message):
 
     if not groups:
         await message.answer(
-            "❌ Sizda guruhlar yo‘q. Avval 📥 Guruhlarni yuklang."
+            "❌ Sizda hali guruhlar yo‘q.\nAvval 📥 Guruhlarni yuklang."
         )
         return
 
@@ -2754,7 +2759,7 @@ async def handle_webapp_data(message: Message):
         step="choose_groups",
         data={
             "mode": "ai",
-            "texts": texts,          # 🔥 MUHIM
+            "texts": texts,
             "groups": groups,
             "selected_ids": [],
             "offset": 0
