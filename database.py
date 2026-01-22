@@ -1609,8 +1609,8 @@ def set_user_blocked(user_id: int, blocked: bool):
     
 def ensure_user_groups_schema():
     """
-    user_groups jadvalida kerakli columnlar borligini tekshiradi,
-    yo‘q bo‘lsa avtomatik qo‘shadi.
+    #user_groups jadvalida kerakli columnlar borligini tekshiradi,
+    #yo‘q bo‘lsa avtomatik qo‘shadi.
     """
     conn = get_db()
     cur = conn.cursor()
