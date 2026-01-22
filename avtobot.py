@@ -2821,17 +2821,17 @@ async def ai_pick_variant(cb: CallbackQuery):
 # =====================
 # RUN
 # =====================
-    
 async def main():
     # 🔥 restartdan keyin aktiv kampaniyalarni pauza qilamiz
     pause_campaigns_on_restart()
 
-    # 🔁 background tasklar (AVVAL!)
+    # 🔁 background tasklar
     asyncio.create_task(subscription_watcher())
     asyncio.create_task(admin_notification_worker())
 
-    # ▶️ botni ishga tushiramiz (ENG OXIRI!)
+    # ▶️ botni ishga tushiramiz (ENG OXIRIDA)
     await dp.start_polling(bot)
+
 
 
 def get_next_group(campaign):
