@@ -346,8 +346,17 @@ def apply_variation(text: str, risk: int) -> str:
 
 from database import get_login_session
 
-def is_logged_in(user_id):
-    return get_login_session(user_id) is not None
+def is_logged_in(user_id: int) -> bool:
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT 1 FROM users WHERE user_id = %s",
+        (user_id,)
+    )
+    ok = cur.fetchone() is not None
+    conn.close()
+    return ok
+
 
 def calculate_duration_limits(interval: int):
     """
