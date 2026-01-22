@@ -347,7 +347,7 @@ def create_campaign(
     cur.execute(
         """
 		INSERT INTO campaigns (
-		user_id, text, groups, duration, chat_id, status_message_id
+			user_id, text, groups, duration, chat_id, status_message_id
 		)
         VALUES (%s, %s, %s, %s, %s, %s, %s)
         RETURNING id
