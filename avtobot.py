@@ -818,9 +818,9 @@ async def cancel_send(message: Message):
 
 
 async def get_client(user_id: int):
-    session_str = get_session(user_id)
-    if not session_str:
-        raise Exception("Telegram login topilmadi")
+    session = get_login_session(user_id)
+    if not session:
+        raise RuntimeError(f"No Telegram session for user {user_id}")
 
     client = TelegramClient(
         StringSession(session_str),
