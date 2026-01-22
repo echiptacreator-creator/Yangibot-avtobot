@@ -1067,28 +1067,50 @@ async def groups_done(cb: CallbackQuery):
     data = flow["data"]
     selected_ids = data.get("selected_ids", [])
     groups = data.get("groups", [])
+    mode = data.get("mode")
 
+    # ❌ Guruh tanlanmagan bo‘lsa
     if not selected_ids:
-        await cb.answer("Hech qanday guruh tanlanmadi", show_alert=True)
+        await cb.answer("❌ Hech qanday guruh tanlanmadi", show_alert=True)
         return
 
-    # 🔹 TANLANGAN GURUHLARNI TOPAMIZ
+    # =========================
+    # 🤖 AI MODE
+    # =========================
+    if mode == "ai":
+        # 👉 guruhlar saqlanadi, postlar allaqachon bor (texts)
+        save_user_flow(
+            user_id=user_id,
+            stepstep="enter_interval",
+            data=data
+        )
+
+        risk = get_account_risk(user_id)
+        intervals, level = get_interval_options_by_risk(risk)
+
+        await cb.message.edit_text(
+            "🤖 *AI postlar tayyor!*\n\n"
+            f"🔐 Akkaunt holati: *{level}*\n\n"
+            "⏱ Endi intervalni tanlang 👇",
+            parse_mode="Markdown",
+            reply_markup=interval_keyboard(intervals)
+        )
+        await cb.answer()
+        return
+
+    # =========================
+    # ✍️ CLASSIC / MULTI MODE
+    # =========================
     selected_groups = [
         g["title"] for g in groups if g["group_id"] in selected_ids
     ]
 
-    # 🔹 FLOW → KEYINGI QADAM
     save_user_flow(
         user_id=user_id,
         step="enter_text",
-        data={
-            "selected_ids": selected_ids,
-            "groups": groups,
-            "mode": data["mode"]
-        }
+        data=data
     )
 
-    # 🔹 CHIROYLI XABAR
     group_list = "\n".join(f"• {name}" for name in selected_groups)
 
     text = (
@@ -2711,31 +2733,37 @@ async def generate_ai_posts(form_data: dict) -> list[str]:
 async def handle_webapp_data(message: Message):
     import json
 
-    form_data = json.loads(message.web_app_data.data)
+    user_id = message.from_user.id
 
-    # 🔥 AI postlar tayyorlaymiz
+    try:
+        form_data = json.loads(message.web_app_data.data)
+    except Exception:
+        await message.answer("❌ AI form ma’lumotini o‘qib bo‘lmadi")
+        return
+
+    # 🔥 5 ta AI post generatsiya qilamiz
     texts = generate_ai_variants(form_data, count=5)
 
+    # 🔥 USER FLOW TO‘G‘RI SAQLANADI
     save_user_flow(
-        user_id=message.from_user.id,
-        step="enter_interval",
+        user_id=user_id,
+        step="choose_groups",
         data={
             "mode": "ai",
             "texts": texts,
-            "selected_ids": get_user_groups(message.from_user.id)
+            "groups": get_user_groups(user_id),
+            "selected_ids": []
         }
     )
 
-    risk = get_account_risk(message.from_user.id)
-    intervals, level = get_interval_options_by_risk(risk)
-
+    # 👇 KEYINGI QADAMNI OCHIQ AYTAMIZ
     await message.answer(
-        "🤖 AI postlar tayyor!\n\n"
-        f"🔐 Holat: *{level}*\n"
-        "⏱ Endi intervalni tanlang:",
-        parse_mode="Markdown",
-        reply_markup=interval_keyboard(intervals)
+        "🤖 AI postlar tayyor ✅\n\n"
+        "📋 Endi qaysi guruhlarga yuborishni tanlang 👇"
     )
+
+    # 🔥 GURUH TANLASHNI CHAQIRAMIZ
+    await show_group_picker(message, user_id)
 
 
 
