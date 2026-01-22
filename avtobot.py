@@ -146,61 +146,95 @@ openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 async def generate_ai_variants(form: dict, count: int = 5) -> list[str]:
     """
-    REAL taksist nomidan postlar
+    Yangi miniapp v2 formasi uchun AI post generator
     """
 
-    system_prompt = """
-Sen O‘zbekistonda ishlaydigan taksistsan.
-Telegram guruhlar uchun e’lon yozyapsan.
+    # === 1. YO‘NALISH ===
+    from_place = form["from_region"]
+    to_place = form["to_region"]
 
-Qoidalar:
-- Juda rasmiy bo‘lma
-- Robotga o‘xshama
-- Har xil ohangda yoz
-- Ortiqcha so‘z yozma
-- Faktlarni o‘zgartirma
-- Commentga tegma
-"""
+    if form.get("from_districts"):
+        from_place += " (" + ", ".join(form["from_districts"]) + ")"
 
-    user_prompt = f"""
-Ma’lumotlar:
-Yo‘nalish: {form['from']} → {form['to']}
-Hozir mashinada: {form['people']} kishi
-Ketish vaqti: {form['time']}
-Tezkorlik: {form['urgent']}
-Mashina: {form['car']}
-Yoqilg‘i: {form['fuel']}
-Telefon: {form.get('phone')}
-Telegram: {form.get('telegram')}
-Izoh: {form.get('comment')}
+    if form.get("to_districts"):
+        to_place += " (" + ", ".join(form["to_districts"]) + ")"
 
-Vazifa:
-- {count} xil post yoz
-- Har biri boshqasidan farq qilsin
-- Telegram guruh uchun mos bo‘lsin
-- Emoji 0–2 ta
-- Izohni oxiriga qo‘sh
+    # === 2. MAJBURIY BLOKLAR ===
+    facts = [
+        f"Yo‘nalish: {from_place} → {to_place}",
+        f"Odamlar: {form['people']} ta",
+        f"Ketish vaqti: {form['time']}",
+        f"Mashina: {form['car']} ({form['fuel']})",
+    ]
+
+    # === 3. IXTiyoriy BLOKLAR ===
+    if form.get("has_woman"):
+        facts.append("Ayol kishi bor")
+
+    if form.get("baggage"):
+        facts.append("Bagaj bor")
+
+    if form.get("mail"):
+        facts.append("Pochta olish mumkin")
+
+    if form.get("urgent"):
+        facts.append("Tezkor yuraman")
+
+    if form.get("comment"):
+        facts.append(f"Izoh: {form['comment']}")
+
+    # === 4. ALOQA ===
+    contacts = []
+
+    if form.get("phone"):
+        contacts.append(f"📞 {form['phone']}")
+
+    if form.get("phone2"):
+        contacts.append(f"📞 {form['phone2']}")
+
+    if form.get("telegram"):
+        contacts.append("Telegramdan yozish mumkin")
+
+    facts_text = "\n".join(facts)
+    contacts_text = "\n".join(contacts)
+
+    # === 5. AI PROMPT ===
+    prompt = f"""
+Sen O‘zbekistonda ishlaydigan taksist nomidan Telegram post yozasan.
+
+Post talablari:
+- Juda rasmiy bo‘lmasin
+- Oddiy, jonli, odamga o‘xshasin
+- Spamga o‘xshamasin
+- Emoji juda kam, joyida ishlat
+- Har variant biroz boshqacha bo‘lsin
+
+Maʼlumotlar:
+{facts_text}
+
+Aloqa:
+{contacts_text}
+
+{count} xil post yoz.
+Har biri alohida bo‘lsin.
 """
 
     response = await openai_client.chat.completions.create(
         model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-        temperature=0.9,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.85
     )
 
-    raw = response.choices[0].message.content
+    raw_text = response.choices[0].message.content
 
+    # === 6. VARIANTLARGA AJRATISH ===
     variants = [
         v.strip()
-        for v in raw.split("\n\n")
-        if len(v.strip()) > 30
+        for v in raw_text.split("\n\n")
+        if len(v.strip()) > 40
     ]
 
     return variants[:count]
-
 
 def generate_ai_posts_from_form(f: dict) -> list[str]:
     return [
