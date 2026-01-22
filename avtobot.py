@@ -143,33 +143,35 @@ import os
 openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 async def generate_ai_variants(form_data: dict, count: int = 5) -> list[str]:
-    prompt = f"""
-Siz O‘zbekistondagi taksistlar uchun Telegram post yozuvchi assistentsiz.
 
-Ma’lumotlar:
-Qayerdan: {form_data.get('from')}
-Qayerga: {form_data.get('to')}
-Odamlar: {form_data.get('people')}
+    prompt = f"""
+Sen Telegramda taksi guruhlariga yozadigan oddiy haydovchisan.
+Bu e’lonni XIZMAT sifatida emas, O‘ZING gapirayotgandek yoz.
+
+QOIDALAR:
+- Juda rasmiy bo‘lma
+- “xizmat”, “murojaat uchun” kabi so‘zlar bo‘lmasin
+- Odamlar ishlatadigan oddiy tilda yoz
+- Har bir ma’lumot alohida qatorda bo‘lsin
+- Agar biror maydon bo‘sh bo‘lsa — umuman yozma
+- Yo‘nalish ajralib tursin alohida korinsin
+
+MA’LUMOTLAR:
+Yo‘nalish: {form_data.get('from').upper()} → {form_data.get('to').upper()}
+Odam: {form_data.get('people')}
 Vaqt: {form_data.get('time')}
 Tezkorlik: {form_data.get('urgent')}
 Mashina: {form_data.get('car')}
 Yoqilg‘i: {form_data.get('fuel')}
-Telefon: {form_data.get('phone')}
-Telegram: {form_data.get('telegram')}
 Izoh: {form_data.get('comment')}
 
-Talablar:
-- {count} xil post yoz
-- Telegram uchun mos
-- Spamga o‘xshamasin
-- Emoji kam, joyida
-- Har biri alohida bo‘lsin
+{count} xil TURFA, jonli variant yoz.
 """
 
     response = await openai_client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}],
-        temperature=0.8
+        temperature=0.85
     )
 
     text = response.choices[0].message.content
@@ -177,7 +179,7 @@ Talablar:
     variants = [
         v.strip()
         for v in text.split("\n\n")
-        if len(v.strip()) > 20
+        if len(v.strip()) > 40
     ]
 
     return variants[:count]
