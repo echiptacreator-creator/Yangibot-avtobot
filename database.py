@@ -226,8 +226,8 @@ def init_db():
 
 	""")
     
-	cur.execute("""
-	CREATE TABLE IF NOT EXISTS user_profiles (
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS user_profiles (
         user_id BIGINT PRIMARY KEY,
         car TEXT,
         fuel TEXT,
