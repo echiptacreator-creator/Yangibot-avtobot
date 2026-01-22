@@ -1667,7 +1667,9 @@ def update_campaign_pause_reason(campaign_id: int, reason: str):
     conn.close()
 
 def save_user_profile(user_id, car=None, fuel=None, phone=None, phone2=None):
-    cur = get_db().cursor()
+    conn = get_db()
+    cur = conn.cursor()
+
     cur.execute("""
         INSERT INTO user_profiles (user_id, car, fuel, phone, phone2, updated_at)
         VALUES (%s,%s,%s,%s,%s,EXTRACT(EPOCH FROM NOW()))
@@ -1678,23 +1680,30 @@ def save_user_profile(user_id, car=None, fuel=None, phone=None, phone2=None):
             phone2 = COALESCE(EXCLUDED.phone2, user_profiles.phone2),
             updated_at = EXCLUDED.updated_at
     """, (user_id, car, fuel, phone, phone2))
-    get_db().commit()
+
+    conn.commit()
+    cur.close()
     
     
 def get_user_profile(user_id):
-    cur = get_db().cursor()
+    conn = get_db()
+    cur = conn.cursor()
+
     cur.execute("""
         SELECT car, fuel, phone, phone2
         FROM user_profiles
         WHERE user_id = %s
     """, (user_id,))
+
     row = cur.fetchone()
+    cur.close()
+
     if not row:
         return {}
+
     return {
         "car": row[0],
         "fuel": row[1],
         "phone": row[2],
         "phone2": row[3],
     }
-    
