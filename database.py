@@ -184,28 +184,16 @@ def init_db():
     );
     """)
     cur.execute("""
-    CREATE TABLE IF NOT EXISTS telegram_groups_temp (
-        id SERIAL PRIMARY KEY,
-        user_id BIGINT NOT NULL,
-        group_id BIGINT NOT NULL,
-        title TEXT NOT NULL,
-        username TEXT,
-        added_at TIMESTAMP DEFAULT NOW(),
-        UNIQUE (user_id, group_id)
+	CREATE TABLE IF NOT EXISTS telegram_groups_temp (
+	    id SERIAL PRIMARY KEY,
+	    user_id BIGINT NOT NULL,
+	    group_id BIGINT NOT NULL,
+	    title TEXT,
+	    username TEXT,
+	    added_at TIMESTAMP DEFAULT NOW(),
+	    UNIQUE (user_id, group_id
     );
     """)
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS telegram_groups_temp (
-        id SERIAL PRIMARY KEY,
-        user_id BIGINT NOT NULL,
-        group_id BIGINT NOT NULL,   -- 🔥 RAW ID
-        title TEXT,
-        username TEXT,
-        added_at TIMESTAMP DEFAULT NOW(),
-        UNIQUE (user_id, group_id)
-    );
-    """)
-
     cur.execute("""
     CREATE TABLE IF NOT EXISTS user_accounts (
         user_id BIGINT PRIMARY KEY,
