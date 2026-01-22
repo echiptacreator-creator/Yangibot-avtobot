@@ -2751,15 +2751,28 @@ async def generate_ai_posts(form_data: dict) -> list[str]:
 async def handle_webapp_data(message: Message):
     import json
 
-    payload = json.loads(message.web_app_data.data)
-    form_data = payload["payload"]
+    data = json.loads(message.web_app_data.data)
+
+    action = data.get("action")
+    form_data = data.get("payload", {})
 
     print("AI FORM DATA:", form_data)
 
-    # 🔥 MUHIM JOY
+    user_id = message.from_user.id
+
+    # ✅ PROFILNI SAQLAB QOLISH (FAQAT v2 UCHUN)
+    if action == "ai_post_v2":
+        save_user_profile(
+            user_id=user_id,
+            car=form_data.get("car"),
+            fuel=form_data.get("fuel"),
+            phone=form_data.get("phone"),
+            phone2=form_data.get("phone2"),
+        )
+
+    # 🤖 AI POST GENERATSIYA
     texts = await generate_ai_variants(form_data, count=5)
 
-    user_id = message.from_user.id
     groups = get_user_groups(user_id)
 
     save_user_flow(
@@ -2767,7 +2780,7 @@ async def handle_webapp_data(message: Message):
         step="choose_groups",
         data={
             "mode": "ai",
-            "texts": texts,          # ✅ list[str]
+            "texts": texts,          # list[str]
             "groups": groups,
             "selected_ids": [],
             "offset": 0
@@ -2781,7 +2794,6 @@ async def handle_webapp_data(message: Message):
     )
 
     await show_group_picker(message, user_id)
-
 
 
 @dp.callback_query(F.data.startswith("ai_pick:"))
