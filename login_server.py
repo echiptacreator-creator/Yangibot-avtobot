@@ -468,6 +468,34 @@ def api_groups_remove():
 
     return jsonify({"status": "removed"})
 
+async def collect_user_groups(client, user_id: int):
+    groups = []
+
+    async for dialog in client.iter_dialogs():
+        entity = dialog.entity
+
+        # ❌ Kanal bo‘lmagan / yozib bo‘lmaydigan joylar chiqib ketadi
+        if not isinstance(entity, (Chat, Channel)):
+            continue
+
+        # ❌ Read-only bo‘lsa — tashlab ketamiz
+        if getattr(entity, "broadcast", False):
+            continue
+
+        group_id = entity.id
+        title = entity.title
+        username = entity.username
+
+        groups.append({
+            "group_id": group_id,
+            "title": title,
+            "username": username,
+            "added_by": user_id
+        })
+
+    return groups
+
+
 
 # =====================
 # RUN
