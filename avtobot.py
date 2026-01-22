@@ -185,49 +185,49 @@ Har biri alohida bo‘lsin
 
     return variants[:count]
 
+async def generate_ai_posts(form: dict, count: int = 5) -> list[str]:
+    """
+    Haydovchi nomidan yozilgan, norasmiy, real postlar
+    """
 
-def generate_ai_posts_from_form(f: dict) -> list[str]:
-    return [
-        (
-            f"🚕 {f['from']} → {f['to']}\n\n"
-            f"👥 {f['people']} ta odam\n"
-            f"⏰ {f['time']}\n"
-            f"🚗 {f['car']} ({f['fuel']})\n"
-            f"📦 Pochta: {f['package']}\n"
-            f"📞 {f['phone']}"
-        ),
-        (
-            f"Assalomu alaykum.\n\n"
-            f"{f['from']}dan {f['to']}ga yuramiz.\n"
-            f"{f['time']} ga.\n"
-            f"{f['people']} ta joy bor.\n"
-            f"🚗 {f['car']} ({f['fuel']})\n"
-            f"📞 {f['phone']}"
-        ),
-        (
-            f"Bugungi qatnov 🚖\n"
-            f"{f['from']} → {f['to']}\n\n"
-            f"⏰ {f['time']}\n"
-            f"👥 {f['people']} ta\n"
-            f"📦 Pochta olamiz\n"
-            f"📞 {f['phone']}"
-        ),
-        (
-            f"❗ Yo‘nalish mavjud\n\n"
-            f"{f['from']} ➡️ {f['to']}\n"
-            f"⏰ {f['time']}\n"
-            f"🚗 {f['car']} ({f['fuel']})\n"
-            f"📞 {f['phone']}"
-        ),
-        (
-            f"🚕 Safarga chiqamiz\n\n"
-            f"{f['from']} — {f['to']}\n"
-            f"{f['time']} da.\n"
-            f"{f['people']} ta odam.\n"
-            f"📞 {f['phone']}"
-        )
+    route = f"{form.get('from')} → {form.get('to')}"
+
+    base = [
+        f"{route} 🚕",
+        f"{form.get('time')} ga chiqaman",
+        f"Mashina: {form.get('car')} ({form.get('fuel')})"
     ]
 
+    if form.get("people"):
+        base.append(f"Hozir {form['people']} kishi bor")
+
+    if form.get("urgent") == "Tezkor":
+        base.append("Tezkor yuriladi ⚡")
+
+    comment = form.get("comment")
+
+    contacts = []
+    if form.get("phone"):
+        contacts.append(form["phone"])
+    if form.get("telegram"):
+        contacts.append(form["telegram"])
+
+    posts = []
+
+    for _ in range(count):
+        random.shuffle(base)
+
+        text = "\n".join(base)
+
+        if comment:
+            text += f"\n\n{comment}"
+
+        if contacts:
+            text += "\n\n" + " / ".join(contacts)
+
+        posts.append(text)
+
+    return posts
 
 
 import random
@@ -2731,41 +2731,43 @@ async def generate_ai_posts(form_data: dict) -> list[str]:
         f"Bugun yo‘nalish: {form_data['from']} → {form_data['to']}"
     ]
 
+
 @dp.message(F.web_app_data)
 async def handle_webapp_data(message: Message):
     import json
 
-    payload = json.loads(message.web_app_data.data)
-    form_data = payload["payload"]
+    data = json.loads(message.web_app_data.data)
 
-    print("AI FORM DATA:", form_data)
+    if data.get("action") != "ai_post":
+        return
 
-    # 🔥 MUHIM JOY
-    texts = await generate_ai_variants(form_data, count=5)
-
+    form = data["payload"]
     user_id = message.from_user.id
-    groups = get_user_groups(user_id)
 
+    # 🔹 AI POSTLAR (5 TA)
+    texts = await generate_ai_posts(form, count=5)
+
+    # 🔹 USER GURUHLARI
+    groups = get_user_groups(user_id)
+    if not groups:
+        await message.answer("❌ Avval guruhlarni yuklang")
+        return
+
+    # 🔹 FLOW SAQLASH
     save_user_flow(
         user_id=user_id,
         step="choose_groups",
         data={
             "mode": "ai",
-            "texts": texts,          # ✅ list[str]
+            "texts": texts,          # ⚠️ MUHIM
             "groups": groups,
-            "selected_ids": [],
-            "offset": 0
+            "selected_ids": []
         }
     )
 
     await message.answer(
-        "🤖 AI postlar tayyor.\n\n"
-        "📋 Endi qaysi guruhlarga yuborishni tanlang 👇",
-        reply_markup=ReplyKeyboardRemove()
+        "🤖 AI postlar tayyor.\n\nEndi qaysi guruhlarga yuborishni tanlang 👇"
     )
-
-    await show_group_picker(message, user_id)
-
 
 
 @dp.callback_query(F.data.startswith("ai_pick:"))
