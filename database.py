@@ -222,8 +222,14 @@ def init_db():
 	ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN DEFAULT FALSE,
 	ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW(),
 	ADD COLUMN IF NOT EXISTS last_login TIMESTAMP
+
 	""")
-	
+	cur.execute("""
+	ALTER TABLE campaigns
+	ADD COLUMN interval INTEGER DEFAULT 10;
+	ADD COLUMN duration INTEGER DEFAULT 60;
+	""")
+
     conn.commit()
     cur.close()
     conn.close()
