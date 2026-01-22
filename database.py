@@ -1698,14 +1698,3 @@ def get_user_profile(user_id):
         "phone2": row[3],
     }
     
-    
-if data.get("action") == "ai_post_v2":
-    payload = data["payload"]
-
-    save_user_profile(
-        user_id=message.from_user.id,
-        car=payload.get("car"),
-        fuel=payload.get("fuel"),
-        phone=payload.get("phone"),
-        phone2=payload.get("phone2"),
-    )
