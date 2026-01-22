@@ -2,165 +2,76 @@
 <html lang="uz">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AI Taxi Post</title>
-
+<title>Taxi AI Post</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
 <style>
-body {
-  margin: 0;
-  font-family: system-ui, sans-serif;
-  background: #0f172a;
-  color: #fff;
-}
-.container {
-  max-width: 520px;
-  margin: auto;
-  padding: 16px;
-}
-.card {
-  background: #020617;
-  border-radius: 12px;
-  padding: 14px;
-  margin-bottom: 12px;
-}
-label {
-  font-size: 13px;
-  color: #94a3b8;
-}
-select, input, textarea, button {
-  width: 100%;
-  margin-top: 6px;
-  padding: 10px;
-  border-radius: 10px;
-  border: 1px solid #1f2933;
-  background: #020617;
-  color: #fff;
-}
-.row {
-  display: flex;
-  gap: 10px;
-}
-button {
-  background: #22c55e;
-  color: #052e16;
-  font-weight: 600;
-  border: none;
-  margin-top: 16px;
-}
-.toggle {
-  display: flex;
-  gap: 10px;
-  margin-top: 6px;
-}
-.toggle button {
-  flex: 1;
-  background: #020617;
-  border: 1px solid #1f2933;
-  color: #fff;
-}
-.toggle button.active {
-  background: #22c55e;
-  color: #052e16;
-}
+  body { background:#0f172a; color:#fff; font-family:sans-serif; }
+  .card { background:#111827; padding:14px; margin-bottom:12px; border-radius:12px; }
+  .row { display:flex; gap:8px; }
+  select, input { width:100%; padding:10px; border-radius:8px; }
+  .toggle { padding:10px; border:1px solid #333; border-radius:20px; cursor:pointer; }
+  .toggle.active { background:#22c55e; color:#052e16; }
+  button { width:100%; padding:14px; border-radius:12px; background:#22c55e; border:none; }
 </style>
 </head>
 
 <body>
-<div class="container">
 
-<h3>🤖 AI taxi post</h3>
-
-<!-- 1. YO‘NALISH -->
 <div class="card">
-  <label>📍 Qayerdan → Qayerga</label>
-  <div class="row">
-    <select id="from_region">
-      <option value="">Qayerdan (viloyat)</option>
-      <option>Andijon</option>
-      <option>Farg‘ona</option>
-      <option>Toshkent</option>
-    </select>
-
-    <select id="to_region">
-      <option value="">Qayerga (viloyat)</option>
-      <option>Andijon</option>
-      <option>Farg‘ona</option>
-      <option>Toshkent</option>
-    </select>
-  </div>
-
-  <div class="row">
-    <input id="from_district" placeholder="Tuman (ixtiyoriy)" />
-    <input id="to_district" placeholder="Tuman (ixtiyoriy)" />
-  </div>
+  <b>Qayerdan</b>
+  <select id="from_region"></select>
+  <div id="from_districts"></div>
+  <button onclick="addDistrict('from')">➕ Tuman qo‘shish</button>
 </div>
 
-<!-- 2. ODAMLAR -->
 <div class="card">
-  <label>👥 Hozir nechta odam bor</label>
-  <input id="people_count" type="number" min="0" placeholder="Masalan: 1" />
+  <b>Qayerga</b>
+  <select id="to_region"></select>
+  <div id="to_districts"></div>
+  <button onclick="addDistrict('to')">➕ Tuman qo‘shish</button>
 </div>
 
-<!-- 3. AYOL KISHI -->
 <div class="card">
-  <label>👩 Ayol kishi bormi?</label>
-  <div class="toggle" data-key="female">
-    <button data-value="true">Bor</button>
-    <button data-value="false" class="active">Yo‘q</button>
-  </div>
+  <b>Odamlar soni</b>
+  <input type="number" id="people" min="1" />
 </div>
 
-<!-- 4. VAQT -->
 <div class="card">
-  <label>⏰ Ketish vaqti</label>
-  <input id="time" type="time" />
+  <b>Ayol kishi bor</b>
+  <div class="toggle" data-key="female">Ha</div>
 </div>
 
-<!-- 5. TEZKOR -->
 <div class="card">
-  <label>⚡ Harakat turi</label>
-  <div class="toggle" data-key="urgent">
-    <button data-value="tezkor">Tezkor</button>
-    <button data-value="tulsa" class="active">To‘lsa yuriladi</button>
-  </div>
+  <b>Ketish vaqti</b>
+  <input type="time" id="time" />
 </div>
 
-<!-- 6. BAGAJ -->
 <div class="card">
-  <label>🧳 Bagaj bormi?</label>
-  <div class="toggle" data-key="baggage">
-    <button data-value="true">Bor</button>
-    <button data-value="false" class="active">Yo‘q</button>
-  </div>
+  <div class="toggle" data-key="urgent">Tezkor</div>
+  <div class="toggle" data-key="fill">To‘lsa yuriladi</div>
 </div>
 
-<!-- 7. POCHTA -->
 <div class="card">
-  <label>📦 Pochta olinadimi?</label>
-  <div class="toggle" data-key="parcel">
-    <button data-value="true">Ha</button>
-    <button data-value="false" class="active">Yo‘q</button>
-  </div>
+  <div class="toggle" data-key="luggage">Bagaj bor</div>
+  <div class="toggle" data-key="parcel">Pochta olinadi</div>
 </div>
 
-<!-- 8. MASHINA -->
 <div class="card">
-  <label>🚗 Mashina rusumi</label>
+  <b>Mashina</b>
   <select id="car">
     <option>Gentra</option>
     <option>Cobalt</option>
     <option>Nexia 3</option>
-    <option>Onix</option>
     <option>Tracker</option>
+    <option>Onix</option>
     <option>BYD</option>
+    <option value="other">Boshqa</option>
   </select>
+  <input id="car_other" placeholder="Mashina yozing" style="display:none;margin-top:8px"/>
 </div>
 
-<!-- 9. YOQILG‘I -->
 <div class="card">
-  <label>⛽ Yoqilg‘i turi</label>
+  <b>Yonilg‘i</b>
   <select id="fuel">
     <option>Benzin</option>
     <option>Propan</option>
@@ -169,82 +80,23 @@ button {
   </select>
 </div>
 
-<!-- 10. TELEFON -->
 <div class="card">
-  <label>📞 Telefon</label>
-  <input id="phone_main" value="+998" />
-  <input id="phone_extra" placeholder="Qo‘shimcha telefon (ixtiyoriy)" />
+  <b>Telefon</b>
+  <input id="phone" placeholder="+998" />
+  <input id="phone_extra" placeholder="Qo‘shimcha telefon" />
 </div>
 
-<!-- 11. TELEGRAM -->
 <div class="card">
-  <label>💬 Telegramdan yozish mumkinmi?</label>
-  <div class="toggle" data-key="telegram_allowed">
-    <button data-value="true">Ha</button>
-    <button data-value="false" class="active">Yo‘q</button>
-  </div>
-  <input id="telegram_username" placeholder="@username (ixtiyoriy)" />
+  <div class="toggle" data-key="telegram_ok">Telegramdan yozish mumkin</div>
 </div>
 
-<!-- 12. IZOH -->
 <div class="card">
-  <label>📝 Qo‘shimcha izoh</label>
-  <textarea id="comment" placeholder="Masalan: yo‘lda chiqaman"></textarea>
+  <b>Izoh</b>
+  <input id="comment" />
 </div>
 
-<button id="send">🤖 Post yaratish</button>
+<button onclick="send()">Yuborish</button>
 
-</div>
-
-<script>
-const state = {
-  female: false,
-  urgent: "tulsa",
-  baggage: false,
-  parcel: false,
-  telegram_allowed: false
-};
-
-document.querySelectorAll(".toggle").forEach(group => {
-  const key = group.dataset.key;
-  group.querySelectorAll("button").forEach(btn => {
-    btn.onclick = () => {
-      group.querySelectorAll("button").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      state[key] = btn.dataset.value === "true" ? true : btn.dataset.value;
-    };
-  });
-});
-
-document.getElementById("send").onclick = () => {
-  const payload = {
-    from_region: from_region.value,
-    from_district: from_district.value,
-    to_region: to_region.value,
-    to_district: to_district.value,
-    people_count: people_count.value,
-    female: state.female,
-    time: time.value,
-    urgent: state.urgent,
-    baggage: state.baggage,
-    parcel: state.parcel,
-    car: car.value,
-    fuel: fuel.value,
-    phone_main: phone_main.value,
-    phone_extra: phone_extra.value,
-    telegram_allowed: state.telegram_allowed,
-    telegram_username: telegram_username.value,
-    comment: comment.value
-  };
-
-  Telegram.WebApp.sendData(JSON.stringify({
-    action: "ai_post",
-    payload
-  }));
-
-  Telegram.WebApp.close();
-};
-</script>
-
+<script src="app.js"></script>
 </body>
 </html>
