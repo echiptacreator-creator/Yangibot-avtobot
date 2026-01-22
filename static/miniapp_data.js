@@ -17,6 +17,20 @@ const REGIONS = {
     "Shahrixon",
     "Ulug‘nor"
   ],
+    "Toshkent shahri": [
+    "Bektemir",
+    "Chilonzor",
+    "Mirzo Ulug‘bek",
+    "Mirobod",
+    "Sergeli",
+    "Shayxontohur",
+    "Uchtepa",
+    "Yunusobod",
+    "Yakkasaroy",
+    "Yangihayot",
+    "Olmazor",
+    "Yashnobod"
+  ],
 
   "Buxoro": [
     "Buxoro",
@@ -185,21 +199,6 @@ const REGIONS = {
     "Taxtako‘pir",
     "To‘rtko‘l"
   ],
-
-  "Toshkent shahri": [
-    "Bektemir",
-    "Chilonzor",
-    "Mirzo Ulug‘bek",
-    "Mirobod",
-    "Sergeli",
-    "Shayxontohur",
-    "Uchtepa",
-    "Yunusobod",
-    "Yakkasaroy",
-    "Yangihayot",
-    "Olmazor",
-    "Yashnobod"
-  ]
 };
 
 const CARS = [
