@@ -67,6 +67,7 @@ from risk import (
     decay_account_risk
 )
 from database import is_user_blocked
+from database import is_user_exists
 
 running_campaigns: dict[int, asyncio.Task] = {}
 
