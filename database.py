@@ -122,13 +122,15 @@ def init_db():
             created_at BIGINT
         );
     """)
-    
-    cur.execute("""
-    ALTER TABLE payments
-    ADD COLUMN IF NOT EXISTS receipt_file_id TEXT,
-    ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP;
-    
-    """)
+	cur.execute("""
+	ALTER TABLE payments
+	ADD COLUMN IF NOT EXISTS receipt_file_id TEXT;
+	""")
+	
+	cur.execute("""
+	ALTER TABLE payments
+	ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP;
+	""")
     
     cur.execute("""
     CREATE TABLE IF NOT EXISTS daily_usage (
