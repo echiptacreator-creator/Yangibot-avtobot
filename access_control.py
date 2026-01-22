@@ -10,6 +10,19 @@ from database import (
 from database import get_premium_status
 from database import get_premium_status, mark_premium_notified
 from database import mark_premium_notified
+from database import get_db
+
+def is_user_exists(user_id: int) -> bool:
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT 1 FROM users WHERE user_id = %s",
+        (user_id,)
+    )
+    ok = cur.fetchone() is not None
+    conn.close()
+    return ok
+
 def get_subscription_status(user_id: int) -> str:
     """
     return: active | expired | blocked | none
