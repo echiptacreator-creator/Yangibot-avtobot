@@ -4,7 +4,23 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>AI Taxi Post</title>
+<script>
+const params = new URLSearchParams(window.location.search);
 
+const car = params.get("car");
+const phone = params.get("phone");
+const fuel = params.get("fuel");
+
+if (car) document.getElementById("car").value = car;
+if (phone) document.getElementById("phone").value = phone;
+
+// agar fuel chip bo‘lsa:
+if (fuel) {
+  document.querySelectorAll("[data-key='fuel'] .chip").forEach(c => {
+    if (c.innerText === fuel) c.classList.add("active");
+  });
+}
+</script>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="miniapp_data.js"></script>
 <script defer src="miniapp_ai_v2.js"></script>
