@@ -2732,28 +2732,46 @@ async def generate_ai_posts(form_data: dict) -> list[str]:
 async def handle_webapp_data(message: Message):
     import json
 
-    form_data = json.loads(message.web_app_data.data)
+    try:
+        form_data = json.loads(message.web_app_data.data)
+    except Exception:
+        await message.answer("❌ AI form ma’lumotini o‘qib bo‘lmadi")
+        return
 
+    # 🔥 5 ta AI post tayyorlaymiz
     texts = generate_ai_variants(form_data, count=5)
 
+    user_id = message.from_user.id
+    groups = get_user_groups(user_id)
+
+    if not groups:
+        await message.answer(
+            "❌ Sizda hali guruhlar yo‘q.\n"
+            "Avval 📥 Guruhlarni yuklang."
+        )
+        return
+
+    # 🔹 FLOW SAQLAYMIZ
     save_user_flow(
-        user_id=message.from_user.id,
+        user_id=user_id,
         step="choose_groups",
         data={
             "mode": "ai",
             "texts": texts,
-            "groups": get_user_groups(message.from_user.id),
-            "selected_ids": []
+            "groups": groups,
+            "selected_ids": [],
+            "offset": 0
         }
     )
 
-    # 👇 KEYINGI QADAMNI OCHIQ AYTAMIZ
+    # 🔹 FOYDALANUVCHIGA AYTAMIZ
     await message.answer(
-        "🤖 AI postlar tayyor ✅\n\n"
-        "📋 Endi qaysi guruhlarga yuborishni tanlang 👇"
+        "🤖 AI postlar tayyor.\n\n"
+        "📋 Endi qaysi guruhlarga yuborishni tanlang 👇",
+        reply_markup=ReplyKeyboardRemove()
     )
 
-    # 🔥 GURUH TANLASHNI CHAQIRAMIZ
+    # 🔥 ENG MUHIM QATOR (SEN AYTGAN MUAMMO SHU YERDA EDI)
     await show_group_picker(message, user_id)
 
 
