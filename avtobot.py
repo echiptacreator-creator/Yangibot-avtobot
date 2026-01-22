@@ -755,15 +755,9 @@ async def logout(message: Message):
     conn = get_db()
     cur = conn.cursor()
 
-    # 1️⃣ session o‘chadi
+    # 🔥 ASOSIY NARSA — SESSIONNI O‘CHIRISH
     cur.execute(
         "DELETE FROM user_sessions WHERE user_id = %s",
-        (user_id,)
-    )
-
-    # 2️⃣ user login flag (agar bo‘lsa)
-    cur.execute(
-        "UPDATE users SET logged_in = FALSE WHERE user_id = %s",
         (user_id,)
     )
 
@@ -771,9 +765,11 @@ async def logout(message: Message):
     conn.close()
 
     await message.answer(
-        "🚪 Tizimdan chiqdingiz",
+        "🚪 Tizimdan chiqdingiz.\n\n"
+        "Qayta ishlash uchun Telegram login qiling.",
         reply_markup=login_menu()
     )
+
 
 
 # =====================
