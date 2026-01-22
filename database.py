@@ -191,8 +191,9 @@ def init_db():
         title TEXT,
         username TEXT,
         added_at TIMESTAMP DEFAULT NOW(),
-        UNIQUE (user_id, group_id
+        UNIQUE (user_id, group_id)
     );
+
     """)
     cur.execute("""
     CREATE TABLE IF NOT EXISTS user_accounts (
