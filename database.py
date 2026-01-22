@@ -16,10 +16,7 @@ def get_db():
 # =====================
 
 def init_db():
-    """
-    Avtobot / login_server ishga tushganda
-    database avtomatik tayyorlanadi.
-    """
+
     conn = get_db()
     cur = conn.cursor()
 
@@ -125,7 +122,7 @@ def init_db():
     """)
     cur.execute("""
     ALTER TABLE payments
-    ADD COLUMN IF NOT EXISTS receipt_file_id TEXT;
+    ADD COLUMN IF NOT EXISTS receipt_file_id TEXT
     """)
     
     cur.execute("""
@@ -145,7 +142,7 @@ def init_db():
     
     cur.execute("""
     ALTER TABLE campaigns
-    ADD COLUMN IF NOT EXISTS error_count INTEGER DEFAULT 0;
+    ADD COLUMN IF NOT EXISTS error_count INTEGER DEFAULT 0
     
     """)
     
