@@ -346,7 +346,7 @@ def create_campaign(
     conn = get_db()
     cur = conn.cursor()
 
-    start_time = datetime.utcnow()  # ✅ MUHIM QATOR
+    start_time = int(time.time())  # ✅ MUHIM QATOR
 
     cur.execute(
         """
