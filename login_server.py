@@ -407,34 +407,48 @@ def api_groups():
         "saved": saved,
         "available": available
     })
+    
 @app.route("/api/groups/add", methods=["POST"])
 def api_groups_add():
-    data = request.json
-    user_id = data["user_id"]
-    group_ids = data["group_ids"]
+    data = request.json or {}
+    user_id = data.get("user_id")
+    group_ids = data.get("group_ids", [])
 
-    added_titles = []
+    if not user_id or not isinstance(group_ids, list):
+        return jsonify({"status": "error", "message": "Invalid data"}), 400
 
     conn = get_db()
     cur = conn.cursor()
 
+    added_titles = []
+
     for gid in group_ids:
+        # 🔒 FAQAT TEMP JADVALDAN OLAMIZ
         cur.execute("""
-            SELECT title
+            SELECT title, username
             FROM telegram_groups_temp
             WHERE user_id = %s AND group_id = %s
         """, (user_id, gid))
 
         row = cur.fetchone()
         if not row:
+            # ❌ agar temp da bo‘lmasa — SKIP
             continue
 
-        title = row[0]
+        title, username = row
+
+        # ✅ user_groups ga ko‘chiramiz
+        cur.execute("""
+            INSERT INTO user_groups (user_id, group_id, title, username)
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT (user_id, group_id) DO NOTHING
+        """, (user_id, gid, title, username))
+
         added_titles.append(title)
 
-        add_user_group(user_id, gid, title)
-
+    conn.commit()
     conn.close()
+
 
     # 🔔 ADMIN XABARNOMA
     if added_titles:
@@ -447,9 +461,12 @@ def api_groups_add():
             "\n".join(f"• {t}" for t in added_titles)
         )
         notify_admin_bot(text)
-
-    return jsonify({"status": "ok"})
-
+    
+    return jsonify({
+        "status": "ok",
+        "added": len(added_titles),
+        "titles": added_titles
+    })
 
 @app.route("/api/groups/remove", methods=["POST"])
 def api_groups_remove():
