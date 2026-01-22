@@ -1507,20 +1507,11 @@ async def send_to_group(client, campaign, group):
         return False
 
     try:
-        # 🎯 PEER ANIQLASH
-        peer_type = group.get("peer_type")
-        group_id = group.get("group_id")
+        # 🔥 ENG MUHIM 2 QATOR
+        peer = await client.get_input_entity(
+            group.get("username") or group["group_id"]
+        )
 
-        if peer_type == "chat":
-            peer = PeerChat(group_id)
-        elif peer_type in ("channel", "supergroup"):
-            peer = PeerChannel(group_id)
-        else:
-            print("SEND ERROR: Unknown peer_type:", peer_type)
-            return False
-
-        entity = await client.get_input_entity(group["group_id"])
-        # 🔥 🔥 🔥 ASOSIY QATOR
         await client.send_message(
             entity=peer,
             message=text
