@@ -112,16 +112,17 @@ def init_db():
 
             # ---------- PAYMENTS ----------
     cur.execute("""
-        CREATE TABLE IF NOT EXISTS payments (
-            id SERIAL PRIMARY KEY,
-            user_id BIGINT NOT NULL,
-            tariff TEXT NOT NULL,
-            price INTEGER NOT NULL,
-            months INTEGER NOT NULL,
-            status TEXT DEFAULT 'pending',
-            created_at BIGINT
-        );
-    """)
+    CREATE TABLE IF NOT EXISTS payments (
+        id SERIAL PRIMARY KEY,
+        user_id BIGINT NOT NULL,
+        tariff TEXT NOT NULL,
+        price INTEGER NOT NULL,
+        months INTEGER NOT NULL,
+        status TEXT DEFAULT 'pending',
+        created_at BIGINT
+    );
+    
+	""")
 	cur.execute("""
 	ALTER TABLE payments
 	ADD COLUMN IF NOT EXISTS receipt_file_id TEXT;
@@ -226,6 +227,7 @@ def init_db():
         updated_at BIGINT
     );
     """)
+
     conn.commit()
     cur.close()
     conn.close()
