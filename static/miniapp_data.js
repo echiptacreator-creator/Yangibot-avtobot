@@ -203,5 +203,5 @@ const REGIONS = {
 };
 
 const CARS = [
-  "Gentra","Cobalt","Nexia 3","Tracker","Onix","BYD","Boshqa"
+  "Gentra","Cobalt","Nexia 3","Tracker","Onix","BYD","Honji","Lada","Captiva","Malibu","Boshqa"
 ];
