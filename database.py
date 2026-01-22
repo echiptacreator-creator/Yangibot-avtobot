@@ -346,28 +346,18 @@ def create_campaign(
     conn = get_db()
     cur = conn.cursor()
 
-    cur.execute("""
-        INSERT INTO campaigns (
-            user_id, text, texts, groups,
-            interval, duration,
-            chat_id, status_message_id,
-            media_type, media_file_id,
-            status
-        )
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'active')
-        RETURNING id
-    """, (
-        user_id,
-        text,
-        json.dumps(texts) if texts else None,
-        json.dumps(groups),
-        interval,
-        duration,
-        chat_id,
-        status_message_id,
-        media_type,
-        media_file_id
-    ))
+	cur.execute("""
+	    INSERT INTO campaigns (
+	        user_id, text, groups,
+	        interval, duration, chat_id, status_message_id
+	    )
+	    VALUES (%s, %s, %s, %s, %s, %s, %s)
+	    RETURNING id
+	""", (
+	    user_id, text, json.dumps(groups),
+	    interval, duration, chat_id, status_message_id
+	))
+
 
     campaign_id = cur.fetchone()[0]
     conn.commit()
