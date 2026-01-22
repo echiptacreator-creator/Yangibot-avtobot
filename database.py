@@ -235,7 +235,7 @@ def init_db():
         phone2 TEXT,
         updated_at BIGINT
     );
-    
+    """)
     conn.commit()
     cur.close()
     conn.close()
