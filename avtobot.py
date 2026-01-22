@@ -2754,28 +2754,30 @@ async def handle_webapp_data(message: Message):
 
     data = json.loads(message.web_app_data.data)
 
-    action = data.get("action")
+    # ✅ action tekshiramiz
+    if data.get("action") != "ai_post_v2":
+        return
+
     form_data = data.get("payload", {})
+    user_id = message.from_user.id
+
+    # ✅ profilni saqlaymiz
+    save_user_profile(
+        user_id=user_id,
+        car=form_data.get("car"),
+        fuel=form_data.get("fuel"),
+        phone=form_data.get("phone"),
+        phone2=form_data.get("phone2"),
+    )
 
     print("AI FORM DATA:", form_data)
 
-    user_id = message.from_user.id
-
-    # ✅ PROFILNI SAQLAB QOLISH (FAQAT v2 UCHUN)
-    if action == "ai_post_v2":
-        save_user_profile(
-            user_id=user_id,
-            car=form_data.get("car"),
-            fuel=form_data.get("fuel"),
-            phone=form_data.get("phone"),
-            phone2=form_data.get("phone2"),
-        )
-
-    # 🤖 AI POST GENERATSIYA
+    # ✅ AI POSTLAR
     texts = await generate_ai_variants(form_data, count=5)
 
     groups = get_user_groups(user_id)
 
+    # ✅ flow saqlaymiz
     save_user_flow(
         user_id=user_id,
         step="choose_groups",
