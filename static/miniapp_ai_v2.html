@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Taxi Post</title>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="miniapp_data.js"></script>
+<script defer src="miniapp_ai_v2.js"></script>
+
+<style>
+:root {
+  --bg:#0b1220;
+  --card:#111827;
+  --border:#1f2937;
+  --accent:#22c55e;
+  --text:#e5e7eb;
+  --muted:#94a3b8;
+}
+
+*{box-sizing:border-box;font-family:Inter,system-ui}
+body{margin:0;background:var(--bg);color:var(--text)}
+.container{max-width:520px;margin:auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px}
+.label{font-size:12px;color:var(--muted);margin-bottom:6px}
+select,input,textarea{
+  width:100%;padding:10px;border-radius:10px;
+  background:#020617;border:1px solid var(--border);color:#fff
+}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.toggle{padding:8px;text-align:center;border:1px solid var(--border);border-radius:999px;font-size:13px;cursor:pointer}
+.toggle.active{background:var(--accent);color:#052e16;border-color:var(--accent)}
+button{width:100%;padding:14px;border:none;border-radius:14px;background:var(--accent);font-weight:600;cursor:pointer}
+.hidden{display:none}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<h3>AI Taxi Post</h3>
+
+<!-- YO‘NALISH -->
+<div class="card">
+  <div class="label">Yo‘nalish</div>
+  <div class="row">
+    <select id="from_region"></select>
+    <select id="to_region"></select>
+  </div>
+  <div id="districts"></div>
+  <button onclick="addDistrict()">+ Tuman qo‘shish</button>
+</div>
+
+<!-- YO‘LOVCHI -->
+<div class="card">
+  <div class="label">Mashinadagi odamlar</div>
+  <input id="people" type="number" min="1" />
+</div>
+
+<!-- TOGGLES -->
+<div class="card">
+  <div class="label">Holatlar</div>
+  <div class="grid4">
+    <div class="toggle" data-key="has_woman">Ayol bor</div>
+    <div class="toggle" data-key="urgent">Tezkor</div>
+    <div class="toggle" data-key="baggage">Bagaj</div>
+    <div class="toggle" data-key="mail">Pochta</div>
+  </div>
+</div>
+
+<!-- VAQT -->
+<div class="card">
+  <div class="label">Ketish vaqti</div>
+  <input id="time" type="time" />
+</div>
+
+<!-- MASHINA -->
+<div class="card">
+  <div class="label">Mashina</div>
+  <select id="car"></select>
+  <input id="custom_car" class="hidden" placeholder="Mashina nomi" />
+</div>
+
+<!-- YOQILGI -->
+<div class="card">
+  <div class="label">Yoqilg‘i</div>
+  <select id="fuel">
+    <option>Benzin</option>
+    <option>Propan</option>
+    <option>Metan</option>
+    <option>Elektromobil</option>
+  </select>
+</div>
+
+<!-- ALOQA -->
+<div class="card">
+  <div class="label">Telefon</div>
+  <input id="phone" placeholder="+998 __ ___ __ __" />
+  <input id="phone2" placeholder="Qo‘shimcha telefon" />
+</div>
+
+<!-- TELEGRAM -->
+<div class="card">
+  <div class="label">Telegramdan bog‘lanish</div>
+  <div class="toggle" data-key="telegram">Telegram ruxsat</div>
+</div>
+
+<!-- IZOX -->
+<div class="card">
+  <div class="label">Izoh</div>
+  <textarea id="comment"></textarea>
+</div>
+
+<button onclick="submitForm()">AI post yaratish</button>
+
+</div>
+</body>
+</html>
