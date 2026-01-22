@@ -1,17 +1,22 @@
 <!DOCTYPE html>
 <html lang="uz">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>AI Taxi Post</title>
 
+<!-- Telegram Mini App -->
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<!-- Sening eski JS fayllaring (TEGMAYMIZ) -->
+<script src="miniapp_data.js"></script>
+<script defer src="miniapp_ai_v2.js"></script>
 
 <style>
 :root{
   --bg: var(--tg-theme-bg-color);
-  --text: var(--tg-theme-text-color);
   --card: var(--tg-theme-secondary-bg-color);
+  --text: var(--tg-theme-text-color);
   --hint: var(--tg-theme-hint-color);
   --accent: var(--tg-theme-button-color);
   --accent-text: var(--tg-theme-button-text-color);
@@ -35,24 +40,24 @@ body{
 }
 
 h3{
-  margin:6px 0 16px;
+  margin:8px 0 16px;
   font-size:20px;
 }
 
 .card{
   background:var(--card);
-  border-radius:16px;
+  border-radius:14px;
   padding:14px;
-  margin-bottom:14px;
+  margin-bottom:12px;
 }
 
 .label{
-  font-size:13px;
+  font-size:12px;
   color:var(--hint);
   margin-bottom:6px;
 }
 
-input,select,textarea{
+input, select, textarea{
   width:100%;
   padding:12px;
   border-radius:12px;
@@ -61,7 +66,10 @@ input,select,textarea{
   color:var(--text);
 }
 
-textarea{resize:vertical}
+textarea{
+  resize:vertical;
+  min-height:70px;
+}
 
 .row{
   display:grid;
@@ -71,18 +79,16 @@ textarea{resize:vertical}
 
 .toggles{
   display:flex;
-  gap:8px;
   flex-wrap:wrap;
+  gap:8px;
 }
 
 .toggle{
   padding:8px 14px;
   border-radius:999px;
   font-size:13px;
-  background:var(--bg);
-  color:var(--text);
-  border:1px solid transparent;
   cursor:pointer;
+  background:var(--bg);
   user-select:none;
 }
 
@@ -94,13 +100,19 @@ textarea{resize:vertical}
 button{
   width:100%;
   padding:16px;
-  border-radius:16px;
   border:none;
+  border-radius:14px;
   background:var(--accent);
   color:var(--accent-text);
   font-size:16px;
   font-weight:600;
   cursor:pointer;
+}
+
+.small-btn{
+  margin-top:8px;
+  padding:10px;
+  font-size:14px;
 }
 </style>
 </head>
@@ -112,54 +124,87 @@ button{
 
 <!-- YO‘NALISH -->
 <div class="card">
-  <div class="label">Yo‘nalish</div>
+  <div class="label">Yo‘nalish (qayerdan → qayerga)</div>
   <div class="row">
     <select id="from_region"></select>
     <select id="to_region"></select>
   </div>
 </div>
 
+<!-- TUMANLAR -->
+<div class="row">
+
+  <div class="card">
+    <div class="label">Qayerdan (tumanlar)</div>
+    <div id="from_districts"></div>
+    <button class="small-btn" type="button" onclick="addDistrict('from')">
+      ➕ Tuman qo‘shish
+    </button>
+  </div>
+
+  <div class="card">
+    <div class="label">Qayerga (tumanlar)</div>
+    <div id="to_districts"></div>
+    <button class="small-btn" type="button" onclick="addDistrict('to')">
+      ➕ Tuman qo‘shish
+    </button>
+  </div>
+
+</div>
+
 <!-- ODAMLAR -->
 <div class="card">
-  <div class="label">Mashinadagi odamlar</div>
-  <input type="number" min="1" id="people">
+  <div class="label">Mashinadagi odamlar soni</div>
+  <input id="people" type="number" min="1" placeholder="Masalan: 3">
 </div>
 
 <!-- HOLATLAR -->
 <div class="card">
-  <div class="label">Holatlar</div>
+  <div class="label">Qo‘shimcha holatlar</div>
   <div class="toggles">
-    <div class="toggle" data-key="woman">👩 Ayol bor</div>
+    <div class="toggle" data-key="has_woman">👩 Ayol bor</div>
     <div class="toggle" data-key="urgent">⚡ Tezkor</div>
     <div class="toggle" data-key="baggage">🧳 Bagaj</div>
     <div class="toggle" data-key="mail">📦 Pochta</div>
-    <div class="toggle" data-key="telegram">💬 Telegram</div>
+    <div class="toggle" data-key="telegram">💬 Telegram orqali</div>
   </div>
 </div>
 
 <!-- VAQT -->
 <div class="card">
   <div class="label">Ketish vaqti</div>
-  <input type="time" id="time">
+  <input id="time" type="time">
 </div>
 
 <!-- MASHINA -->
 <div class="card">
-  <div class="label">Mashina</div>
+  <div class="label">Mashina rusumi</div>
   <select id="car"></select>
+  <input id="custom_car" class="hidden" placeholder="Mashina nomini yozing" style="margin-top:8px">
+</div>
+
+<!-- YOQILG‘I -->
+<div class="card">
+  <div class="label">Yoqilg‘i turi</div>
+  <select id="fuel">
+    <option>Benzin</option>
+    <option>Propan</option>
+    <option>Metan</option>
+    <option>Elektromobil</option>
+  </select>
 </div>
 
 <!-- ALOQA -->
 <div class="card">
-  <div class="label">Telefon</div>
-  <input id="phone">
-  <input id="phone2" style="margin-top:8px">
+  <div class="label">Bog‘lanish uchun telefon</div>
+  <input id="phone" placeholder="+998 xx xxx xx xx">
+  <input id="phone2" placeholder="Qo‘shimcha raqam (ixtiyoriy)" style="margin-top:8px">
 </div>
 
 <!-- IZOH -->
 <div class="card">
-  <div class="label">Izoh</div>
-  <textarea id="comment"></textarea>
+  <div class="label">Qo‘shimcha izoh</div>
+  <textarea id="comment" placeholder="Masalan: ertalab chiqaman, narx kelishiladi"></textarea>
 </div>
 
 <button onclick="submitForm()">🚀 AI post yaratish</button>
@@ -170,8 +215,11 @@ button{
 const tg = Telegram.WebApp;
 tg.ready();
 
+/* Toggle ishlashi (ESKI JS bilan MOS) */
 document.querySelectorAll(".toggle").forEach(t=>{
-  t.onclick = ()=>t.classList.toggle("active");
+  t.addEventListener("click",()=>{
+    t.classList.toggle("active");
+  });
 });
 </script>
 
