@@ -2,101 +2,258 @@
 <html lang="uz">
 <head>
 <meta charset="UTF-8" />
-<title>Taxi AI Post</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Taxi Post</title>
+
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
 <style>
-  body { background:#0f172a; color:#fff; font-family:sans-serif; }
-  .card { background:#111827; padding:14px; margin-bottom:12px; border-radius:12px; }
-  .row { display:flex; gap:8px; }
-  select, input { width:100%; padding:10px; border-radius:8px; }
-  .toggle { padding:10px; border:1px solid #333; border-radius:20px; cursor:pointer; }
-  .toggle.active { background:#22c55e; color:#052e16; }
-  button { width:100%; padding:14px; border-radius:12px; background:#22c55e; border:none; }
+:root {
+  --bg: #0f172a;
+  --card: #111827;
+  --border: #1f2937;
+  --text: #e5e7eb;
+  --muted: #94a3b8;
+  --accent: #22c55e;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.container {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+h1 {
+  font-size: 20px;
+  margin-bottom: 12px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.label {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+input, select, textarea {
+  width: 100%;
+  background: #020617;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  color: var(--text);
+  font-size: 15px;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 70px;
+}
+
+/* GRID */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+/* TOGGLE / CHIP */
+.toggle {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 10px 6px;
+  text-align: center;
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+  background: #020617;
+}
+
+.toggle.active {
+  background: var(--accent);
+  color: #052e16;
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+/* BUTTON */
+button {
+  width: 100%;
+  padding: 16px;
+  border-radius: 18px;
+  border: none;
+  background: var(--accent);
+  color: #052e16;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.footer {
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 10px;
+}
 </style>
 </head>
 
 <body>
+<div class="container">
 
+<h1>AI orqali taxi post</h1>
+
+<!-- 1. YO‘NALISH -->
 <div class="card">
-  <b>Qayerdan</b>
-  <select id="from_region"></select>
-  <div id="from_districts"></div>
-  <button onclick="addDistrict('from')">➕ Tuman qo‘shish</button>
+  <div class="label">Yo‘nalish</div>
+  <div class="grid-2">
+    <select id="from_region">
+      <option value="">Qayerdan (viloyat)</option>
+      <option>Toshkent</option>
+      <option>Andijon</option>
+      <option>Farg‘ona</option>
+      <option>Namangan</option>
+    </select>
+    <select id="to_region">
+      <option value="">Qayerga (viloyat)</option>
+      <option>Toshkent</option>
+      <option>Andijon</option>
+      <option>Farg‘ona</option>
+      <option>Namangan</option>
+    </select>
+  </div>
 </div>
 
+<!-- 2. ODAMLAR -->
 <div class="card">
-  <b>Qayerga</b>
-  <select id="to_region"></select>
-  <div id="to_districts"></div>
-  <button onclick="addDistrict('to')">➕ Tuman qo‘shish</button>
+  <div class="label">Nechta odam bor</div>
+  <input id="people" type="number" min="1" placeholder="Masalan: 2" />
 </div>
 
+<!-- 3. HOLATLAR -->
 <div class="card">
-  <b>Odamlar soni</b>
-  <input type="number" id="people" min="1" />
+  <div class="label">Qo‘shimcha holatlar</div>
+  <div class="grid-4">
+    <div class="toggle" onclick="toggle(this,'woman')">Ayol bor</div>
+    <div class="toggle" onclick="toggle(this,'urgent')">Tezkor</div>
+    <div class="toggle" onclick="toggle(this,'baggage')">Bagaj bor</div>
+    <div class="toggle" onclick="toggle(this,'mail')">Pochta olaman</div>
+  </div>
 </div>
 
+<!-- 4. VAQT -->
 <div class="card">
-  <b>Ayol kishi bor</b>
-  <div class="toggle" data-key="female">Ha</div>
+  <div class="label">Ketish vaqti</div>
+  <input id="time" type="time" />
 </div>
 
+<!-- 5. MASHINA -->
 <div class="card">
-  <b>Ketish vaqti</b>
-  <input type="time" id="time" />
+  <div class="label">Mashina</div>
+  <div class="grid-4">
+    <div class="toggle" onclick="pickCar(this,'Gentra')">Gentra</div>
+    <div class="toggle" onclick="pickCar(this,'Cobalt')">Cobalt</div>
+    <div class="toggle" onclick="pickCar(this,'Onix')">Onix</div>
+    <div class="toggle" onclick="pickCar(this,'Nexia 3')">Nexia 3</div>
+  </div>
+  <input id="car_custom" placeholder="Boshqa mashina" style="margin-top:10px; display:none;" />
 </div>
 
+<!-- 6. YOQILGI -->
 <div class="card">
-  <div class="toggle" data-key="urgent">Tezkor</div>
-  <div class="toggle" data-key="fill">To‘lsa yuriladi</div>
+  <div class="label">Yoqilg‘i</div>
+  <div class="grid-4">
+    <div class="toggle" onclick="pickFuel(this,'Benzin')">Benzin</div>
+    <div class="toggle" onclick="pickFuel(this,'Propan')">Propan</div>
+    <div class="toggle" onclick="pickFuel(this,'Metan')">Metan</div>
+    <div class="toggle" onclick="pickFuel(this,'EV')">EV</div>
+  </div>
 </div>
 
+<!-- 7. ALOQA -->
 <div class="card">
-  <div class="toggle" data-key="luggage">Bagaj bor</div>
-  <div class="toggle" data-key="parcel">Pochta olinadi</div>
+  <div class="label">Telefon</div>
+  <input id="phone" placeholder="+998 88 472 77 72" />
 </div>
 
+<!-- 8. IZOX -->
 <div class="card">
-  <b>Mashina</b>
-  <select id="car">
-    <option>Gentra</option>
-    <option>Cobalt</option>
-    <option>Nexia 3</option>
-    <option>Tracker</option>
-    <option>Onix</option>
-    <option>BYD</option>
-    <option value="other">Boshqa</option>
-  </select>
-  <input id="car_other" placeholder="Mashina yozing" style="display:none;margin-top:8px"/>
+  <div class="label">Izoh (ixtiyoriy)</div>
+  <textarea id="comment" placeholder="O‘zim yozaman..."></textarea>
 </div>
 
-<div class="card">
-  <b>Yonilg‘i</b>
-  <select id="fuel">
-    <option>Benzin</option>
-    <option>Propan</option>
-    <option>Metan</option>
-    <option>Elektromobil</option>
-  </select>
+<button onclick="submitForm()">AI post yaratish</button>
+
+<div class="footer">Tez • Qulay • Spamga o‘xshamaydi</div>
+
 </div>
 
-<div class="card">
-  <b>Telefon</b>
-  <input id="phone" placeholder="+998" />
-  <input id="phone_extra" placeholder="Qo‘shimcha telefon" />
-</div>
+<script>
+const state = {
+  woman:false, urgent:false, baggage:false, mail:false,
+  car:null, fuel:null
+};
 
-<div class="card">
-  <div class="toggle" data-key="telegram_ok">Telegramdan yozish mumkin</div>
-</div>
+function toggle(el,key){
+  el.classList.toggle("active");
+  state[key] = el.classList.contains("active");
+}
 
-<div class="card">
-  <b>Izoh</b>
-  <input id="comment" />
-</div>
+function pickCar(el,val){
+  document.querySelectorAll("[onclick^='pickCar']").forEach(e=>e.classList.remove("active"));
+  el.classList.add("active");
+  state.car = val;
+  document.getElementById("car_custom").style.display = "none";
+}
 
-<button onclick="send()">Yuborish</button>
+function pickFuel(el,val){
+  document.querySelectorAll("[onclick^='pickFuel']").forEach(e=>e.classList.remove("active"));
+  el.classList.add("active");
+  state.fuel = val;
+}
 
-<script src="app.js"></script>
+function submitForm(){
+  const payload = {
+    from_region: from_region.value,
+    to_region: to_region.value,
+    people: people.value,
+    time: time.value,
+    ...state,
+    phone: phone.value,
+    comment: comment.value
+  };
+
+  Telegram.WebApp.sendData(JSON.stringify({
+    action:"ai_post",
+    payload
+  }));
+  Telegram.WebApp.close();
+}
+</script>
+
 </body>
 </html>
