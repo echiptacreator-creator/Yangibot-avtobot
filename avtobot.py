@@ -1235,7 +1235,6 @@ async def pick_duration(cb: CallbackQuery):
         duration=data["duration"],
         chat_id=cb.message.chat.id,
         status_message_id=status_msg.message_id,
-        status="active"  # 👈 AGAR PARAMETR BO‘LSA
     )
 
     clear_user_flow(user_id)
@@ -1246,7 +1245,10 @@ async def pick_duration(cb: CallbackQuery):
         text=build_campaign_status_text(campaign_id),
         reply_markup=campaign_control_keyboard(campaign_id, "active")
     )
-
+    # 🔥 MUHIM QATORLAR
+    update_campaign_status(campaign_id, "active")
+    update_campaign_started(campaign_id)
+    
     task = asyncio.create_task(run_campaign(campaign_id))
     running_campaigns[campaign_id] = task
 
