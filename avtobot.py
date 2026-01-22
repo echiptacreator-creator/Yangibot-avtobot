@@ -1456,8 +1456,8 @@ import random
 async def send_to_group(client, campaign, group):
     user_id = campaign["user_id"]
     group_id = group["group_id"]
-
-    # 🔐 Riskni yangilaymiz
+    
+        # 🔐 Riskni yangilaymiz
     risk = decay_account_risk(user_id)
 
     # =========================
@@ -1518,6 +1518,13 @@ async def send_to_group(client, campaign, group):
         else:
             print("SEND ERROR: Unknown peer_type:", peer_type)
             return False
+
+        entity = await client.get_input_entity(group["group_id"])
+        # 🔥 🔥 🔥 ASOSIY QATOR
+        await client.send_message(
+            entity=peer,
+            message=text
+        )
 
         # =========================
         # 📊 STATISTIKA & RISK
