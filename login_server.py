@@ -60,11 +60,8 @@ API_HASH = "2f39ded3e260910e54b48b00a264f19c"
 # =====================
 # ASYNC LOOP (BITTA!)
 # =====================
-loop = asyncio.new_event_loop()
-asyncio.set_event_loop(loop)
-
 def run(coro):
-    return loop.run_until_complete(coro)
+    return asyncio.run(coro)
 
 # =====================
 # FLASK APP — SHART!
