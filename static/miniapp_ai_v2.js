@@ -28,14 +28,36 @@ document.getElementById("car").onchange=e=>{
   document.getElementById("custom_car").classList.toggle("hidden", e.target.value!=="Boshqa");
 };
 
-function addDistrict(){
-  const div=document.createElement("select");
-  REGIONS[from_region.value].forEach(d=>{
-    const o=document.createElement("option");
-    o.textContent=d;
-    div.appendChild(o);
+function addDistrict(type) {
+  const regionSelect =
+    type === "from"
+      ? document.getElementById("from_region")
+      : document.getElementById("to_region");
+
+  const region = regionSelect.value;
+  if (!region) {
+    alert("Avval viloyatni tanlang");
+    return;
+  }
+
+  const container =
+    type === "from"
+      ? document.getElementById("from_districts")
+      : document.getElementById("to_districts");
+
+  const select = document.createElement("select");
+  select.style.marginTop = "8px";
+
+  const districts = REGIONS[region] || [];
+
+  districts.forEach(d => {
+    const opt = document.createElement("option");
+    opt.value = d;
+    opt.innerText = d;
+    select.appendChild(opt);
   });
-  document.getElementById("districts").appendChild(div);
+
+  container.appendChild(select);
 }
 
 function submitForm(){
