@@ -1,6 +1,7 @@
 import os
 import psycopg2
 from datetime import datetime
+import json
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -345,6 +346,8 @@ def create_campaign(
     conn = get_db()
     cur = conn.cursor()
 
+    start_time = datetime.utcnow()  # ✅ MUHIM QATOR
+
     cur.execute(
         """
         INSERT INTO campaigns (
@@ -353,21 +356,23 @@ def create_campaign(
             groups,
             interval_minutes,
             duration_minutes,
+            start_time,
             chat_id,
             status_message_id,
             status,
             sent_count,
             error_count
         )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, 'active', 0, 0)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'active', 0, 0)
         RETURNING id
         """,
         (
             user_id,
             text,
             json.dumps(groups),
-            interval,        # ✅ NOT NULL TALABI BAJARILDI
-            duration,        # ✅ NOT NULL TALABI BAJARILDI
+            interval,
+            duration,
+            start_time,        # ✅ endi NULL emas
             chat_id,
             status_message_id
         )
