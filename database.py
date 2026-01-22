@@ -109,15 +109,15 @@ def init_db():
 
             # ---------- PAYMENTS ----------
     cur.execute("""
-    CREATE TABLE IF NOT EXISTS payments (
-        id SERIAL PRIMARY KEY,
-        user_id BIGINT NOT NULL,
-        tariff TEXT NOT NULL,
-        price INTEGER NOT NULL,
-        months INTEGER NOT NULL,
-        status TEXT DEFAULT 'pending',
-        created_at BIGINT
-    );
+        CREATE TABLE IF NOT EXISTS payments (
+            id SERIAL PRIMARY KEY,
+            user_id BIGINT NOT NULL,
+            tariff TEXT NOT NULL,
+            price INTEGER NOT NULL,
+            months INTEGER NOT NULL,
+            status TEXT DEFAULT 'pending',
+            created_at BIGINT
+        );
     
     """)
     cur.execute("""
@@ -166,9 +166,9 @@ def init_db():
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS account_risk (
-    user_id BIGINT PRIMARY KEY,
-    risk_score INTEGER NOT NULL DEFAULT 0,
-    last_updated TIMESTAMP NOT NULL DEFAULT NOW()
+        user_id BIGINT PRIMARY KEY,
+        risk_score INTEGER NOT NULL DEFAULT 0,
+        last_updated TIMESTAMP NOT NULL DEFAULT NOW()
     );
     """)
     
@@ -176,7 +176,7 @@ def init_db():
     CREATE TABLE IF NOT EXISTS user_groups (
         id SERIAL PRIMARY KEY,
         user_id BIGINT NOT NULL,
-        group_id BIGINT NOT NULL,   -- 🔥 RAW ID
+        group_id BIGINT NOT NULL,
         title TEXT,
         username TEXT,
         added_at TIMESTAMP DEFAULT NOW(),
@@ -204,6 +204,7 @@ def init_db():
     cur.execute("""
     ALTER TABLE user_groups
     ADD COLUMN IF NOT EXISTS peer_type TEXT
+    
     """)
     
     cur.execute("""
