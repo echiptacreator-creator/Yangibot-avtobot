@@ -336,8 +336,6 @@ def create_campaign(
     user_id,
     text,
     groups,
-    interval,
-    duration,
     chat_id,
     status_message_id
 ):
@@ -346,18 +344,23 @@ def create_campaign(
 
     cur.execute(
         """
-		INSERT INTO campaigns (
-			user_id, text, groups, duration, chat_id, status_message_id
-		)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO campaigns (
+            user_id,
+            text,
+            groups,
+            chat_id,
+            status_message_id,
+            status,
+            sent_count,
+            error_count
+        )
+        VALUES (%s, %s, %s, %s, %s, 'active', 0, 0)
         RETURNING id
         """,
         (
             user_id,
             text,
             json.dumps(groups),
-            interval,
-            duration,
             chat_id,
             status_message_id
         )
@@ -366,8 +369,8 @@ def create_campaign(
     campaign_id = cur.fetchone()[0]
     conn.commit()
     conn.close()
-
     return campaign_id
+
 
 import json
 
