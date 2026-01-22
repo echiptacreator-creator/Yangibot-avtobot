@@ -347,6 +347,7 @@ def apply_variation(text: str, risk: int) -> str:
 from database import get_login_session
 
 def is_logged_in(user_id: int) -> bool:
+    return get_login_session(user_id) is not None
     conn = get_db()
     cur = conn.cursor()
     cur.execute(
@@ -749,12 +750,23 @@ async def check_login(message: Message):
 
 @dp.message(F.text == "🚪 Chiqish")
 async def logout(message: Message):
+    user_id = message.from_user.id
+
     conn = get_db()
     cur = conn.cursor()
+
+    # 1️⃣ session o‘chadi
     cur.execute(
-        "DELETE FROM authorized_users WHERE user_id = %s",
-        (message.from_user.id,)
+        "DELETE FROM user_sessions WHERE user_id = %s",
+        (user_id,)
     )
+
+    # 2️⃣ user login flag (agar bo‘lsa)
+    cur.execute(
+        "UPDATE users SET logged_in = FALSE WHERE user_id = %s",
+        (user_id,)
+    )
+
     conn.commit()
     conn.close()
 
@@ -762,6 +774,7 @@ async def logout(message: Message):
         "🚪 Tizimdan chiqdingiz",
         reply_markup=login_menu()
     )
+
 
 # =====================
 # XABAR YUBORISH
@@ -1499,17 +1512,16 @@ async def send_to_group(client, campaign, group):
 
     try:
         # 🎯 PEER ANIQLASH
-        peer = await client.get_input_entity(group_id)
+        peer_type = group.get("peer_type")
+        group_id = group.get("group_id")
 
-        # 📤 YUBORISH
-        if campaign.get("media_type") in ("photo", "video"):
-            await client.send_file(
-                peer,
-                campaign["media_file_id"],
-                caption=text
-            )
+        if peer_type == "chat":
+            peer = PeerChat(group_id)
+        elif peer_type in ("channel", "supergroup"):
+            peer = PeerChannel(group_id)
         else:
-            await client.send_message(peer, text)
+            print("SEND ERROR: Unknown peer_type:", peer_type)
+            return False
 
         # =========================
         # 📊 STATISTIKA & RISK
