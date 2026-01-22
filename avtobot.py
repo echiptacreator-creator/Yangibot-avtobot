@@ -1228,14 +1228,14 @@ async def pick_duration(cb: CallbackQuery):
     
     campaign_id = create_campaign(
         user_id=user_id,
-        text=data.get("text", ""),
-        texts=data.get("texts"),
+        text=data["text"],   # ❗ faqat bitta text
         groups=data["selected_ids"],
         interval=data["interval"],
         duration=data["duration"],
         chat_id=cb.message.chat.id,
-        status_message_id=status_msg.message_id,
+        status_message_id=status_msg.message_id
     )
+
 
     clear_user_flow(user_id)
 
@@ -1245,9 +1245,9 @@ async def pick_duration(cb: CallbackQuery):
         text=build_campaign_status_text(campaign_id),
         reply_markup=campaign_control_keyboard(campaign_id, "active")
     )
-    # 🔥 MUHIM QATORLAR
-    update_campaign_status(campaign_id, "active")
-    update_campaign_started(campaign_id)
+    # 🔥 runtime uchun saqlaymiz (DB emas)
+    campaign = get_campaign(campaign_id)
+    campaign["texts"] = data.get("texts")
     
     task = asyncio.create_task(run_campaign(campaign_id))
     running_campaigns[campaign_id] = task
