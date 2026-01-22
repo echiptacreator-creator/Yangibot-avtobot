@@ -2689,7 +2689,7 @@ async def handle_ai_form(message: Message):
 
     # endi oddiy interval bosqichiga o‘tamiz
     if not flow or flow["step"] != "enter_interval":
-    return
+        return
 
 
     await message.answer(
