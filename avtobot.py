@@ -1193,24 +1193,25 @@ async def pick_interval(cb: CallbackQuery):
     
 @dp.callback_query(F.data.startswith("pick_duration:"))
 async def pick_duration(cb: CallbackQuery):
-    # ✅ 1. XABARNI TO‘LIQ YO‘Q QILAMIZ (MATN + TUGMA)
+    await cb.answer()
+
+    # 1️⃣ eski xabarni o‘chiramiz
     try:
         await cb.message.delete()
     except:
         pass
-        
+
     user_id = cb.from_user.id
     duration = int(cb.data.split(":")[1])
 
     flow = get_user_flow(user_id)
     if not flow or flow["step"] != "enter_duration":
-        await cb.answer()
         return
 
     data = flow["data"]
     data["duration"] = duration
 
-    # ⛔ limit tekshiruv
+    # 2️⃣ LIMIT TEKSHIRUV
     ok, reason = can_user_run_campaign(user_id)
     if not ok:
         await send_limit_message(
@@ -1221,14 +1222,26 @@ async def pick_duration(cb: CallbackQuery):
         clear_user_flow(user_id)
         return
 
+    # 3️⃣ STATUS XABAR
     status_msg = await bot.send_message(
         chat_id=cb.message.chat.id,
         text="🚀 Kampaniya boshlanmoqda..."
     )
-    
+
+    # 4️⃣ 🔒 HAR DOIM TEXT BOR BO‘LISHI SHART
+    final_text = data.get("text")
+
+    if not final_text:
+        texts = data.get("texts", [])
+        if texts:
+            final_text = texts[0]
+        else:
+            final_text = "🚕 Yangi kampaniya"
+
+    # 5️⃣ KAMPANIYA YARATAMIZ
     campaign_id = create_campaign(
         user_id=user_id,
-        text=data["text"],   # ❗ faqat bitta text
+        text=final_text,              # ✅ har doim bor
         groups=data["selected_ids"],
         interval=data["interval"],
         duration=data["duration"],
@@ -1236,23 +1249,24 @@ async def pick_duration(cb: CallbackQuery):
         status_message_id=status_msg.message_id
     )
 
-
+    # 6️⃣ FLOW TOZALAYMIZ
     clear_user_flow(user_id)
 
+    # 7️⃣ STATUS UI YANGILAYMIZ
     await bot.edit_message_text(
         chat_id=cb.message.chat.id,
         message_id=status_msg.message_id,
         text=build_campaign_status_text(campaign_id),
         reply_markup=campaign_control_keyboard(campaign_id, "active")
     )
-    # 🔥 runtime uchun saqlaymiz (DB emas)
+
+    # 8️⃣ 🔥 runtime uchun AI postlarni ulab qo‘yamiz (DBga emas)
     campaign = get_campaign(campaign_id)
     campaign["texts"] = data.get("texts")
-    
+
+    # 9️⃣ KAMPANIYANI ISHGA TUSHIRAMIZ
     task = asyncio.create_task(run_campaign(campaign_id))
     running_campaigns[campaign_id] = task
-
-    await cb.answer("🚀 Kampaniya boshlandi")
 
 
 
