@@ -130,7 +130,7 @@ def init_db():
     
     cur.execute("""
     ALTER TABLE payments
-    ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP;
+    ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP
     """)
     
     cur.execute("""
@@ -163,7 +163,7 @@ def init_db():
     ADD COLUMN IF NOT EXISTS sent_count INTEGER DEFAULT 0,
     ADD COLUMN IF NOT EXISTS error_count INTEGER DEFAULT 0,
     ADD COLUMN IF NOT EXISTS started_at TIMESTAMP,
-    ADD COLUMN IF NOT EXISTS finished_at TIMESTAMP;
+    ADD COLUMN IF NOT EXISTS finished_at TIMESTAMP
     
     """)
 
@@ -206,7 +206,7 @@ def init_db():
     """)
     cur.execute("""
     ALTER TABLE user_groups
-    ADD COLUMN IF NOT EXISTS peer_type TEXT;
+    ADD COLUMN IF NOT EXISTS peer_type TEXT
     """)
     
     cur.execute("""
