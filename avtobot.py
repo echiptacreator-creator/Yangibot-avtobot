@@ -1587,8 +1587,22 @@ async def run_campaign(campaign_id: int):
         client = await get_client(campaign["user_id"])
         await run_campaign_safe(client, campaign)
 
-    except CancelledError:
-        return
+        except FloodWaitError as e:
+            wait_seconds = int(e.seconds)
+        
+            await asyncio.sleep(wait_seconds + 5)
+        
+            update_campaign_status(campaign_id, "active")
+        
+            # 🔴 ESKI TASKNI O‘CHIRAMIZ (ENG MUHIM)
+            old_task = running_campaigns.pop(campaign_id, None)
+            if old_task:
+                old_task.cancel()
+        
+            task = asyncio.create_task(run_campaign(campaign_id))
+            running_campaigns[campaign_id] = task
+        
+            return
 
     finally:
         if client:
@@ -1659,6 +1673,7 @@ async def run_campaign_safe(client, campaign):
                 peer = await client.get_input_entity(group["group_id"])
                 async with client.action(peer, "typing"):
                     await asyncio.sleep(random.uniform(1.5, 3.0))
+            
             except Exception:
                 pass
 
@@ -1690,20 +1705,21 @@ async def run_campaign_safe(client, campaign):
         # 🚨 FLOODWAIT
         # =====================
         except FloodWaitError as e:
-            increase_risk(user_id, 40)
             pause_campaign_with_reason(
                 campaign["id"],
                 f"floodwait:{e.seconds}"
             )
-
+        
             await notify_user(
                 campaign["chat_id"],
                 "⏸ Kampaniya vaqtincha pauza qilindi\n\n"
                 "Telegram xavfsizlik cheklovi qo‘ydi.\n"
                 f"⏳ Taxminiy kutish: {e.seconds // 60} daqiqa\n\n"
-                "Akkauntni himoyalash uchun kampaniya to‘xtatildi."
+                "Kampaniya avtomatik davom ettiriladi."
             )
-            return
+        
+            raise e   # 🔥 MUHIM
+
 
         # =====================
         # ❌ BOSHQA XATOLAR
@@ -1736,18 +1752,18 @@ async def run_campaign_safe(client, campaign):
     # =====================
     update_campaign_status(campaign["id"], "finished")
     
-    # 👤 USERGA XABAR
+    final_campaign = get_campaign(campaign["id"])  # 🔥 MUHIM
+    
     await notify_user(
         campaign["chat_id"],
         "✅ Kampaniya yakunlandi"
     )
     
-    # 👮 ADMIN GA XABAR
     await notify_admin(
         "✅ *Kampaniya yakunlandi*\n\n"
-        f"👤 User ID: `{campaign['user_id']}`\n"
-        f"🆔 Kampaniya ID: `{campaign['id']}`\n"
-        f"📨 Yuborildi: *{campaign['sent_count']} ta*"
+        f"👤 User ID: `{final_campaign['user_id']}`\n"
+        f"🆔 Kampaniya ID: `{final_campaign['id']}`\n"
+        f"📨 Yuborildi: *{final_campaign['sent_count']} ta*"
     )
 
 from database import update_campaign_pause_reason
