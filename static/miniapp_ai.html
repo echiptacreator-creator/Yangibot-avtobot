@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Taxi Post</title>
+<title>Taxi e’lon</title>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="miniapp_data.js"></script>
@@ -14,33 +14,17 @@ body{
   margin:0;
   background:#0f172a;
   color:#f8fafc;
-  font-family:system-ui,-apple-system,BlinkMacSystemFont;
+  font-family:system-ui,-apple-system;
 }
+.container{max-width:520px;margin:auto;padding:16px}
+h2{text-align:center;margin-bottom:16px}
 
-.container{
-  max-width:520px;
-  margin:auto;
-  padding:18px;
-}
+.block{margin-bottom:18px}
+.label{font-size:15px;font-weight:600;margin-bottom:6px}
 
-h2{
-  text-align:center;
-  margin-bottom:20px;
-}
-
-.section{
-  margin-bottom:20px;
-}
-
-.label{
-  font-size:15px;
-  margin-bottom:6px;
-  font-weight:600;
-}
-
-select,input,textarea{
+input,select,textarea{
   width:100%;
-  padding:16px;
+  padding:14px;
   font-size:16px;
   border-radius:12px;
   border:none;
@@ -48,45 +32,39 @@ select,input,textarea{
   color:#fff;
 }
 
-textarea{min-height:90px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
 
-.row{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:12px;
-}
-
-.big-toggle{
-  display:flex;
-  align-items:center;
-  gap:12px;
+.choice{
+  flex:1;
   padding:14px;
-  background:#020617;
+  text-align:center;
   border-radius:12px;
-  margin-bottom:10px;
+  background:#020617;
+  cursor:pointer;
+  font-weight:600;
+}
+.choice.active{background:#22c55e;color:#052e16}
+
+.toggle{
+  padding:14px;
+  border-radius:12px;
+  background:#020617;
   cursor:pointer;
 }
-
-.big-toggle input{
-  width:22px;
-  height:22px;
-}
-
-.big-toggle span{
-  font-size:16px;
-}
+.toggle.active{background:#22c55e;color:#052e16}
 
 button{
   width:100%;
   padding:18px;
-  font-size:18px;
-  font-weight:700;
   border:none;
   border-radius:14px;
   background:#22c55e;
   color:#052e16;
-  cursor:pointer;
+  font-size:18px;
+  font-weight:700;
 }
+.small{padding:12px;font-size:15px}
+.hidden{display:none}
 </style>
 </head>
 
@@ -96,7 +74,7 @@ button{
 <h2>🚕 Taxi e’lon yaratish</h2>
 
 <!-- YO‘NALISH -->
-<div class="section">
+<div class="block">
   <div class="label">Yo‘nalish</div>
   <div class="row">
     <select id="from_region"></select>
@@ -105,78 +83,64 @@ button{
 </div>
 
 <!-- TUMAN -->
-<div class="section">
-  <div class="label">Qayerdan (tumanlar)</div>
-  <div id="from_districts"></div>
-  <button onclick="addDistrict('from')" style="margin-top:8px">➕ Tuman qo‘shish</button>
-</div>
-
-<div class="section">
-  <div class="label">Qayerga (tumanlar)</div>
-  <div id="to_districts"></div>
-  <button onclick="addDistrict('to')" style="margin-top:8px">➕ Tuman qo‘shish</button>
+<div class="block">
+  <div class="label">Tumanlar</div>
+  <div id="districts"></div>
+  <button class="small" onclick="addDistrict()">➕ Tuman qo‘shish</button>
 </div>
 
 <!-- ODAMLAR -->
-<div class="section">
+<div class="block">
   <div class="label">Necha kishi bor</div>
-  <input id="people" type="number" min="1" placeholder="Masalan: 3">
+  <div class="row">
+    <div class="choice" data-p="1">1</div>
+    <div class="choice" data-p="2">2</div>
+    <div class="choice" data-p="3">3</div>
+    <div class="choice" data-p="4">4</div>
+  </div>
+  <input id="people" type="hidden">
 </div>
 
 <!-- HOLATLAR -->
-<div class="section">
-  <div class="label">Qo‘shimcha holatlar</div>
-
-  <label class="big-toggle">
-    <input type="checkbox" data-key="has_woman">
-    <span>👩 Ayol bor</span>
-  </label>
-
-  <label class="big-toggle">
-    <input type="checkbox" data-key="urgent">
-    <span>⚡ Tez chiqish kerak</span>
-  </label>
-
-  <label class="big-toggle">
-    <input type="checkbox" data-key="baggage">
-    <span>🧳 Bagaj bor</span>
-  </label>
-
-  <label class="big-toggle">
-    <input type="checkbox" data-key="mail">
-    <span>📦 Pochta bor</span>
-  </label>
-
-  <label class="big-toggle">
-    <input type="checkbox" data-key="telegram">
-    <span>💬 Telegram orqali bog‘lanish</span>
-  </label>
+<div class="block">
+  <div class="label">Holatlar</div>
+  <div class="toggle" data-key="front_seat">🪑 Old o‘rindiq bo‘sh</div>
+  <div class="toggle" data-key="has_woman">👩 Ayol bor</div>
+  <div class="toggle" data-key="urgent">⚡ Tez chiqish</div>
+  <div class="toggle" data-key="baggage">🧳 Bagaj bor</div>
 </div>
 
 <!-- VAQT -->
-<div class="section">
+<div class="block">
   <div class="label">Ketish vaqti</div>
-  <input id="time" type="time">
+  <div class="row">
+    <div class="choice" data-time="01:00">1:00</div>
+    <div class="choice" data-time="01:30">1:30</div>
+    <div class="choice" data-time="02:00">2:00</div>
+    <div class="choice" data-time="02:30">2:30</div>
+  </div>
+  <input id="time" type="hidden">
 </div>
 
 <!-- MASHINA -->
-<div class="section">
-  <div class="label">Mashina rusumi</div>
+<div class="block">
+  <div class="label">Mashina</div>
   <select id="car"></select>
-  <input id="custom_car" style="margin-top:8px" placeholder="Agar ro‘yxatda bo‘lmasa">
+  <input id="custom_car" class="hidden" placeholder="Mashina nomini yozing">
 </div>
 
 <!-- TELEFON -->
-<div class="section">
+<div class="block">
   <div class="label">Telefon raqam</div>
-  <input id="phone" placeholder="+998 xx xxx xx xx">
-  <input id="phone2" placeholder="Qo‘shimcha raqam (ixtiyoriy)" style="margin-top:8px">
+  <input id="phone" value="+998 ">
+  <input id="phone2" type="hidden">
+  <button class="small" onclick="fillMyPhone()">📲 Mening raqamim</button>
 </div>
 
 <!-- IZOH -->
-<div class="section">
-  <div class="label">Qo‘shimcha izoh</div>
-  <textarea id="comment" placeholder="Masalan: ertalab chiqaman, kelishiladi"></textarea>
+<div class="block">
+  <div class="label">Izoh</div>
+  <textarea id="comment"></textarea>
 </div>
 
 <button onclick="submitForm()">🚀 E’lon yaratish</button>
@@ -186,12 +150,34 @@ button{
 <script>
 Telegram.WebApp.ready();
 
-/* eski toggle logikaga moslashtiramiz */
-document.querySelectorAll(".big-toggle input").forEach(i=>{
-  i.addEventListener("change",()=>{
-    i.parentElement.classList.toggle("active", i.checked);
-  });
+/* odamlar */
+document.querySelectorAll("[data-p]").forEach(b=>{
+  b.onclick=()=>{
+    document.getElementById("people").value=b.dataset.p;
+    document.querySelectorAll("[data-p]").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+  };
 });
+
+/* vaqt */
+document.querySelectorAll("[data-time]").forEach(b=>{
+  b.onclick=()=>{
+    document.getElementById("time").value=b.dataset.time;
+    document.querySelectorAll("[data-time]").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+  };
+});
+
+/* toggle sync */
+document.querySelectorAll(".toggle").forEach(t=>{
+  t.onclick=()=>t.classList.toggle("active");
+});
+
+/* telefon */
+function fillMyPhone(){
+  const p = Telegram.WebApp.initDataUnsafe?.user?.phone_number;
+  if(p) document.getElementById("phone").value = "+998 " + p.slice(-9);
+}
 </script>
 
 </body>
