@@ -1,6 +1,5 @@
 import os
 import psycopg2
-from database import is_user_exists
 from datetime import datetime
 import json
 
