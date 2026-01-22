@@ -58,6 +58,7 @@ from database import get_premium_status
 from database import get_premium_status, mark_premium_notified
 from database import mark_premium_notified
 from aiogram.types import Message
+from database import get_user_profile, save_user_profile
 from aiogram import F
 import json
 from risk import (
