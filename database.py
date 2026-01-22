@@ -68,7 +68,7 @@ def init_db():
             id SERIAL PRIMARY KEY,
             user_id BIGINT NOT NULL,
             text TEXT NOT NULL,
-			texts JSONB,
+            texts JSONB,
             groups JSONB NOT NULL,
             interval_minutes INTEGER NOT NULL,
             duration_minutes INTEGER NOT NULL,
@@ -122,16 +122,16 @@ def init_db():
         created_at BIGINT
     );
     
-	""")
-	cur.execute("""
-	ALTER TABLE payments
-	ADD COLUMN IF NOT EXISTS receipt_file_id TEXT;
-	""")
-	
-	cur.execute("""
-	ALTER TABLE payments
-	ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP;
-	""")
+    """)
+    cur.execute("""
+    ALTER TABLE payments
+    ADD COLUMN IF NOT EXISTS receipt_file_id TEXT;
+    """)
+    
+    cur.execute("""
+    ALTER TABLE payments
+    ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP;
+    """)
     
     cur.execute("""
     CREATE TABLE IF NOT EXISTS daily_usage (
@@ -187,14 +187,14 @@ def init_db():
     );
     """)
     cur.execute("""
-	CREATE TABLE IF NOT EXISTS telegram_groups_temp (
-	    id SERIAL PRIMARY KEY,
-	    user_id BIGINT NOT NULL,
-	    group_id BIGINT NOT NULL,
-	    title TEXT,
-	    username TEXT,
-	    added_at TIMESTAMP DEFAULT NOW(),
-	    UNIQUE (user_id, group_id
+    CREATE TABLE IF NOT EXISTS telegram_groups_temp (
+        id SERIAL PRIMARY KEY,
+        user_id BIGINT NOT NULL,
+        group_id BIGINT NOT NULL,
+        title TEXT,
+        username TEXT,
+        added_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE (user_id, group_id
     );
     """)
     cur.execute("""
@@ -210,12 +210,12 @@ def init_db():
     """)
     
     cur.execute("""
-	ALTER TABLE users
-	ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN DEFAULT FALSE,
-	ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW(),
-	ADD COLUMN IF NOT EXISTS last_login TIMESTAMP
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW(),
+    ADD COLUMN IF NOT EXISTS last_login TIMESTAMP
 
-	""")
+    """)
     
     cur.execute("""
     CREATE TABLE IF NOT EXISTS user_profiles (
@@ -1016,7 +1016,7 @@ def increment_campaign_error(campaign_id: int):
     )
     conn.commit()
     conn.close()
-	
+    
 def update_campaign_started(campaign_id: int):
     conn = get_db()
     cur = conn.cursor()
