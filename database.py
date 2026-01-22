@@ -225,7 +225,17 @@ def init_db():
 	ADD COLUMN IF NOT EXISTS last_login TIMESTAMP
 
 	""")
-
+    
+	cur.execute("""
+	CREATE TABLE IF NOT EXISTS user_profiles (
+        user_id BIGINT PRIMARY KEY,
+        car TEXT,
+        fuel TEXT,
+        phone TEXT,
+        phone2 TEXT,
+        updated_at BIGINT
+    );
+    
     conn.commit()
     cur.close()
     conn.close()
@@ -1656,3 +1666,46 @@ def update_campaign_pause_reason(campaign_id: int, reason: str):
     conn.commit()
     conn.close()
 
+def save_user_profile(user_id, car=None, fuel=None, phone=None, phone2=None):
+    cur = get_db().cursor()
+    cur.execute("""
+        INSERT INTO user_profiles (user_id, car, fuel, phone, phone2, updated_at)
+        VALUES (%s,%s,%s,%s,%s,EXTRACT(EPOCH FROM NOW()))
+        ON CONFLICT (user_id) DO UPDATE SET
+            car = COALESCE(EXCLUDED.car, user_profiles.car),
+            fuel = COALESCE(EXCLUDED.fuel, user_profiles.fuel),
+            phone = COALESCE(EXCLUDED.phone, user_profiles.phone),
+            phone2 = COALESCE(EXCLUDED.phone2, user_profiles.phone2),
+            updated_at = EXCLUDED.updated_at
+    """, (user_id, car, fuel, phone, phone2))
+    get_db().commit()
+    
+    
+def get_user_profile(user_id):
+    cur = get_db().cursor()
+    cur.execute("""
+        SELECT car, fuel, phone, phone2
+        FROM user_profiles
+        WHERE user_id = %s
+    """, (user_id,))
+    row = cur.fetchone()
+    if not row:
+        return {}
+    return {
+        "car": row[0],
+        "fuel": row[1],
+        "phone": row[2],
+        "phone2": row[3],
+    }
+    
+    
+if data.get("action") == "ai_post_v2":
+    payload = data["payload"]
+
+    save_user_profile(
+        user_id=message.from_user.id,
+        car=payload.get("car"),
+        fuel=payload.get("fuel"),
+        phone=payload.get("phone"),
+        phone2=payload.get("phone2"),
+    )
