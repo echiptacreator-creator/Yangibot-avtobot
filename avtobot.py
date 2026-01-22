@@ -67,6 +67,7 @@ from risk import (
     decay_account_risk
 )
 from database import is_user_blocked
+from telethon.utils import get_peer_id
 
 running_campaigns: dict[int, asyncio.Task] = {}
 
@@ -879,8 +880,10 @@ async def load_groups_handler(message: Message):
             else:
                 continue
             
+            peer_id = get_peer_id(entity)
+            
             groups.append({
-                "group_id": entity.id,
+                "group_id": peer_id,      # 🔥 MUHIM
                 "title": entity.title,
                 "username": getattr(entity, "username", None),
                 "peer_type": peer_type
