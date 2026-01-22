@@ -2650,6 +2650,7 @@ async def group_no_link(cb: CallbackQuery):
 # =====================
 # AIAIAIAIAIAIAIAIAIAI
 # =====================
+	profile = get_user_profile(user_id)
 
 @dp.message(F.text == "🤖 AI orqali yuborish")
 async def choose_ai_mode(message: Message):
