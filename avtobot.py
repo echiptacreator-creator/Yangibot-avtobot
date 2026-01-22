@@ -142,45 +142,60 @@ import os
 
 openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-async def generate_ai_variants(form_data: dict, count: int = 5) -> list[str]:
 
-    prompt = f"""
-Sen Telegramda taksi guruhlariga yozadigan oddiy haydovchisan.
-Bu e’lonni XIZMAT sifatida emas, O‘ZING gapirayotgandek yoz.
+async def generate_ai_variants(form: dict, count: int = 5) -> list[str]:
+    """
+    REAL taksist nomidan postlar
+    """
 
-QOIDALAR:
+    system_prompt = """
+Sen O‘zbekistonda ishlaydigan taksistsan.
+Telegram guruhlar uchun e’lon yozyapsan.
+
+Qoidalar:
 - Juda rasmiy bo‘lma
-- “xizmat”, “murojaat uchun” kabi so‘zlar bo‘lmasin
-- Odamlar ishlatadigan oddiy tilda yoz
-- Har bir ma’lumot alohida qatorda bo‘lsin
-- Agar biror maydon bo‘sh bo‘lsa — umuman yozma
-- Yo‘nalish ajralib tursin alohida korinsin
+- Robotga o‘xshama
+- Har xil ohangda yoz
+- Ortiqcha so‘z yozma
+- Faktlarni o‘zgartirma
+- Commentga tegma
+"""
 
-MA’LUMOTLAR:
-Yo‘nalish: {form_data.get('from').upper()} → {form_data.get('to').upper()}
-Odam: {form_data.get('people')}
-Vaqt: {form_data.get('time')}
-Tezkorlik: {form_data.get('urgent')}
-Mashina: {form_data.get('car')}
-Yoqilg‘i: {form_data.get('fuel')}
-Izoh: {form_data.get('comment')}
+    user_prompt = f"""
+Ma’lumotlar:
+Yo‘nalish: {form['from']} → {form['to']}
+Hozir mashinada: {form['people']} kishi
+Ketish vaqti: {form['time']}
+Tezkorlik: {form['urgent']}
+Mashina: {form['car']}
+Yoqilg‘i: {form['fuel']}
+Telefon: {form.get('phone')}
+Telegram: {form.get('telegram')}
+Izoh: {form.get('comment')}
 
-{count} 5 ta BUTUNLAY FARQLI post yoz.
-Har biri alohida bo‘lsin
+Vazifa:
+- {count} xil post yoz
+- Har biri boshqasidan farq qilsin
+- Telegram guruh uchun mos bo‘lsin
+- Emoji 0–2 ta
+- Izohni oxiriga qo‘sh
 """
 
     response = await openai_client.chat.completions.create(
         model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.85
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+        temperature=0.9,
     )
 
-    text = response.choices[0].message.content
+    raw = response.choices[0].message.content
 
     variants = [
         v.strip()
-        for v in text.split("\n\n")
-        if len(v.strip()) > 40
+        for v in raw.split("\n\n")
+        if len(v.strip()) > 30
     ]
 
     return variants[:count]
