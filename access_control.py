@@ -11,6 +11,7 @@ from database import get_premium_status
 from database import get_premium_status, mark_premium_notified
 from database import mark_premium_notified
 from database import get_db
+from database import get_login_session
 
 def is_user_exists(user_id: int) -> bool:
     conn = get_db()
@@ -52,7 +53,7 @@ def get_subscription_status(user_id: int) -> str:
 def can_user_run_campaign(user_id: int) -> tuple[bool, str]:
 
     # 1️⃣ LOGIN (TO‘G‘RI)
-    if not is_user_exists(user_id):
+    if not is_user_exists(user_id) or not get_login_session(user_id):
         return False, "❌ Avval Telegram login qiling"
 
     # 2️⃣ SUBSCRIPTION STATUS (TO‘G‘RI)
