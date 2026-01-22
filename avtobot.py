@@ -137,43 +137,57 @@ openai_client = AsyncOpenAI(
     api_key=os.getenv("OPENAI_API_KEY")
 )
 
-def generate_ai_variants(form_data: dict, count: int = 5) -> list[str]:
+from openai import AsyncOpenAI
+import os
+
+openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+
+async def generate_ai_variants(form_data: dict, count: int = 5) -> list[str]:
     """
-    Ishonchli, professional post generator (AI o‘rniga)
+    REAL AI orqali post yaratadi
     """
 
-    def v(key, default="—"):
-        return form_data.get(key) or default
+    def v(key):
+        return form_data.get(key, "—")
 
-    base = (
-        f"🚕 {v('from')} → {v('to')}\n"
-        f"👥 {v('people')} ta odam\n"
-        f"⏰ {v('time')}\n"
-        f"🚗 {v('car')} ({v('fuel')})\n"
-        f"📞 {v('phone')}"
+    prompt = f"""
+Siz O‘zbekistondagi taksistlar uchun Telegram post yozuvchi assistentsiz.
+
+Maʼlumotlar:
+Qayerdan: {v('from')}
+Qayerga: {v('to')}
+Odamlar soni: {v('people')}
+Ketish vaqti: {v('time')}
+Mashina: {v('car')}
+Yoqilg‘i: {v('fuel')}
+Telefon: {v('phone')}
+Telegram: {v('telegram')}
+Qo‘shimcha: {v('comment')}
+
+Talablar:
+- {count} xil variant yoz
+- Telegram uchun mos bo‘lsin
+- Spamga o‘xshamasin
+- Emoji kam, lekin joyida
+- Har biri alohida post bo‘lsin
+"""
+
+    response = await openai_client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.8,
     )
 
-    styles = [
-        "Assalomu alaykum!",
-        "📢 Diqqat eʼlon!",
-        "🚕 Taxi xizmati",
-        "📍 Yo‘nalish bo‘yicha",
-        "🛣 Safar haqida",
-        "⚡ Tezkor taklif",
-        "🔔 Maʼlumot uchun",
-        "🚖 Bugungi yo‘nalish",
-        "📣 Eʼlon qilamiz",
-        "🚘 Yo‘lga chiqamiz",
+    text = response.choices[0].message.content.strip()
+
+    variants = [
+        v.strip()
+        for v in text.split("\n\n")
+        if len(v.strip()) > 30
     ]
 
-    variants = []
-
-    for i in range(count):
-        variants.append(
-            f"{styles[i % len(styles)]}\n\n{base}"
-        )
-
-    return variants
+    return variants[:count]
 
 def generate_ai_posts_from_form(f: dict) -> list[str]:
     return [
@@ -2716,43 +2730,43 @@ async def handle_webapp_data(message: Message):
     try:
         form_data = json.loads(message.web_app_data.data)
     except Exception:
-        await message.answer("❌ AI form ma’lumotini o‘qib bo‘lmadi")
+        await message.answer("❌ AI forma ma’lumotini o‘qib bo‘lmadi")
         return
 
-    # 🔥 5 ta AI post tayyorlaymiz
-    texts = generate_ai_variants(form_data, count=5)
+    # 🔥 REAL AI POSTLAR
+    texts = await generate_ai_variants(form_data, count=5)
+
+    if not texts:
+        await message.answer("❌ AI post yaratolmadi")
+        return
 
     user_id = message.from_user.id
     groups = get_user_groups(user_id)
 
     if not groups:
         await message.answer(
-            "❌ Sizda hali guruhlar yo‘q.\n"
-            "Avval 📥 Guruhlarni yuklang."
+            "❌ Sizda guruhlar yo‘q. Avval 📥 Guruhlarni yuklang."
         )
         return
 
-    # 🔹 FLOW SAQLAYMIZ
     save_user_flow(
         user_id=user_id,
         step="choose_groups",
         data={
             "mode": "ai",
-            "texts": texts,
+            "texts": texts,          # 🔥 MUHIM
             "groups": groups,
             "selected_ids": [],
             "offset": 0
         }
     )
 
-    # 🔹 FOYDALANUVCHIGA AYTAMIZ
     await message.answer(
         "🤖 AI postlar tayyor.\n\n"
         "📋 Endi qaysi guruhlarga yuborishni tanlang 👇",
         reply_markup=ReplyKeyboardRemove()
     )
 
-    # 🔥 ENG MUHIM QATOR (SEN AYTGAN MUAMMO SHU YERDA EDI)
     await show_group_picker(message, user_id)
 
 
