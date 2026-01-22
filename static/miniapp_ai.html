@@ -22,8 +22,9 @@ h2{text-align:center;margin-bottom:18px}
 .block{margin-bottom:20px}
 .label{font-size:15px;font-weight:600;margin-bottom:6px}
 
-input,select,textarea{
+input,select,textarea,button{
   width:100%;
+  height:52px;
   padding:14px;
   font-size:16px;
   border-radius:12px;
@@ -32,17 +33,21 @@ input,select,textarea{
   color:#fff;
 }
 
-textarea{min-height:90px}
+textarea{
+  height:auto;
+  min-height:104px;
+}
+
 .row{display:flex;gap:10px;flex-wrap:wrap}
 
 .choice{
   flex:1;
-  padding:14px;
   text-align:center;
   border-radius:12px;
   background:#020617;
   cursor:pointer;
   font-weight:600;
+  line-height:24px;
 }
 .choice.active{background:#22c55e;color:#052e16}
 
@@ -52,6 +57,7 @@ textarea{min-height:90px}
   flex-wrap:wrap;
 }
 .toggle{
+  height:auto;
   padding:12px 16px;
   border-radius:999px;
   background:#020617;
@@ -62,19 +68,17 @@ textarea{min-height:90px}
 .toggle.active{background:#22c55e;color:#052e16}
 
 button{
-  width:100%;
-  padding:18px;
-  border:none;
-  border-radius:14px;
   background:#22c55e;
   color:#052e16;
-  font-size:18px;
   font-weight:700;
+  cursor:pointer;
 }
+
 .small{
-  padding:12px;
+  height:44px;
   font-size:15px;
 }
+
 .hidden{display:none}
 </style>
 </head>
@@ -96,8 +100,28 @@ button{
 <!-- TUMAN -->
 <div class="block">
   <div class="label">Tumanlar</div>
-  <div id="districts"></div>
-  <button class="small" onclick="addDistrict()">➕ Tuman qo‘shish</button>
+
+  <div id="districts-wrapper" class="hidden">
+    <div class="row">
+      <div style="flex:1">
+        <div class="label">Qayerdan</div>
+        <div id="from_districts"></div>
+      </div>
+      <div style="flex:1">
+        <div class="label">Qayerga</div>
+        <div id="to_districts"></div>
+      </div>
+    </div>
+  </div>
+
+  <button
+    id="add-district-btn"
+    class="small"
+    type="button"
+    onclick="showDistricts()"
+  >
+    ➕ Tuman tanlash
+  </button>
 </div>
 
 <!-- ODAMLAR -->
@@ -154,7 +178,7 @@ button{
   <div class="label">Telefon raqam</div>
   <input id="phone" value="+998 " placeholder="+998 (__) ___ __ __">
   <input id="phone2" type="hidden">
-  <button class="small" onclick="fillMyPhone()">📲 Mening raqamim</button>
+  <button class="small" type="button" onclick="fillMyPhone()">📲 Mening raqamim</button>
 </div>
 
 <!-- IZOH -->
@@ -163,7 +187,7 @@ button{
   <textarea id="comment" placeholder="Masalan: ertalab chiqaman, kelishiladi"></textarea>
 </div>
 
-<button onclick="submitForm()">🚀 E’lon yaratish</button>
+<button type="button" onclick="submitForm()">🚀 E’lon yaratish</button>
 
 </div>
 
@@ -184,8 +208,8 @@ document.querySelectorAll(".toggle").forEach(t=>{
   t.onclick=()=>t.classList.toggle("active");
 });
 
-/* Vaqtlar (24 soat, 30 daqiqa) */
-const timeSelect = document.getElementById("time");
+/* Vaqtlar */
+const timeSelect=document.getElementById("time");
 for(let h=0;h<24;h++){
   for(let m of ["00","30"]){
     const hh=String(h).padStart(2,"0");
@@ -196,10 +220,28 @@ for(let h=0;h<24;h++){
   }
 }
 
+/* Tumanlarni ko‘rsatish */
+function showDistricts(){
+  const wrap=document.getElementById("districts-wrapper");
+  const btn=document.getElementById("add-district-btn");
+
+  if(wrap.classList.contains("hidden")){
+    wrap.classList.remove("hidden");
+    addDistrict("from");
+    addDistrict("to");
+    btn.textContent="➕ Yana tuman qo‘shish";
+  }else{
+    addDistrict("from");
+    addDistrict("to");
+  }
+}
+
 /* Telefon */
 function fillMyPhone(){
-  const p = Telegram.WebApp.initDataUnsafe?.user?.phone_number;
-  if(p) document.getElementById("phone").value = "+998 " + p.slice(-9);
+  const p=Telegram.WebApp.initDataUnsafe?.user?.phone_number;
+  if(p){
+    document.getElementById("phone").value="+998 "+p.slice(-9);
+  }
 }
 </script>
 
