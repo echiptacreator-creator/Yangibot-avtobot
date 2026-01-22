@@ -338,30 +338,40 @@ def create_campaign(
     interval,
     duration,
     chat_id,
-    status_message_id,
-    texts=None,
-    media_type=None,
-    media_file_id=None
+    status_message_id
 ):
     conn = get_db()
     cur = conn.cursor()
 
-	cur.execute("""
-	    INSERT INTO campaigns (
-	        user_id, text, groups,
-	        interval, duration, chat_id, status_message_id
-	    )
-	    VALUES (%s, %s, %s, %s, %s, %s, %s)
-	    RETURNING id
-	""", (
-	    user_id, text, json.dumps(groups),
-	    interval, duration, chat_id, status_message_id
-	))
-
+    cur.execute(
+        """
+        INSERT INTO campaigns (
+            user_id,
+            text,
+            groups,
+            interval,
+            duration,
+            chat_id,
+            status_message_id
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        RETURNING id
+        """,
+        (
+            user_id,
+            text,
+            json.dumps(groups),
+            interval,
+            duration,
+            chat_id,
+            status_message_id
+        )
+    )
 
     campaign_id = cur.fetchone()[0]
     conn.commit()
     conn.close()
+
     return campaign_id
 
 import json
