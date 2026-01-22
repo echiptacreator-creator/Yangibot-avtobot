@@ -139,11 +139,6 @@ openai_client = AsyncOpenAI(
     api_key=os.getenv("OPENAI_API_KEY")
 )
 
-openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-
-from openai import AsyncOpenAI
-
 openai_client = AsyncOpenAI()
 
 async def generate_ai_variants(form_data: dict, count: int = 5) -> list[str]:
