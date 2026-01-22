@@ -91,11 +91,18 @@ button.secondary{
     <select id="to_region"></select>
   </div>
 
-  <div id="districts"></div>
+<!-- QAYERDAN TUMANLAR -->
+<div class="card">
+  <div class="label">Qayerdan (tumanlar)</div>
+  <div id="from_districts"></div>
+  <button type="button" onclick="addDistrict('from')">+ Tuman qo‘shish</button>
+</div>
 
-  <button class="secondary" type="button" onclick="addDistrict()">
-    + Tuman qo‘shish
-  </button>
+<!-- QAYERGA TUMANLAR -->
+<div class="card">
+  <div class="label">Qayerga (tumanlar)</div>
+  <div id="to_districts"></div>
+  <button type="button" onclick="addDistrict('to')">+ Tuman qo‘shish</button>
 </div>
 
 <!-- YO‘LOVCHI -->
