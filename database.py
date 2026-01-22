@@ -1258,27 +1258,20 @@ def save_user_groups(user_id: int, groups: list[dict]):
 
     for g in groups:
         cur.execute("""
-            INSERT INTO user_groups (
-                user_id,
-                group_id,
-                title,
-                username,
-                peer_type
-            )
+            INSERT INTO telegram_groups_temp
+                (user_id, group_id, title, username, added_by)
             VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (user_id, group_id)
-            DO NOTHING
+            ON CONFLICT (user_id, group_id) DO NOTHING
         """, (
             user_id,
             g["group_id"],
-            g.get("title"),
-            g.get("username"),
-            g.get("peer_type")
+            g["title"],
+            g["username"],
+            g["added_by"]
         ))
 
     conn.commit()
     conn.close()
-
 
 
 
