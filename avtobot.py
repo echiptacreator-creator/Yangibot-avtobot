@@ -148,82 +148,86 @@ openai_client = AsyncOpenAI()
 
 async def generate_ai_variants(form_data: dict, count: int = 5) -> list[str]:
     """
-    Kuchli AI generator:
-    - Shovqinli Telegram guruhlar uchun
-    - Attention + conversion fokus
+    Kuchli, grammatik jihatdan toza, shafyorona AI post generator
     """
+    urgent = "ha" if form_data.get("urgent") else "yo‘q"
+    has_woman = "ha" if form_data.get("has_woman") else "yo‘q"
+    baggage = "ha" if form_data.get("baggage") else "yo‘q"
+    mail = "ha" if form_data.get("mail") else "yo‘q"
+    telegram = "ha" if form_data.get("telegram") else "yo‘q"
 
-    # ---- FLAGS ----
-    flags = form_data.get("flags", {})
-    urgent = flags.get("urgent")
-    mail = flags.get("mail")
-    telegram = flags.get("telegram")
-
-    # ---- DISTRICTS ----
-    from_d = ", ".join(form_data.get("from_districts", []))
-    to_d = ", ".join(form_data.get("to_districts", []))
+    from_districts = ", ".join(form_data.get("from_districts", []))
+    to_districts = ", ".join(form_data.get("to_districts", []))
 
     prompt = f"""
-SEN KASBIY REKLAMACHI, PSIXOLOG VA TAJRIBALI TAKSISTSAN.
+SEN O‘ZBEK TILINI JUDA YAXSHI BILADIGAN TAJRIBALI SHAFYORSAN.
+SEN YOZGAN HAR BIR GAP O‘ZBEK TILI GRAMMATIKASIGA TO‘LIQ MOS BO‘LISHI SHART.
 
-Bu postlar O‘zbekistondagi juda shovqinli Telegram guruhlarga yuboriladi.
-U yerda HAR DAQIQADA 10–20 ta xabar tushadi.
-Odamlar tez skroll qiladi.
+SEN PSIXOLOG HAM SAN:
+- Telegramdagi gavjum guruhlarda qaysi e’lonlar e’tibor tortishini bilasan
+- odamlar nimaga tez yozishini tushunasan
 
-SENING MAQSADING:
-— ko‘zni to‘xtatish
-— 1–2 soniyada qiziqtirish
-— yozishga yoki qo‘ng‘iroq qilishga majbur qilish
+QAT’IY QOIDALAR:
+- gaplar sodda, ravon va tabiiy bo‘lsin
+- sun’iy yoki tarjima ohangidagi gaplar BO‘LMASIN
+- noto‘g‘ri so‘z tartibi BO‘LMASIN
+- reklama yoki marketing uslubi BO‘LMASIN
+- shafyor o‘z nomidan gapirsin
+- juda rasmiy ham, juda hazil ham bo‘lmasin
 
-❗ RASMIY EMAS
-❗ SHABLON EMAS
-❗ BOTGA O‘XSHAMASIN
-❗ SHAFYOR O‘ZI YOZGANDek bo‘lsin
+FORMAT TALABLARI:
+- post UZUN bo‘lsin (kamida 10–14 qator)
+- bo‘sh qatorlar bilan ajrat
+- o‘qishga oson bo‘lsin
+- asosiy ma’lumotlar ko‘zga tashlansin
+- oxiri yozishga undasin
 
----
+❌ ISHLATMA:
+- “aksiya”, “taklif”, “foyda”, “eng yaxshi”
+- majburlovchi gaplar
+- kulgili yoki masxarali jumlalar
 
 MA’LUMOTLAR:
-YO‘NALISH: {form_data.get("from_region")} ({from_d}) → {form_data.get("to_region")} ({to_d})
-ODAM: {form_data.get("people")}
-VAQT: {form_data.get("time")}
-MASHINA: {form_data.get("car")} ({form_data.get("fuel")})
-TELEFON: {form_data.get("phone")}
-QO‘SHIMCHA TELEFON: {form_data.get("phone2")}
-IZOH: {form_data.get("comment")}
+Qayerdan: {form_data.get("from_region")} ({from_districts})
+Qayerga: {form_data.get("to_region")} ({to_districts})
 
-HOLATLAR:
+Odam soni: {form_data.get("people")}
+Ketish vaqti: {form_data.get("time")}
+
+Mashina: {form_data.get("car")}
+Yoqilg‘i: {form_data.get("fuel")}
+
+Telefon: {form_data.get("phone")}
+Qo‘shimcha telefon: {form_data.get("phone2")}
+
+Izoh: {form_data.get("comment")}
+
+Holatlar:
 - Tezkor: {urgent}
-- Pochta: {mail}
-- Telegram: {telegram}
-
-QOIDALAR:
-- false bo‘lgan narsani UMUMAN yozma
-- eng muhim ma’lumotlar yuqorida bo‘lsin
-- qisqa qatorlar
-- bo‘sh joylar
-- emoji ixtiyoriy, lekin joyida
-- spamga o‘xshamasin
-
----
+- Ayol kishi bor: {has_woman}
+- Bagaj bor: {baggage}
+- Pochta olinadi: {mail}
+- Telegramdan yozish mumkin: {telegram}
 
 VAZIFA:
-Telegram uchun {count} ta KUCHLI POST yoz.
+Yuqoridagi ma’lumotlarga asoslanib {count} ta TURFA, BIR-BIRIGA O‘XSHAMAGAN ELON yoz.
 
-HAR BIRI:
-- boshqasidan farqli bo‘lsin
-- tirik odam yozgandek bo‘lsin
-- 5–7 qatordan oshmasin
-- o‘qigan odamda “yozib ko‘ray” degan impuls bo‘lsin
+HAR BIR ELON:
+- mutlaqo o‘zbekcha
+- grammatik jihatdan toza
+- “buni haqiqiy shafyor yozgan” degan taassurot bersin
+- gavjum guruhda ko‘zga tashlansin
+- oxirida aloqa qilishga undasin
 
-POSTLARNI RAQAMLAMA.
-HAR BIRINI ALOHIDA MATN QILIB YOZ.
+HAR BIR ELONNI ALOHIDA BLOK QILIB YOZ.
+RAQAMLAMA QILMA.
 """
 
     response = await openai_client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": "Sen kuchli marketing va psixologiya asosida yozadigan assistentsan."},
-            {"role": "user", "content": prompt}
+            {"role": "system", "content": "Sen o‘zbek tilida mukammal yozadigan yordamchisan."},
+            {"role": "user", "content": prompt},
         ],
         temperature=0.9,
         max_tokens=900,
@@ -231,14 +235,15 @@ HAR BIRINI ALOHIDA MATN QILIB YOZ.
 
     text = response.choices[0].message.content.strip()
 
-    # --- POSTLARNI AJRATIB OLAMIZ ---
-    variants = []
-    for block in text.split("\n\n"):
-        clean = block.strip()
-        if len(clean) > 40:
-            variants.append(clean)
+    # Postlarni ajratib olamiz
+    variants = [
+        block.strip()
+        for block in text.split("\n\n")
+        if len(block.strip()) > 80
+    ]
 
     return variants[:count]
+
 
 
 def generate_ai_posts_from_form(f: dict) -> list[str]:
