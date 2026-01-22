@@ -1585,6 +1585,7 @@ async def notify_admin_campaign_start(campaign):
     )
 
 from asyncio import CancelledError
+from telethon.errors import FloodWaitError
 
 async def run_campaign(campaign_id: int):
     client = None
@@ -1596,22 +1597,26 @@ async def run_campaign(campaign_id: int):
         client = await get_client(campaign["user_id"])
         await run_campaign_safe(client, campaign)
 
-        except FloodWaitError as e:
-            wait_seconds = int(e.seconds)
-        
-            await asyncio.sleep(wait_seconds + 5)
-        
-            update_campaign_status(campaign_id, "active")
-        
-            # 🔴 ESKI TASKNI O‘CHIRAMIZ (ENG MUHIM)
-            old_task = running_campaigns.pop(campaign_id, None)
-            if old_task:
-                old_task.cancel()
-        
-            task = asyncio.create_task(run_campaign(campaign_id))
-            running_campaigns[campaign_id] = task
-        
-            return
+    except FloodWaitError as e:
+        wait_seconds = int(e.seconds)
+
+        await asyncio.sleep(wait_seconds + 5)
+
+        update_campaign_status(campaign_id, "active")
+
+        # 🔴 eski taskni tozalaymiz
+        old_task = running_campaigns.pop(campaign_id, None)
+        if old_task:
+            old_task.cancel()
+
+        task = asyncio.create_task(run_campaign(campaign_id))
+        running_campaigns[campaign_id] = task
+
+    except CancelledError:
+        return
+
+    except Exception as e:
+        print("RUN_CAMPAIGN ERROR:", e)
 
     finally:
         if client:
@@ -1619,6 +1624,7 @@ async def run_campaign(campaign_id: int):
                 await client.disconnect()
             except Exception:
                 pass
+
 
 
 async def run_campaign_safe(client, campaign):
