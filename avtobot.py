@@ -165,7 +165,8 @@ Mashina: {form_data.get('car')}
 Yoqilg‘i: {form_data.get('fuel')}
 Izoh: {form_data.get('comment')}
 
-{count} xil TURFA, jonli variant yoz.
+{count} 5 ta BUTUNLAY FARQLI post yoz.
+Har biri alohida bo‘lsin
 """
 
     response = await openai_client.chat.completions.create(
@@ -1397,9 +1398,20 @@ async def send_to_group(client, campaign, group):
         base_text = random.choice(texts)
     else:
         base_text = campaign.get("text", "")
-
-    # 🔀 Riskga qarab variation qo‘llaymiz
+    
+    # 🔥 RISKGA QARAB VARIATION
     text = apply_variation(base_text, risk)
+    
+    # 🔥 AGAR RISK PAST BO‘LSA — QO‘SHIMCHA O‘ZGARISH
+    if risk < 20:
+        text += "\n\nYo‘lda chiqaman 🚕"
+    
+    elif risk < 40:
+        text = text.replace("🚕", random.choice(["🚖", "🚘", ""]))
+    
+    elif risk >= 60:
+        # xavfli bo‘lsa — soddaroq
+        text = text.split("\n")[0] + "\n" + "\n".join(text.split("\n")[1:4])
 
     # =========================
     # ⛔ LIMIT / RUXSAT TEKSHIRUV
