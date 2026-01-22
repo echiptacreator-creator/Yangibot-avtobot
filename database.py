@@ -719,19 +719,6 @@ def get_global_statistics():
     }
 
 
-def is_logged_in_user(user_id: int) -> bool:
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute(
-        "SELECT 1 FROM authorized_users WHERE user_id = %s",
-        (user_id,)
-    )
-    ok = cur.fetchone() is not None
-    conn.close()
-    return ok
-
-
-
 def get_all_subs():
     conn = get_db()
     cur = conn.cursor()
@@ -791,6 +778,17 @@ def get_free_limits():
         "max_active": row[1],
         "daily_limit": row[2]
     }
+
+def is_logged_in(user_id: int) -> bool:
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT 1 FROM users WHERE user_id = %s",
+        (user_id,)
+    )
+    ok = cur.fetchone() is not None
+    conn.close()
+    return ok
 
 
 def find_user_any(query: str):
