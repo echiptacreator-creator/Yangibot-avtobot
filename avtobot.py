@@ -1225,16 +1225,17 @@ async def pick_duration(cb: CallbackQuery):
         chat_id=cb.message.chat.id,
         text="🚀 Kampaniya boshlanmoqda..."
     )
-
+    
     campaign_id = create_campaign(
         user_id=user_id,
         text=data.get("text", ""),
-        texts=data.get("texts"),  # 🔥 MUHIM
+        texts=data.get("texts"),
         groups=data["selected_ids"],
         interval=data["interval"],
         duration=data["duration"],
         chat_id=cb.message.chat.id,
-        status_message_id=status_msg.message_id
+        status_message_id=status_msg.message_id,
+        status="active"  # 👈 AGAR PARAMETR BO‘LSA
     )
 
     clear_user_flow(user_id)
