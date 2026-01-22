@@ -143,7 +143,7 @@ import os
 openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
-async def generate_ai_variants(form_data: dict, count: int = 5) -> list[str]:
+def generate_ai_variants(form_data: dict, count: int = 17) -> list[str]:
     """
     REAL AI orqali post yaratadi
     """
@@ -2739,7 +2739,7 @@ async def handle_webapp_data(message: Message):
     # 🔍 1 MARTA LOG KO‘RISH UCHUN
     print("AI FORM DATA:", form_data)
 
-    texts = generate_ai_variants(form_data, count=5)
+    texts = await generate_ai_variants(form_data, count=5)
 
     if not texts:
         await message.answer("❌ AI post yaratilmadi")
