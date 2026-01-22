@@ -44,7 +44,7 @@ window.AI_FORM_CONFIG = [
     key: "fuel",
     label: "⛽ Yoqilg‘i",
     type: "select",
-    options: ["Benzin", "Gaz"]
+    options: ["Benzin", "Gaz", "Propan", "Elektr"]
   },
   {
     key: "phone",
