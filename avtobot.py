@@ -2651,23 +2651,31 @@ async def group_no_link(cb: CallbackQuery):
 # =====================
 # AIAIAIAIAIAIAIAIAIAI
 # =====================
-profile = get_user_profile(user_id)
 
 @dp.message(F.text == "🤖 AI orqali yuborish")
 async def choose_ai_mode(message: Message):
+    user_id = message.from_user.id
+    profile = get_user_profile(user_id)
+
+    car = profile.get("car", "")
+    fuel = profile.get("fuel", "")
+    phone = profile.get("phone", "")
+    phone2 = profile.get("phone2", "")
+
+    url = (
+        "https://yangibot-avtobot-production.up.railway.app/static/miniapp_ai.html"
+        f"?car={car}&fuel={fuel}&phone={phone}&phone2={phone2}"
+    )
+
     await message.answer(
         "🤖 AI post yaratish uchun formani to‘ldiring 👇",
         reply_markup=ReplyKeyboardMarkup(
-            keyboard=[
-                [
-                    KeyboardButton(
-                        text="🤖 AI post yaratish",
-                        web_app=WebAppInfo(
-                            url="https://yangibot-avtobot-production.up.railway.app/static/miniapp_ai.html"
-                        )
-                    )
-                ]
-            ],
+            keyboard=[[
+                KeyboardButton(
+                    text="🤖 AI post yaratish",
+                    web_app=WebAppInfo(url=url)
+                )
+            ]],
             resize_keyboard=True
         )
     )
