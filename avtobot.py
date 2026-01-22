@@ -2786,15 +2786,16 @@ async def ai_pick_variant(cb: CallbackQuery):
 # =====================
     
 async def main():
-    # 🔥 RESTARTDAN KEYIN AKTIV KAMPANIYALARNI PAUZA QILAMIZ
+    # 🔥 restartdan keyin aktiv kampaniyalarni pauza qilamiz
     pause_campaigns_on_restart()
-    # ▶️ BOTNI ISHGA TUSHIRAMIZ
 
-    await dp.start_polling(bot)
-    
+    # 🔁 background tasklar (AVVAL!)
     asyncio.create_task(subscription_watcher())
     asyncio.create_task(admin_notification_worker())
-    
+
+    # ▶️ botni ishga tushiramiz (ENG OXIRI!)
+    await dp.start_polling(bot)
+
 
 def get_next_group(campaign):
     groups = campaign.get("groups", [])
