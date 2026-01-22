@@ -224,11 +224,6 @@ def init_db():
 	ADD COLUMN IF NOT EXISTS last_login TIMESTAMP
 
 	""")
-	cur.execute("""
-	ALTER TABLE campaigns
-	ADD COLUMN interval INTEGER DEFAULT 10;
-	ADD COLUMN duration INTEGER DEFAULT 60;
-	""")
 
     conn.commit()
     cur.close()
@@ -351,15 +346,9 @@ def create_campaign(
 
     cur.execute(
         """
-        INSERT INTO campaigns (
-            user_id,
-            text,
-            groups,
-            interval,
-            duration,
-            chat_id,
-            status_message_id
-        )
+		INSERT INTO campaigns (
+		user_id, text, groups, duration, chat_id, status_message_id
+		)
         VALUES (%s, %s, %s, %s, %s, %s, %s)
         RETURNING id
         """,
