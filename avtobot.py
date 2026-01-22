@@ -2734,25 +2734,24 @@ async def handle_webapp_data(message: Message):
     import json
 
     user_id = message.from_user.id
+    form_data = json.loads(message.web_app_data.data)
 
-    try:
-        form_data = json.loads(message.web_app_data.data)
-    except Exception:
-        await message.answer("❌ AI form ma’lumotini o‘qib bo‘lmadi")
-        return
-
-    # 🔥 5 ta AI post generatsiya qilamiz
+    # 🤖 AI postlar
     texts = generate_ai_variants(form_data, count=5)
 
-    # 🔥 USER FLOW TO‘G‘RI SAQLANADI
+    groups = get_user_groups(user_id)
+    if not groups:
+        await message.answer("❌ Avval guruhlarni yuklang")
+        return
+
     save_user_flow(
         user_id=user_id,
         step="choose_groups",
         data={
             "mode": "ai",
-            "texts": texts,
-            "groups": get_user_groups(user_id),
-            "selected_ids": []
+            "groups": groups,
+            "selected_ids": [],
+            "texts": texts
         }
     )
 
