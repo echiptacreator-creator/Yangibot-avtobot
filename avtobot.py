@@ -820,15 +820,16 @@ async def cancel_send(message: Message):
 async def get_client(user_id: int):
     session = get_login_session(user_id)
     if not session:
-        raise RuntimeError(f"No Telegram session for user {user_id}")
+        raise RuntimeError("Telegram login topilmadi")
 
     client = TelegramClient(
-        StringSession(session_str),
+        StringSession(session),
         API_ID,
         API_HASH
     )
     await client.connect()
     return client
+
 
 
 # =====================
