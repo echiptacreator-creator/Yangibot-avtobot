@@ -1695,3 +1695,14 @@ def get_user_profile(user_id):
         "phone": row[2],
         "phone2": row[3],
     }
+
+def authorize_user(user_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO authorized_users (user_id)
+        VALUES (%s)
+        ON CONFLICT (user_id) DO NOTHING
+    """, (user_id,))
+    conn.commit()
+    conn.close()
