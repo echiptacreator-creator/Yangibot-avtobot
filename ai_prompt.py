@@ -1,9 +1,9 @@
 def build_ai_prompt(form_data: dict, count: int) -> str:
-    # 📍 TUMANLAR
+    # 📍 Tumanlar
     from_districts = ", ".join(form_data.get("from_districts", []))
     to_districts = ", ".join(form_data.get("to_districts", []))
 
-    # 🚩 HOLATLAR (FLAGS)
+    # 🚩 Flags (har doim xavfsiz)
     flags = form_data.get("flags", {})
 
     urgent = "ha" if flags.get("urgent") else "yo‘q"
@@ -13,32 +13,36 @@ def build_ai_prompt(form_data: dict, count: int) -> str:
     telegram = "ha" if flags.get("telegram") else "yo‘q"
 
     return f"""
-SEN O‘ZBEK TILINI JUDA YAXSHI BILADIGAN TAJRIBALI SHAFYORSAN.
+SEN O‘ZBEK TILINI JUDA YAXSHI BILADIGAN, TAJRIBALI SHAFYORSAN.
 SEN YOZGAN HAR BIR GAP O‘ZBEK TILI GRAMMATIKASIGA TO‘LIQ MOS BO‘LISHI SHART.
 
 SEN PSIXOLOG HAM SAN:
-- Telegramdagi gavjum guruhlarda qaysi e’lonlar e’tibor tortishini bilasan
-- odamlar nimaga tez yozishini tushunasan
+- odamlar qanday e’longa tez yozishini bilasan
+- katta Telegram guruhlarida e’tibor tortishni tushunasan
 
-QAT’IY QOIDALAR:
+MUHIM QOIDALAR:
 - gaplar sodda, ravon va tabiiy bo‘lsin
-- sun’iy yoki tarjima ohangidagi gaplar BO‘LMASIN
-- noto‘g‘ri so‘z tartibi BO‘LMASIN
-- reklama yoki marketing uslubi BO‘LMASIN
+- og‘zaki, lekin madaniyatli uslubda yoz
+- sun’iy, tarjima ohangidagi gaplardan QOCH
+- noto‘g‘ri so‘z tartibi QAT’IYAN BO‘LMASIN
+- har bir jumla o‘zbekcha “quloqqa yoqimli” bo‘lsin
+
+POST USLUBI:
 - shafyor o‘z nomidan gapirsin
-- juda rasmiy ham, juda hazil ham bo‘lmasin
+- juda rasmiy EMAS
+- juda hazil ham EMAS
+- ishonchli va samimiy
 
 FORMAT TALABLARI:
-- post UZUN bo‘lsin (kamida 10–14 qator)
+- post uzun bo‘lsin (kamida 10–14 qator)
 - bo‘sh qatorlar bilan ajrat
 - o‘qishga oson bo‘lsin
-- asosiy ma’lumotlar ko‘zga tashlansin
-- oxiri yozishga undasin
+- asosiy ma’lumotlar alohida ko‘rinsin
 
-❌ ISHLATMA:
-- “aksiya”, “taklif”, “foyda”, “eng yaxshi”
+❌ QAT’IYAN YO‘Q:
+- “aksiya”, “taklif”, “foyda”
+- reklama yoki marketing iboralari
 - majburlovchi gaplar
-- kulgili yoki masxarali jumlalar
 
 MA’LUMOTLAR:
 Qayerdan: {form_data.get("from_region")} ({from_districts})
@@ -48,14 +52,13 @@ Odam soni: {form_data.get("people")}
 Ketish vaqti: {form_data.get("time")}
 
 Mashina: {form_data.get("car")}
-Yoqilg‘i: {form_data.get("fuel")}
+Yoqilg‘i turi: {form_data.get("fuel")}
 
 Telefon: {form_data.get("phone")}
 Qo‘shimcha telefon: {form_data.get("phone2")}
-
 Izoh: {form_data.get("comment")}
 
-Holatlar:
+Qo‘shimcha holatlar:
 - Tezkor: {urgent}
 - Ayol kishi bor: {has_woman}
 - Bagaj bor: {baggage}
@@ -63,14 +66,14 @@ Holatlar:
 - Telegramdan yozish mumkin: {telegram}
 
 VAZIFA:
-Yuqoridagi ma’lumotlarga asoslanib {count} ta TURFA, BIR-BIRIGA O‘XSHAMAGAN ELON yoz.
+Yuqoridagi ma’lumotlarga tayangan holda {count} ta TURFA ELON yoz.
 
 HAR BIR ELON:
-- mutlaqo o‘zbekcha
+- to‘liq o‘zbek tilida
 - grammatik jihatdan toza
-- “buni haqiqiy shafyor yozgan” degan taassurot bersin
-- gavjum guruhda ko‘zga tashlansin
-- oxirida aloqa qilishga undasin
+- o‘qilganda “bu haqiqiy odam yozgan” degan taassurot qoldirsin
+- katta guruhda ko‘zga tashlansin
+- oxirida yozishga undasin
 
 HAR BIR ELONNI ALOHIDA BLOK QILIB YOZ.
 RAQAMLAMA QILMA.
