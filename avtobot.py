@@ -2736,6 +2736,16 @@ async def choose_ai_mode(message: Message):
     user_id = message.from_user.id
     profile = get_user_profile(user_id)
 
+    # 🔥 MUHIM: AI FORM FLOW BOSHLANADI
+    save_user_flow(
+        user_id=user_id,
+        step="ai_form",
+        data={
+            "ai_form": {},
+            "ai_step": 0
+        }
+    )
+
     car = profile.get("car", "")
     fuel = profile.get("fuel", "")
     phone = profile.get("phone", "")
@@ -2759,13 +2769,6 @@ async def choose_ai_mode(message: Message):
         )
     )
 
-
-@dp.message(
-    F.from_user.func(lambda u: (
-        (flow := get_user_flow(u.id)) is not None
-        and flow["step"] == "ai_form"
-    ))
-)
 async def handle_ai_form(message: Message):
     user_id = message.from_user.id
     flow = get_user_flow(user_id)
