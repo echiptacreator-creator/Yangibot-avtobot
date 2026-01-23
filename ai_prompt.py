@@ -1,6 +1,16 @@
 def build_ai_prompt(form_data: dict, count: int) -> str:
-    from_d = ", ".join(form_data.get("from_districts", []))
-    to_d = ", ".join(form_data.get("to_districts", []))
+    # 📍 TUMANLAR
+    from_districts = ", ".join(form_data.get("from_districts", []))
+    to_districts = ", ".join(form_data.get("to_districts", []))
+
+    # 🚩 HOLATLAR (FLAGS)
+    flags = form_data.get("flags", {})
+
+    urgent = "ha" if flags.get("urgent") else "yo‘q"
+    has_woman = "ha" if flags.get("has_woman") else "yo‘q"
+    baggage = "ha" if flags.get("baggage") else "yo‘q"
+    mail = "ha" if flags.get("mail") else "yo‘q"
+    telegram = "ha" if flags.get("telegram") else "yo‘q"
 
     return f"""
 SEN O‘ZBEK TILINI JUDA YAXSHI BILADIGAN TAJRIBALI SHAFYORSAN.
@@ -64,4 +74,4 @@ HAR BIR ELON:
 
 HAR BIR ELONNI ALOHIDA BLOK QILIB YOZ.
 RAQAMLAMA QILMA.
-"""
+""".strip()
