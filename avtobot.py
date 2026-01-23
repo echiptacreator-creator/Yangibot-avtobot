@@ -612,10 +612,9 @@ async def send_message_start(message: Message, state: FSMContext):
     # yangi flow boshlaymiz
     save_user_flow(
         user_id=user_id,
-        step="choose_mode",
-        data={
-            "mode": "classic"  # default
-        }
+        step="send_menu",
+        data={}
+    )
     )
 
 
