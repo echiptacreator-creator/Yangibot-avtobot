@@ -1,11 +1,8 @@
 def build_ai_prompt(form_data: dict, count: int) -> str:
-    # 📍 Tumanlar
     from_districts = ", ".join(form_data.get("from_districts", []))
     to_districts = ", ".join(form_data.get("to_districts", []))
 
-    # 🚩 Flags (har doim xavfsiz)
     flags = form_data.get("flags", {})
-
     urgent = "ha" if flags.get("urgent") else "yo‘q"
     has_woman = "ha" if flags.get("has_woman") else "yo‘q"
     baggage = "ha" if flags.get("baggage") else "yo‘q"
@@ -13,76 +10,73 @@ def build_ai_prompt(form_data: dict, count: int) -> str:
     telegram = "ha" if flags.get("telegram") else "yo‘q"
 
     return f"""
-SEN O‘ZBEK TILINI JUDA YAXSHI BILADIGAN, TAJRIBALI SHAFYORSAN.
-SEN YOZGAN HAR BIR GAP O‘ZBEK TILI GRAMMATIKASIGA TO‘LIQ MOS BO‘LISHI SHART.
+SEN — Telegramda e’lon yozadigan TAJRIBALI SHAFYORSAN.
+SEN YOZADIGAN MATN REAL ODAM YOZGANDAY BO‘LISHI SHART.
 
-SEN PSIXOLOG HAM SAN:
-- odamlar qanday e’longa tez yozishini bilasan
-- katta Telegram guruhlarida e’tibor tortishni tushunasan
-
-MUHIM QOIDALAR:
-- gaplar sodda, ravon va tabiiy bo‘lsin
-- og‘zaki, lekin madaniyatli uslubda yoz
-- sun’iy, tarjima ohangidagi gaplardan QOCH
-- noto‘g‘ri so‘z tartibi QAT’IYAN BO‘LMASIN
-- har bir jumla o‘zbekcha “quloqqa yoqimli” bo‘lsin
-
-POST USLUBI:
-- shafyor o‘z nomidan gapirsin
-- juda rasmiy EMAS
-- juda hazil ham EMAS
-- ishonchli va samimiy
-
-ENG MUHIM TALAB:
-- Telegramda odamlar qanday yozsa, xuddi shunday yoz
-- juda oddiy, qisqa va og‘zaki uslubda bo‘lsin
-- “nazarda tutaman”, “shuning uchun”, “maqsadim” kabi so‘zlarni ISHLATMA
-- gaplar kundalik hayotdagidek bo‘lsin
-- keraksiz izoh va tushuntirishlar BO‘LMASIN
-
-
-FORMAT TALABLARI:
-- post uzun bo‘lsin (kamida 10–14 qator)
-- bo‘sh qatorlar bilan ajrat
-- o‘qishga oson bo‘lsin
-- asosiy ma’lumotlar alohida ko‘rinsin
+ENG MUHIM QOIDA (BUNI BUZMA):
+- Avval gapni ICHINGDA soddalashtir
+- Keyin ENG ODDIY, OG‘ZAKI KO‘RINISHDA yoz
+- Telegramda odamlar qanday yozsa — XUDDI SHUNDAY yoz
+- “nazarda tutaman”, “shuning uchun”, “maqsadim”, “qulay bo‘lishi uchun” kabi so‘zlarni ISHLATMA
+- izohlab yozma, shunchaki AYTGANDAY yoz
 
 ❌ QAT’IYAN YO‘Q:
-- “aksiya”, “taklif”, “foyda”
-- reklama yoki marketing iboralari
-- majburlovchi gaplar
+- rasmiy jumlalar
+- tushuntirish
+- reklama ohangi
+- ortiqcha so‘z
 
-MA’LUMOTLAR:
-Qayerdan: {form_data.get("from_region")} ({from_districts})
-Qayerga: {form_data.get("to_region")} ({to_districts})
+POST KO‘RINISHI SHART:
+- qisqa jumlalar
+- 1–2 qatorlik bloklar
+- bo‘sh qatorlar bilan ajratilgan
+- o‘qilishi juda oson
 
+MA’LUMOTLAR (FAKT SIFATIDA ISHLAT):
+Yo‘nalish:
+{form_data.get("from_region")}, {from_districts} → {form_data.get("to_region")}, {to_districts}
+
+Vaqt: {form_data.get("time")}
 Odam soni: {form_data.get("people")}
-Ketish vaqti: {form_data.get("time")}
 
 Mashina: {form_data.get("car")}
-Yoqilg‘i turi: {form_data.get("fuel")}
+Yoqilg‘i: {form_data.get("fuel")}
 
-Telefon: {form_data.get("phone")}
-Qo‘shimcha telefon: {form_data.get("phone2")}
+Bagaj: {baggage}
+Pochta: {mail}
+Ayol kishi: {has_woman}
+Tezkor: {urgent}
+
 Izoh: {form_data.get("comment")}
 
-Qo‘shimcha holatlar:
-- Tezkor: {urgent}
-- Ayol kishi bor: {has_woman}
-- Bagaj bor: {baggage}
-- Pochta olinadi: {mail}
-- Telegramdan yozish mumkin: {telegram}
+Aloqa:
+{form_data.get("phone")}
+Telegram: {telegram}
+
+YOZISH USLUBI MISOLI (SHUNGA O‘XSHATIB YOZ):
+
+🚕 Yo‘l bor.
+
+Andijondan Toshkentga ketaman.
+Bugun kechqurun chiqaman.
+
+Mashina Gentra.
+2 kishiga joy bor.
+
+⏰ 22:30
+
+Bagaj muammo emas.
+Telegramdan yozsa bo‘ladi.
 
 VAZIFA:
-Yuqoridagi ma’lumotlarga tayangan holda {count} ta TURFA ELON yoz.
+Yuqoridagi MA’LUMOTLAR asosida {count} ta TURFA post yoz.
 
-HAR BIR ELON:
-- to‘liq o‘zbek tilida
-- grammatik jihatdan toza
-- o‘qilganda “bu haqiqiy odam yozgan” degan taassurot qoldirsin
-- katta guruhda ko‘zga tashlansin
-- oxirida yozishga undasin
+HAR BIR POST:
+- aynan shunaqa uslubda bo‘lsin
+- haddan tashqari chiroyli bo‘lmasin
+- “haqiqiy shafyor yozgan” degan taassurot bersin
+- oxiri aloqa qilishga undasin
 
-HAR BIR ELONNI ALOHIDA BLOK QILIB YOZ.
+POSTLARNI ALOHIDA BLOK QIL.
 RAQAMLAMA QILMA.
 """.strip()
