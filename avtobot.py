@@ -2553,7 +2553,9 @@ async def group_no_link(cb: CallbackQuery):
 # AIAIAIAIAIAIAIAIAIAI
 # =====================
 
-@dp.message(F.text == "🤖 AI orqali yuborish")
+@dp.message(
+    (F.text == "🤖 AI orqali yuborish")
+)
 async def choose_ai_mode(message: Message, state: FSMContext):
     user_id = message.from_user.id
 
