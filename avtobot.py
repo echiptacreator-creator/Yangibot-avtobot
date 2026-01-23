@@ -2554,19 +2554,14 @@ async def group_no_link(cb: CallbackQuery):
 # =====================
 
 @dp.message(F.text == "🤖 AI orqali yuborish")
-async def choose_ai_mode(message: Message):
+async def choose_ai_mode(message: Message, state: FSMContext):
     user_id = message.from_user.id
-    profile = get_user_profile(user_id)
 
-    # 🔥 MUHIM: AI FORM FLOW BOSHLANADI
-    save_user_flow(
-        user_id=user_id,
-        step="ai_form",
-        data={
-            "ai_form": {},
-            "ai_step": 0
-        }
-    )
+    # 🔥 BARCHA FSM + FLOW TOZALANADI
+    await state.clear()
+    clear_user_flow(user_id)
+
+    profile = get_user_profile(user_id)
 
     car = profile.get("car", "")
     fuel = profile.get("fuel", "")
