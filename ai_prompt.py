@@ -33,6 +33,14 @@ POST USLUBI:
 - juda hazil ham EMAS
 - ishonchli va samimiy
 
+ENG MUHIM TALAB:
+- Telegramda odamlar qanday yozsa, xuddi shunday yoz
+- juda oddiy, qisqa va og‘zaki uslubda bo‘lsin
+- “nazarda tutaman”, “shuning uchun”, “maqsadim” kabi so‘zlarni ISHLATMA
+- gaplar kundalik hayotdagidek bo‘lsin
+- keraksiz izoh va tushuntirishlar BO‘LMASIN
+
+
 FORMAT TALABLARI:
 - post uzun bo‘lsin (kamida 10–14 qator)
 - bo‘sh qatorlar bilan ajrat
