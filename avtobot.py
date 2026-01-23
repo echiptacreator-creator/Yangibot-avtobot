@@ -615,8 +615,6 @@ async def send_message_start(message: Message, state: FSMContext):
         step="send_menu",
         data={}
     )
-    )
-
 
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
