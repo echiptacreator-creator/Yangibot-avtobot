@@ -12,12 +12,6 @@ client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 
 # 2️⃣ XAVFSIZ AI FUNKSIYA
 async def generate_ai_posts(prompt: str, count: int = 5) -> list[str]:
-    """
-    🔒 Xavfsiz AI generator
-    - hech qachon exception tashlamaydi
-    - har doim list qaytaradi
-    """
-
     try:
         response = await client.chat.completions.create(
             model="gpt-4o-mini",
@@ -25,7 +19,7 @@ async def generate_ai_posts(prompt: str, count: int = 5) -> list[str]:
                 {"role": "system", "content": "Sen o‘zbek tilida tabiiy yozadigan shafyorsan."},
                 {"role": "user", "content": prompt},
             ],
-            temperature=0.9,
+            temperature=0.85,
             max_tokens=900,
         )
     except Exception as e:
@@ -39,11 +33,12 @@ async def generate_ai_posts(prompt: str, count: int = 5) -> list[str]:
     if not text:
         return []
 
-    # 3️⃣ Postlarni bo‘lamiz
-    blocks = [
-        b.strip()
-        for b in text.split("\n\n")
-        if len(b.strip()) > 80
-    ]
+    # 🔥 AGAR AI bir nechta post yozgan bo‘lsa
+    blocks = [b.strip() for b in text.split("\n\n\n") if b.strip()]
+
+    # 🔒 fallback: agar ajratilmagan bo‘lsa
+    if not blocks:
+        blocks = [text.strip()]
 
     return blocks[:count]
+
