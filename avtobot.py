@@ -68,6 +68,9 @@ from risk import (
 )
 from database import is_user_blocked
 from telethon.utils import get_peer_id
+from ai_wrapper import generate_ai_posts
+from ai_prompt import build_ai_prompt
+
 
 running_campaigns: dict[int, asyncio.Task] = {}
 
@@ -75,35 +78,6 @@ running_campaigns: dict[int, asyncio.Task] = {}
 # =====================
 # STATE (XABAR YUBORISH)
 # =====================
-AI_FORM_STEPS = [
-    "from",
-    "to",
-    "people",
-    "urgent",
-    "time",
-    "female",
-    "front_seat",
-    "car",
-    "fuel",
-    "package",
-    "phone",
-    "telegram"
-]
-
-AI_FORM_LABELS = {
-    "from": "📍 Qayerdan ketiladi?",
-    "to": "📍 Qayerga boriladi?",
-    "people": "👥 Nechta odam kerak?",
-    "urgent": "⚡ Tezkor ketiladimi? (ha/yo‘q)",
-    "time": "⏰ Qaysi vaqtga ketiladi?",
-    "female": "👩 Ayol kishi bormi? (ha/yo‘q)",
-    "front_seat": "💺 Oldi o‘rindiq bo‘shmi? (ha/yo‘q)",
-    "car": "🚗 Qanaqa mashina?",
-    "fuel": "⛽ Benzinmi yoki gaz?",
-    "package": "📦 Pochta olinadimi? (ha/yo‘q)",
-    "phone": "📞 Telefon raqamni yozing",
-    "telegram": "💬 Telegram manzil (@username)"
-}
 
 # =====================
 # STATE (XABAR YUBORISH)
@@ -131,158 +105,6 @@ class EditCampaign(StatesGroup):
 # =====================
 # HELPERS — ACCESS
 # =====================
-
-from openai import AsyncOpenAI
-import os
-
-openai_client = AsyncOpenAI(
-    api_key=os.getenv("OPENAI_API_KEY")
-)
-
-openai_client = AsyncOpenAI()
-
-async def generate_ai_variants(form_data: dict, count: int = 5) -> list[str]:
-    """
-    Kuchli, grammatik jihatdan toza, shafyorona AI post generator
-    """
-    urgent = "ha" if form_data.get("urgent") else "yo‘q"
-    has_woman = "ha" if form_data.get("has_woman") else "yo‘q"
-    baggage = "ha" if form_data.get("baggage") else "yo‘q"
-    mail = "ha" if form_data.get("mail") else "yo‘q"
-    telegram = "ha" if form_data.get("telegram") else "yo‘q"
-
-    from_districts = ", ".join(form_data.get("from_districts", []))
-    to_districts = ", ".join(form_data.get("to_districts", []))
-
-    prompt = f"""
-SEN O‘ZBEK TILINI JUDA YAXSHI BILADIGAN TAJRIBALI SHAFYORSAN.
-SEN YOZGAN HAR BIR GAP O‘ZBEK TILI GRAMMATIKASIGA TO‘LIQ MOS BO‘LISHI SHART.
-
-SEN PSIXOLOG HAM SAN:
-- Telegramdagi gavjum guruhlarda qaysi e’lonlar e’tibor tortishini bilasan
-- odamlar nimaga tez yozishini tushunasan
-
-QAT’IY QOIDALAR:
-- gaplar sodda, ravon va tabiiy bo‘lsin
-- sun’iy yoki tarjima ohangidagi gaplar BO‘LMASIN
-- noto‘g‘ri so‘z tartibi BO‘LMASIN
-- reklama yoki marketing uslubi BO‘LMASIN
-- shafyor o‘z nomidan gapirsin
-- juda rasmiy ham, juda hazil ham bo‘lmasin
-
-FORMAT TALABLARI:
-- post UZUN bo‘lsin (kamida 10–14 qator)
-- bo‘sh qatorlar bilan ajrat
-- o‘qishga oson bo‘lsin
-- asosiy ma’lumotlar ko‘zga tashlansin
-- oxiri yozishga undasin
-
-❌ ISHLATMA:
-- “aksiya”, “taklif”, “foyda”, “eng yaxshi”
-- majburlovchi gaplar
-- kulgili yoki masxarali jumlalar
-
-MA’LUMOTLAR:
-Qayerdan: {form_data.get("from_region")} ({from_districts})
-Qayerga: {form_data.get("to_region")} ({to_districts})
-
-Odam soni: {form_data.get("people")}
-Ketish vaqti: {form_data.get("time")}
-
-Mashina: {form_data.get("car")}
-Yoqilg‘i: {form_data.get("fuel")}
-
-Telefon: {form_data.get("phone")}
-Qo‘shimcha telefon: {form_data.get("phone2")}
-
-Izoh: {form_data.get("comment")}
-
-Holatlar:
-- Tezkor: {urgent}
-- Ayol kishi bor: {has_woman}
-- Bagaj bor: {baggage}
-- Pochta olinadi: {mail}
-- Telegramdan yozish mumkin: {telegram}
-
-VAZIFA:
-Yuqoridagi ma’lumotlarga asoslanib {count} ta TURFA, BIR-BIRIGA O‘XSHAMAGAN ELON yoz.
-
-HAR BIR ELON:
-- mutlaqo o‘zbekcha
-- grammatik jihatdan toza
-- “buni haqiqiy shafyor yozgan” degan taassurot bersin
-- gavjum guruhda ko‘zga tashlansin
-- oxirida aloqa qilishga undasin
-
-HAR BIR ELONNI ALOHIDA BLOK QILIB YOZ.
-RAQAMLAMA QILMA.
-"""
-
-    response = await openai_client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "Sen o‘zbek tilida mukammal yozadigan yordamchisan."},
-            {"role": "user", "content": prompt},
-        ],
-        temperature=0.9,
-        max_tokens=900,
-    )
-
-    text = response.choices[0].message.content.strip()
-
-    # Postlarni ajratib olamiz
-    variants = [
-        block.strip()
-        for block in text.split("\n\n")
-        if len(block.strip()) > 80
-    ]
-
-    return variants[:count]
-
-
-
-def generate_ai_posts_from_form(f: dict) -> list[str]:
-    return [
-        (
-            f"🚕 {f['from']} → {f['to']}\n\n"
-            f"👥 {f['people']} ta odam\n"
-            f"⏰ {f['time']}\n"
-            f"🚗 {f['car']} ({f['fuel']})\n"
-            f"📦 Pochta: {f['package']}\n"
-            f"📞 {f['phone']}"
-        ),
-        (
-            f"Assalomu alaykum.\n\n"
-            f"{f['from']}dan {f['to']}ga yuramiz.\n"
-            f"{f['time']} ga.\n"
-            f"{f['people']} ta joy bor.\n"
-            f"🚗 {f['car']} ({f['fuel']})\n"
-            f"📞 {f['phone']}"
-        ),
-        (
-            f"Bugungi qatnov 🚖\n"
-            f"{f['from']} → {f['to']}\n\n"
-            f"⏰ {f['time']}\n"
-            f"👥 {f['people']} ta\n"
-            f"📦 Pochta olamiz\n"
-            f"📞 {f['phone']}"
-        ),
-        (
-            f"❗ Yo‘nalish mavjud\n\n"
-            f"{f['from']} ➡️ {f['to']}\n"
-            f"⏰ {f['time']}\n"
-            f"🚗 {f['car']} ({f['fuel']})\n"
-            f"📞 {f['phone']}"
-        ),
-        (
-            f"🚕 Safarga chiqamiz\n\n"
-            f"{f['from']} — {f['to']}\n"
-            f"{f['time']} da.\n"
-            f"{f['people']} ta odam.\n"
-            f"📞 {f['phone']}"
-        )
-    ]
-
 
 
 import random
@@ -2769,89 +2591,17 @@ async def choose_ai_mode(message: Message):
         )
     )
 
-async def handle_ai_form(message: Message):
-    user_id = message.from_user.id
-    flow = get_user_flow(user_id)
-    data = flow["data"]
-
-    step_index = data.get("ai_step", 0)
-    current_key = AI_FORM_STEPS[step_index]
-
-    # javobni saqlaymiz
-    data["ai_form"][current_key] = message.text.strip()
-
-    step_index += 1
-
-    # hali savollar bor
-    if step_index < len(AI_FORM_STEPS):
-        data["ai_step"] = step_index
-        save_user_flow(user_id, "ai_form", data)
-
-        next_key = AI_FORM_STEPS[step_index]
-        await message.answer(AI_FORM_LABELS[next_key])
-        return
-
-    # ✅ HAMMASI TUGADI — AI TEXT YIG‘AMIZ
-    f = data["ai_form"]
-
-    text = (
-        f"🚕 {f['from']} → {f['to']}\n"
-        f"👥 {f['people']} kishi\n"
-        f"⏰ {f['time']}\n"
-        f"⚡ Tezkor: {f['urgent']}\n"
-        f"👩 Ayol: {f['female']}\n"
-        f"💺 Oldi o‘rindiq: {f['front_seat']}\n"
-        f"🚗 Mashina: {f['car']} ({f['fuel']})\n"
-        f"📦 Pochta: {f['package']}\n"
-        f"📞 {f['phone']}\n"
-        f"💬 {f['telegram']}"
-    )
-
-    # text ni saqlaymiz (bot uchun oddiy text)
-    data["text"] = text
-
-    data["texts"] = [
-        text,
-        apply_variation(text, 20),
-        apply_variation(text, 40),
-        apply_variation(text, 60),
-        apply_variation(text, 80),
-    ]
-
-    # endi oddiy interval bosqichiga o‘tamiz
-    if not flow or flow["step"] != "enter_interval":
-        return
-
-
-    await message.answer(
-        "✅ Ma’lumotlar tayyor.\n\n"
-        "⏱ Endi intervalni tanlang:"
-    )
-
-async def generate_ai_posts(form_data: dict) -> list[str]:
-    prompt = build_prompt_from_form(form_data)
-
-    # hozircha FAKE (test uchun)
-    return [
-        f"🚕 {form_data['from']} → {form_data['to']} | {form_data['time']}",
-        f"Assalomu alaykum. {form_data['from']}dan {form_data['to']}ga yuramiz",
-        f"Bugun yo‘nalish: {form_data['from']} → {form_data['to']}"
-    ]
 
 @dp.message(F.web_app_data)
 async def handle_webapp_data(message: Message):
-    import json
-
     data = json.loads(message.web_app_data.data)
 
-    # ✅ action tekshiramiz
     if data.get("action") != "ai_post_v2":
         return
 
     form_data = data.get("payload", {})
     user_id = message.from_user.id
 
-    # ✅ profilni saqlaymiz
     save_user_profile(
         user_id=user_id,
         car=form_data.get("car"),
@@ -2862,18 +2612,26 @@ async def handle_webapp_data(message: Message):
 
     print("AI FORM DATA:", form_data)
 
-    # ✅ AI POSTLAR
-    texts = await generate_ai_variants(form_data, count=5)
+    # ✅ YAGONA TO‘G‘RI AI CHAQRUV
+    prompt = build_ai_prompt(form_data, count=5)
+    texts = await generate_ai_posts(prompt, count=5)
+
+    # 🔒 MUHIM FALLBACK
+    if not texts:
+        texts = [
+            f"🚕 {form_data.get('from_region')} → {form_data.get('to_region')}\n"
+            f"⏰ {form_data.get('time')}\n"
+            f"📞 {form_data.get('phone')}"
+        ]
 
     groups = get_user_groups(user_id)
 
-    # ✅ flow saqlaymiz
     save_user_flow(
         user_id=user_id,
         step="choose_groups",
         data={
             "mode": "ai",
-            "texts": texts,          # list[str]
+            "texts": texts,
             "groups": groups,
             "selected_ids": [],
             "offset": 0
@@ -2887,48 +2645,6 @@ async def handle_webapp_data(message: Message):
     )
 
     await show_group_picker(message, user_id)
-
-
-@dp.callback_query(F.data.startswith("ai_pick:"))
-async def ai_pick_variant(cb: CallbackQuery):
-    user_id = cb.from_user.id
-    flow = get_user_flow(user_id)
-
-    if not flow or flow["step"] != "ai_choose_variant":
-        await cb.answer()
-        return
-
-    variants = flow["data"]["variants"]
-
-    choice = cb.data.split(":")[1]
-
-    if choice == "random":
-        text = random.choice(variants)
-    else:
-        text = variants[int(choice)]
-
-    # 🔥 endi oddiy flowga o‘tamiz
-    flow["data"]["text"] = text
-    save_user_flow(user_id, "enter_interval", flow["data"])
-
-    await cb.message.edit_text(
-        "✅ Post tanlandi.\n\n⏱ Endi intervalni tanlang:"
-    )
-
-    # interval keyboard
-    risk = get_account_risk(user_id)
-    intervals, level = get_interval_options_by_risk(risk)
-
-    await cb.message.answer(
-        f"🔐 Akkaunt holati: *{level}*\n\n"
-        "Intervalni tanlang:",
-        reply_markup=interval_keyboard(intervals),
-        parse_mode="Markdown"
-    )
-
-    await cb.answer()
-
-
 
 
 # =====================
