@@ -2578,7 +2578,8 @@ async def choose_ai_mode(message: Message, state: FSMContext):
             keyboard=[[
                 KeyboardButton(
                     text="🤖 AI post yaratish",
-                    web_app=WebAppInfo("https://yangibot-avtobot-production.up.railway.app/static/miniapp_ai.html")
+                   web_app=WebAppInfo(url="https://yangibot-avtobot-production.up.railway.app/static/miniapp_ai.html")
+
                 )
             ]],
             resize_keyboard=True
