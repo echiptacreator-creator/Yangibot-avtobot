@@ -226,7 +226,13 @@ def init_db():
         updated_at BIGINT
     );
     """)
-
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS user_trial (
+      user_id BIGINT PRIMARY KEY,
+      remaining INT NOT NULL DEFAULT 2,
+      created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    );
+    """)
     conn.commit()
     cur.close()
     conn.close()
@@ -1707,3 +1713,42 @@ def authorize_user(user_id: int):
     """, (user_id,))
     conn.commit()
     conn.close()
+
+def get_trial_remaining(user_id: int) -> int:
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT remaining FROM user_trial WHERE user_id=%s", (user_id,))
+    row = cur.fetchone()
+    conn.close()
+    return int(row[0]) if row else 2  # default: yangi user = 2
+
+def ensure_trial_row(user_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO user_trial (user_id, remaining)
+        VALUES (%s, 2)
+        ON CONFLICT (user_id) DO NOTHING
+    """, (user_id,))
+    conn.commit()
+    conn.close()
+
+def consume_trial(user_id: int, n: int = 1) -> int:
+    """n ta trial yechadi, qaytadi: yangilangan remaining"""
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO user_trial (user_id, remaining)
+        VALUES (%s, 2)
+        ON CONFLICT (user_id) DO NOTHING
+    """, (user_id,))
+    cur.execute("""
+        UPDATE user_trial
+        SET remaining = GREATEST(remaining - %s, 0)
+        WHERE user_id=%s
+        RETURNING remaining
+    """, (n, user_id))
+    remaining = cur.fetchone()[0]
+    conn.commit()
+    conn.close()
+    return int(remaining)
