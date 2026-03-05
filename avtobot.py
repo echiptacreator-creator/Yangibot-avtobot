@@ -1,4 +1,5 @@
 import asyncio
+import requests
 from datetime import date
 import time
 from aiogram import Bot, Dispatcher, F
@@ -11,7 +12,7 @@ from aiogram.types import (
     WebAppInfo
 )
 from telethon import TelegramClient
-from database import expire_subscription
+from database import expire_subscription, update_last_notify
 import os
 import json
 import random
@@ -173,15 +174,6 @@ from database import get_login_session
 
 def is_logged_in(user_id: int) -> bool:
     return get_login_session(user_id) is not None
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute(
-        "SELECT 1 FROM users WHERE user_id = %s",
-        (user_id,)
-    )
-    ok = cur.fetchone() is not None
-    conn.close()
-    return ok
 
 
 def calculate_duration_limits(interval: int):
@@ -1206,6 +1198,7 @@ async def handle_numbers(message: Message):
         # ✅ INTERVAL SAQLANADI
         data["interval"] = interval
         save_user_flow(user_id, "enter_duration", data)
+        min_d, safe_d, max_d = calculate_duration_limits(interval)  # ✅ SHUNI QO‘SHING
 
         await message.answer(
             "⏳ *Kampaniya davomiyligini tanlang*\n\n"
