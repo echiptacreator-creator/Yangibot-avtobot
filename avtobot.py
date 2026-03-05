@@ -70,6 +70,7 @@ from database import is_user_blocked
 from telethon.utils import get_peer_id
 from ai_wrapper import generate_ai_posts
 from ai_prompt import build_ai_prompt
+from database import ensure_trial_row, get_trial_remaining, consume_trial
 
 
 running_campaigns: dict[int, asyncio.Task] = {}
@@ -210,6 +211,37 @@ def get_interval_options_by_risk(risk: int):
     else:
         return [20, 30], "🔴 Yuqori xavf"
 
+
+def compute_safe_delay(interval_minutes: int, risk: int) -> int:
+    base = max(int(interval_minutes * 60), 90)  # minimum 90 soniya
+    delay = random.randint(int(base * 0.9), int(base * 1.7))
+
+    if risk >= 40:
+        delay = int(delay * 1.4)
+    if risk >= 60:
+        delay = int(delay * 2.2)
+
+    return min(delay, 60 * 60 * 3)  # max 3 soat
+
+
+from collections import deque
+campaign_group_queues = {}
+
+def get_next_group_rotating(campaign):
+    cid = campaign["id"]
+    groups = campaign.get("groups", [])
+    if not groups:
+        raise Exception("Guruhlar yo‘q")
+
+    if cid not in campaign_group_queues or not campaign_group_queues[cid]:
+        tmp = groups[:]
+        random.shuffle(tmp)
+        campaign_group_queues[cid] = deque(tmp)
+
+    g = campaign_group_queues[cid].popleft()
+    if isinstance(g, int):
+        return {"group_id": g}
+    return g
 # =====================
 # NOTIFICATION XATO
 # =====================
@@ -1278,8 +1310,9 @@ import random
 async def send_to_group(client, campaign, group):
     user_id = campaign["user_id"]
     group_id = group["group_id"]
+   
     
-        # 🔐 Riskni yangilaymiz
+    # 🔐 Riskni yangilaymiz
     risk = decay_account_risk(user_id)
 
     # =========================
@@ -1311,6 +1344,17 @@ async def send_to_group(client, campaign, group):
     # =========================
     # ⛔ LIMIT / RUXSAT TEKSHIRUV
     # =========================
+
+    # 🆓 TRIAL: premium bo‘lmasa 2 marta sinov
+    status, paid_until, _ = get_premium_status(user_id)
+    is_premium = (status == "active")
+    
+    if not is_premium:
+        ensure_trial_row(user_id)
+        if get_trial_remaining(user_id) <= 0:
+            await notify_user(campaign["chat_id"], "🆓 Sinov limiti tugadi. Davom etish uchun tarifga o‘ting.")
+            return False
+            
     ok, reason = can_user_run_campaign(user_id)
     if not ok:
         pause_campaign_with_reason(
@@ -1334,11 +1378,22 @@ async def send_to_group(client, campaign, group):
             group.get("username") or group["group_id"]
         )
 
-        await client.send_message(
-            entity=peer,
-            message=text
-        )
+        # ✅ XABAR YUBORISH (2 rejim)
+        if campaign.get("send_mode") == "copy":
+            src = await client.send_message("me", text)
+            await client.forward_messages(peer, src, as_copy=True)
+        else:
+            await client.send_message(entity=peer, message=text)
 
+        # ✅ TRIALNI FAQAT MUVAFFAQIYATLI YUBORGANDAN KEYIN YECHAMIZ
+        if not is_premium:
+            left = consume_trial(user_id, 1)
+            if left == 0:
+                await notify_user(
+                    campaign["chat_id"],
+                    "🆓 Sinov yakunlandi. Endi tarif bilan davom etasiz."
+                )
+            
         # =========================
         # 📊 STATISTIKA & RISK
         # =========================
@@ -1510,7 +1565,7 @@ async def run_campaign_safe(client, campaign):
             # =====================
             # 📍 NAVBATDAGI GURUH
             # =====================
-            group = get_next_group(campaign)
+            group = get_next_group_rotating(campaign)
 
             # ✍️ TYPING (faqat kosmetik)
             try:
@@ -1526,8 +1581,7 @@ async def run_campaign_safe(client, campaign):
             # =====================
             ok = await send_to_group(client, campaign, group)
             if not ok:
-                # ❗ faqat shu guruhni tashlab ketamiz
-                await asyncio.sleep(60)
+                await asyncio.sleep(random.randint(5, 15))
                 continue
 
             sent_count += 1
@@ -1536,7 +1590,7 @@ async def run_campaign_safe(client, campaign):
             # =====================
             # ⏱ RANDOM INTERVAL (FAQAT YUBORISHDAN KEYIN)
             # =====================
-            delay = random_interval(campaign["interval"] * 60)
+            delay = compute_safe_delay(campaign["interval"], risk)
             await asyncio.sleep(delay)
 
             # =====================
