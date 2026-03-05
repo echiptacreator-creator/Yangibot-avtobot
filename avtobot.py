@@ -11,6 +11,7 @@ from aiogram.types import (
     WebAppInfo
 )
 from telethon import TelegramClient
+from database import expire_subscription
 import os
 import json
 import random
