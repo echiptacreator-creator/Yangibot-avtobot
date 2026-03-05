@@ -805,7 +805,7 @@ async def choose_send_mode(message: Message):
     # 🔥 FAQAT SHU QATOR QO‘SHILADI
     await message.answer(
         "📋 Guruhlarni tanlang:",
-        reply_markup=ReplyKeyboardRemove()
+        reply_markup=main_menu()
     )
 
     # 🔁 INLINE GURUH TANLASH
@@ -925,7 +925,7 @@ async def pick_group(cb: CallbackQuery):
         await cb.bot.send_message(
             chat_id=cb.from_user.id,
             text="👉 Endi xabar matnini kiriting:",
-            reply_markup=ReplyKeyboardRemove()
+            reply_markup=send_flow_keyboard()
         )
     
         await cb.answer()
@@ -2684,7 +2684,7 @@ async def handle_webapp_data(message: Message):
     await message.answer(
         "🤖 AI postlar tayyor.\n\n"
         "📋 Endi qaysi guruhlarga yuborishni tanlang 👇",
-        reply_markup=ReplyKeyboardRemove()
+        reply_markup=main_menu()
     )
 
     await show_group_picker(message, user_id)
