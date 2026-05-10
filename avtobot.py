@@ -1188,10 +1188,9 @@ async def handle_numbers(message: Message):
         # 🔐 RISKGA MOS INTERVAL CHEGARASI
         intervals, _ = get_interval_options_by_risk(risk)
 
-        if interval not in intervals:
+        if interval < min(intervals):
             await message.answer(
-                "❌ Bu interval akkaunt xavfiga mos emas.\n"
-                "Iltimos, tavsiya etilgan variantlardan birini tanlang."
+                "⚠️ Juda past interval. Akkaunt xavfi oshishi mumkin."
             )
             return
             
@@ -1297,7 +1296,7 @@ def normalize_chat_id(group_id: int) -> int:
     # musbat bo‘lsa → supergroup deb qabul qilamiz
     return int("-100" + gid)
 
-FLOODWAIT_PAUSE_THRESHOLD = 600  # 10 daqiqa
+FLOODWAIT_PAUSE_THRESHOLD = 1800  # 10 daqiqa
 
 import random
 
@@ -1395,10 +1394,7 @@ async def send_to_group(client, campaign, group):
         increment_daily_usage(user_id, 1)
 
         risk_inc = 1
-        if campaign["interval"] <= 5:
-            risk_inc += 2
-        elif campaign["interval"] <= 10:
-            risk_inc += 1
+
 
         increase_risk(user_id, risk_inc)
         reset_campaign_error(campaign["id"])
@@ -1529,7 +1525,7 @@ async def run_campaign_safe(client, campaign):
         # =====================
         risk = decay_account_risk(user_id)
 
-        if risk >= 80:
+        if risk >= 95:
             pause_campaign_with_reason(
                 campaign["id"],
                 "risk_high"
@@ -1542,7 +1538,7 @@ async def run_campaign_safe(client, campaign):
             )
             return
 
-        if risk >= 60:
+        if risk >= 85:
             pause_campaign_with_reason(
                 campaign["id"],
                 "risk_high"
