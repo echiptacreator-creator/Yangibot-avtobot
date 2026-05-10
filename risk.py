@@ -60,8 +60,8 @@ def decay_account_risk(user_id: int) -> int:
     score, last = row
     minutes = (datetime.utcnow() - last).total_seconds() / 60
 
-    if minutes >= 10 and score > 0:
-        score = max(0, score - 10)
+    if minutes >= 5 and score > 0:
+        score = max(0, score - 15)
         save_account_risk(user_id, score)
 
     conn.close()
